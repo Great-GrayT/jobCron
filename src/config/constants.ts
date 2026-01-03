@@ -8,7 +8,7 @@ export const RSS_FEED_URLS = process.env.RSS_FEED_URLS
     ];
 
 export const CHECK_INTERVAL_MINUTES = parseInt(
-  process.env.CHECK_INTERVAL_MINUTES || "5",
+  process.env.CHECK_INTERVAL_MINUTES || "60",
   10
 );
 
