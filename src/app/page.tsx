@@ -53,7 +53,7 @@ export default function Home() {
 
       <h2>Documentation</h2>
       <ul>
-        <li><a href="https://github.com/Great-GrayT/website">GitHub Repository</a></li>
+        <li><a href="https://github.com/Great-GrayT/jobCron">GitHub Repository</a></li>
         <li>See README.md for setup instructions</li>
         <li>See DEPLOYMENT.md for deployment guide</li>
       </ul>
