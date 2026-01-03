@@ -308,5 +308,3 @@ MIT
 ## Support
 
 For issues and questions, please open an issue on GitHub.
-#   j o b C r o n  
- 
