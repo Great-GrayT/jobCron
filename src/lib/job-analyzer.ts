@@ -1,4 +1,11 @@
 import { JobAnalysis, JobDetails } from "@/types/job";
+import { certificationPatterns } from "./dictionaries/certifications";
+import { majorKeywords } from "./dictionaries/majors";
+import { softwareKeywords } from "./dictionaries/software";
+import { programmingKeywords } from "./dictionaries/programming-languages";
+import { expertiseKeywords } from "./dictionaries/expertise";
+import { jobTypes } from "./dictionaries/job-types";
+import { companyTypes } from "./dictionaries/company-types";
 
 /**
  * Extracts company, position, and location from job title
@@ -51,17 +58,8 @@ export function analyzeJobDescription(description: string): JobAnalysis {
 
 function extractCertifications(text: string): string[] {
   const certifications: string[] = [];
-  const certPatterns = [
-    /\bCFA\s*(?:Level\s*([I1-3]|One|Two|Three|I{1,3}))?\b/gi,
-    /\bACCA\b/gi,
-    /\bACA\b/gi,
-    /\bCIMA\b/gi,
-    /\bFRM\b/gi,
-    /\bMBA\b/gi,
-    /\bCPA\b/gi,
-  ];
 
-  for (const pattern of certPatterns) {
+  for (const { pattern } of certificationPatterns) {
     const matches = text.match(pattern);
     if (matches) {
       certifications.push(...matches.map(m => m.trim()));
@@ -91,22 +89,6 @@ function extractYearsExperience(text: string): string {
 
 function extractExpertise(text: string): string[] {
   const expertise: string[] = [];
-  const expertiseKeywords: Record<string, RegExp> = {
-    'Financial Modeling': /financial\s*model(?:l?ing)?/gi,
-    'Valuation': /\bvaluation/gi,
-    'M&A': /\bM&A\b|mergers?\s*(?:and|&)\s*acquisitions?/gi,
-    'Portfolio Management': /portfolio\s*manag(?:ement|er)/gi,
-    'Risk Management': /risk\s*manag(?:ement|er)/gi,
-    'Equity Research': /equity\s*research/gi,
-    'Fixed Income': /fixed\s*income/gi,
-    'Derivatives': /derivatives?/gi,
-    'Quantitative Analysis': /quant(?:itative)?(?:\s*analy(?:sis|st))?/gi,
-    'Bloomberg Terminal': /bloomberg(?:\s*terminal)?/gi,
-    'Python': /\bpython\b/gi,
-    'SQL': /\bSQL\b/gi,
-    'Excel': /\bexcel\b/gi,
-    'VBA': /\bVBA\b/gi,
-  };
 
   for (const [skill, pattern] of Object.entries(expertiseKeywords)) {
     if (pattern.test(text)) {
@@ -114,39 +96,20 @@ function extractExpertise(text: string): string[] {
     }
   }
 
-  return [...new Set(expertise)].slice(0, 6);
+  return [...new Set(expertise)].slice(0, 10);
 }
 
 function identifyJobType(lowerText: string): string {
-  const jobTypes = [
-    { type: 'Investment Banking', keywords: ['investment bank', 'M&A', 'corporate finance'] },
-    { type: 'Portfolio Management', keywords: ['portfolio manager', 'fund manager'] },
-    { type: 'Financial Analysis', keywords: ['financial analyst', 'FP&A'] },
-    { type: 'Equity Research', keywords: ['equity research', 'research analyst'] },
-    { type: 'Risk Management', keywords: ['risk manager', 'risk analyst'] },
-    { type: 'Quantitative Finance', keywords: ['quant', 'quantitative'] },
-    { type: 'Trading', keywords: ['trader', 'trading'] },
-  ];
-
   for (const { type, keywords } of jobTypes) {
     if (keywords.some(kw => lowerText.includes(kw.toLowerCase()))) {
       return type;
     }
   }
 
-  return "General Finance";
+  return "General";
 }
 
 function identifyCompanyType(lowerText: string): string {
-  const companyTypes = [
-    { type: 'Investment Bank', keywords: ['goldman sachs', 'morgan stanley', 'jp morgan', 'barclays', 'citi', 'ubs'] },
-    { type: 'Asset Manager', keywords: ['blackrock', 'vanguard', 'fidelity', 'asset manag'] },
-    { type: 'Hedge Fund', keywords: ['hedge fund', 'citadel', 'two sigma'] },
-    { type: 'Private Equity', keywords: ['private equity', 'KKR', 'blackstone'] },
-    { type: 'Consulting Firm', keywords: ['mckinsey', 'bain', 'bcg', 'deloitte', 'pwc', 'ey', 'kpmg'] },
-    { type: 'Fintech', keywords: ['fintech', 'revolut', 'stripe'] },
-  ];
-
   for (const { type, keywords } of companyTypes) {
     if (keywords.some(kw => lowerText.includes(kw.toLowerCase()))) {
       return type;
@@ -189,14 +152,6 @@ function extractAcademicDegrees(text: string): string[] {
 
 function extractMajors(text: string): string[] {
   const majors: string[] = [];
-  const majorKeywords: Record<string, RegExp> = {
-    'Finance': /\bfinance\b/gi,
-    'Accounting': /\baccounting\b/gi,
-    'Economics': /\beconomics\b/gi,
-    'Mathematics': /\bmathematics\b|\bmath\b/gi,
-    'Computer Science': /computer\s*science/gi,
-    'Statistics': /\bstatistics\b/gi,
-  };
 
   for (const [major, pattern] of Object.entries(majorKeywords)) {
     if (pattern.test(text)) {
@@ -209,14 +164,6 @@ function extractMajors(text: string): string[] {
 
 function extractSoftware(text: string): string[] {
   const software: string[] = [];
-  const softwareKeywords: Record<string, RegExp> = {
-    'Excel': /\bexcel\b/gi,
-    'Bloomberg': /\bbloomberg\b/gi,
-    'Power BI': /power\s*bi/gi,
-    'Tableau': /\btableau\b/gi,
-    'SAP': /\bSAP\b/gi,
-    'Oracle': /\boracle\b/gi,
-  };
 
   for (const [soft, pattern] of Object.entries(softwareKeywords)) {
     if (pattern.test(text)) {
@@ -229,16 +176,8 @@ function extractSoftware(text: string): string[] {
 
 function extractProgrammingSkills(text: string): string[] {
   const skills: string[] = [];
-  const progKeywords: Record<string, RegExp> = {
-    'Python': /\bpython\b/gi,
-    'R': /\bR\b(?:\s+programming)?/g,
-    'SQL': /\bSQL\b/gi,
-    'VBA': /\bVBA\b/gi,
-    'JavaScript': /javascript/gi,
-    'MATLAB': /\bMATLAB\b/gi,
-  };
 
-  for (const [skill, pattern] of Object.entries(progKeywords)) {
+  for (const [skill, pattern] of Object.entries(programmingKeywords)) {
     if (pattern.test(text)) {
       skills.push(skill);
     }
