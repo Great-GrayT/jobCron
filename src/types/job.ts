@@ -29,4 +29,5 @@ export interface CronJobResult {
   total: number;
   sent: number;
   failed: number;
+  pubDates: string[];
 }
