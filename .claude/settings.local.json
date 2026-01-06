@@ -4,7 +4,11 @@
       "Bash(tree:*)",
       "Bash(npm run build:*)",
       "Bash(mkdir:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm add:*)",
+      "Bash(test:*)",
+      "Bash(npm run dev:*)"
     ]
   }
 }

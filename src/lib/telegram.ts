@@ -74,3 +74,62 @@ export async function sendMessagesWithRateLimit(
 
   return { sent, failed };
 }
+
+/**
+ * Sends a file (document) to Telegram using native FormData (Node.js 18+)
+ */
+export async function sendTelegramFile(
+  fileBuffer: Buffer,
+  filename: string,
+  caption?: string
+): Promise<void> {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    throw new TelegramError("Telegram credentials not configured");
+  }
+
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`;
+
+  try {
+    // Convert Buffer to Uint8Array for compatibility
+    const uint8Array = new Uint8Array(fileBuffer);
+
+    // Create a Blob from the buffer
+    const blob = new Blob([uint8Array], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    // Create a File object
+    const file = new File([blob], filename, {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    // Use native FormData (available in Node.js 18+)
+    const formData = new FormData();
+    formData.append("chat_id", TELEGRAM_CHAT_ID);
+    formData.append("document", file);
+
+    if (caption) {
+      formData.append("caption", caption);
+    }
+
+    const response = await fetch(url, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new TelegramError(
+        errorData.description || `Failed to send file: ${response.statusText}`,
+        response.status
+      );
+    }
+  } catch (error) {
+    if (error instanceof TelegramError) {
+      throw error;
+    }
+    throw new TelegramError(
+      `Network error: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}

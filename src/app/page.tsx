@@ -27,12 +27,15 @@ export default function Home() {
       <h2 style={{ marginTop: '2rem' }}>Endpoints</h2>
       <ul>
         <li>
-          <code>/api/cron/check-jobs</code> - Cron endpoint (automated)
+          <code>/api/cron/check-jobs</code> - Cron endpoint (automated RSS monitoring)
+        </li>
+        <li>
+          <code>/api/scrape-jobs</code> - LinkedIn job scraper (manual trigger)
         </li>
       </ul>
 
-      <h2>Manual Trigger</h2>
-      <p>
+      <h2>Manual Triggers</h2>
+      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
         <a
           href="/api/cron/check-jobs"
           style={{
@@ -44,11 +47,24 @@ export default function Home() {
             borderRadius: '6px'
           }}
         >
-          Trigger Job Check Now
+          Trigger RSS Job Check
         </a>
-      </p>
-      <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-        Note: Manual triggers may require authentication if CRON_SECRET is set.
+        <a
+          href="/scrape"
+          style={{
+            display: 'inline-block',
+            padding: '0.5rem 1rem',
+            background: '#0073b1',
+            color: 'white',
+            textDecoration: 'none',
+            borderRadius: '6px'
+          }}
+        >
+          LinkedIn Job Scraper
+        </a>
+      </div>
+      <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '1rem' }}>
+        Note: RSS job check may require authentication if CRON_SECRET is set.
       </p>
 
       <h2>Documentation</h2>
