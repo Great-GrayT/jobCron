@@ -5,7 +5,8 @@
 
 interface CacheEntry {
   date: string; // YYYY-MM-DD format
-  sentJobs: Set<string>;
+  sentTitles: Set<string>;
+  sentDescriptions: Set<string>;
 }
 
 class DailyJobCache {
@@ -33,49 +34,57 @@ class DailyJobCache {
   private initializeCache(): void {
     this.cache = {
       date: this.getTodayDate(),
-      sentJobs: new Set<string>()
+      sentTitles: new Set<string>(),
+      sentDescriptions: new Set<string>()
     };
   }
 
   /**
-   * Check if a job has already been sent today
-   * @param jobTitle - The job title (used as unique identifier)
-   * @returns true if job was already sent today, false otherwise
+   * Check if a job has already been sent today (by title OR description)
+   * @param jobTitle - The job title
+   * @param jobDescription - The job description
+   * @returns true if job was already sent today (title or description match), false otherwise
    */
-  public hasBeenSent(jobTitle: string): boolean {
+  public hasBeenSent(jobTitle: string, jobDescription: string): boolean {
     // If cache is invalid (new day), reset it
     if (!this.isCacheValid()) {
       this.initializeCache();
       return false;
     }
 
-    return this.cache!.sentJobs.has(jobTitle);
+    // Check if either title OR description has been sent
+    return this.cache!.sentTitles.has(jobTitle) || this.cache!.sentDescriptions.has(jobDescription);
   }
 
   /**
    * Mark a job as sent for today
    * @param jobTitle - The job title to mark as sent
+   * @param jobDescription - The job description to mark as sent
    */
-  public markAsSent(jobTitle: string): void {
+  public markAsSent(jobTitle: string, jobDescription: string): void {
     // If cache is invalid (new day), reset it
     if (!this.isCacheValid()) {
       this.initializeCache();
     }
 
-    this.cache!.sentJobs.add(jobTitle);
+    this.cache!.sentTitles.add(jobTitle);
+    this.cache!.sentDescriptions.add(jobDescription);
   }
 
   /**
    * Mark multiple jobs as sent
-   * @param jobTitles - Array of job titles to mark as sent
+   * @param jobs - Array of jobs with title and description
    */
-  public markMultipleAsSent(jobTitles: string[]): void {
+  public markMultipleAsSent(jobs: Array<{ title: string; description: string }>): void {
     // If cache is invalid (new day), reset it
     if (!this.isCacheValid()) {
       this.initializeCache();
     }
 
-    jobTitles.forEach(title => this.cache!.sentJobs.add(title));
+    jobs.forEach(job => {
+      this.cache!.sentTitles.add(job.title);
+      this.cache!.sentDescriptions.add(job.description);
+    });
   }
 
   /**
@@ -85,7 +94,8 @@ class DailyJobCache {
     if (!this.isCacheValid()) {
       return 0;
     }
-    return this.cache!.sentJobs.size;
+    // Use titles count as the job count (both sets should be the same size)
+    return this.cache!.sentTitles.size;
   }
 
   /**
@@ -109,7 +119,7 @@ class DailyJobCache {
 
     return {
       date: this.cache!.date,
-      sentCount: this.cache!.sentJobs.size,
+      sentCount: this.cache!.sentTitles.size,
       isValid: true
     };
   }

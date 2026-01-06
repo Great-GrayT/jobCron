@@ -7,16 +7,22 @@ import { dailyJobCache } from "./daily-cache";
 import { RSS_FEED_URLS, CHECK_INTERVAL_MINUTES, RATE_LIMIT_DELAY_MS } from "@/config/constants";
 
 /**
- * Deduplicate jobs based on title (case-insensitive)
+ * Deduplicate jobs based on title OR description (case-insensitive)
+ * A job is considered duplicate if either its title or description matches an already seen job
  */
 function deduplicateJobs(jobs: JobItem[]): JobItem[] {
-  const seen = new Set<string>();
+  const seenTitles = new Set<string>();
+  const seenDescriptions = new Set<string>();
   const uniqueJobs: JobItem[] = [];
 
   for (const job of jobs) {
     const normalizedTitle = job.title.toLowerCase().trim();
-    if (!seen.has(normalizedTitle)) {
-      seen.add(normalizedTitle);
+    const normalizedDescription = job.description.toLowerCase().trim();
+
+    // Skip if either title OR description has been seen before
+    if (!seenTitles.has(normalizedTitle) && !seenDescriptions.has(normalizedDescription)) {
+      seenTitles.add(normalizedTitle);
+      seenDescriptions.add(normalizedDescription);
       uniqueJobs.push(job);
     }
   }
@@ -50,8 +56,8 @@ export async function checkAndSendJobs(): Promise<CronJobResult> {
     const recentJobs = filterRecentJobs(uniqueJobs, CHECK_INTERVAL_MINUTES);
     logger.info(`Found ${recentJobs.length} recent jobs (within ${CHECK_INTERVAL_MINUTES} minutes)`);
 
-    // Filter out jobs that have already been sent today (using job title as unique identifier)
-    const newJobs = recentJobs.filter(job => !dailyJobCache.hasBeenSent(job.title));
+    // Filter out jobs that have already been sent today (using title OR description as unique identifier)
+    const newJobs = recentJobs.filter(job => !dailyJobCache.hasBeenSent(job.title, job.description));
     logger.info(`${newJobs.length} new jobs to send (${recentJobs.length - newJobs.length} already sent today)`);
 
     // If no new jobs, return early
@@ -71,8 +77,11 @@ export async function checkAndSendJobs(): Promise<CronJobResult> {
     // CRITICAL: Only mark SUCCESSFULLY sent jobs in the cache
     // Failed jobs should NOT be cached so they can be retried
     if (sent > 0) {
-      const sentJobTitles = newJobs.slice(0, sent).map(job => job.title);
-      dailyJobCache.markMultipleAsSent(sentJobTitles);
+      const sentJobs = newJobs.slice(0, sent).map(job => ({
+        title: job.title,
+        description: job.description
+      }));
+      dailyJobCache.markMultipleAsSent(sentJobs);
       logger.info(`Marked ${sent} successfully sent jobs in daily cache`);
     }
 
