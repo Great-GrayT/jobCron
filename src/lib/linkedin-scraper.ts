@@ -254,9 +254,9 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
 
       browser = await puppeteer.launch({
         args: chromium.args,
-        defaultViewport: { width: 1920, height: 1080 },
-        executablePath: await chromium.executablePath('/tmp'),
-        headless: true,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
       });
     } else {
       // Use local Chrome/Chromium for development
