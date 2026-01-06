@@ -251,11 +251,15 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
     if (isProduction) {
       // Use @sparticuz/chromium for serverless environments (Vercel)
       logger.info("Launching browser for production (serverless)");
+
+      // Set required environment variable for @sparticuz/chromium
+      process.env.FONTCONFIG_PATH = "/tmp";
+
       browser = await puppeteer.launch({
-        args: chromium.args,
-        defaultViewport: { width: 1920, height: 1080 },
-        executablePath: await chromium.executablePath(),
-        headless: true,
+        args: [...chromium.args, '--single-process'],
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath('/tmp'),
+        headless: chromium.headless,
       });
     } else {
       // Use local Chrome/Chromium for development
