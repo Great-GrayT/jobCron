@@ -374,20 +374,20 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
     }
   }
 
-  // Remove duplicates based on job title (case-insensitive)
-  const seenTitles = new Set<string>();
+  // Remove duplicates based on job URL
+  const seenUrls = new Set<string>();
   const uniqueJobs: LinkedInJob[] = [];
 
   for (const job of allJobs) {
-    const normalizedTitle = job.title.toLowerCase().trim();
-    if (!seenTitles.has(normalizedTitle)) {
-      seenTitles.add(normalizedTitle);
+    const normalizedUrl = job.url.toLowerCase().trim();
+    if (!seenUrls.has(normalizedUrl)) {
+      seenUrls.add(normalizedUrl);
       uniqueJobs.push(job);
     }
   }
 
   logger.info(`Total jobs found: ${allJobs.length}`);
-  logger.info(`Unique jobs (after removing ${allJobs.length - uniqueJobs.length} duplicates by title): ${uniqueJobs.length}`);
+  logger.info(`Unique jobs (after removing ${allJobs.length - uniqueJobs.length} duplicates by URL): ${uniqueJobs.length}`);
 
   return uniqueJobs;
 }

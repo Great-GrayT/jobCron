@@ -8,7 +8,8 @@
       "Bash(npm install:*)",
       "Bash(pnpm add:*)",
       "Bash(test:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(npm run type-check:*)"
     ]
   }
 }
