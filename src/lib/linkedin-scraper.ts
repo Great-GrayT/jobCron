@@ -2,6 +2,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import ExcelJS from "exceljs";
 import { logger } from "./logger";
+import { ProgressEmitter } from "./progress-emitter";
 
 export interface LinkedInJob {
   id: string;
@@ -236,7 +237,10 @@ async function scrapeJobsFromHtml(html: string): Promise<LinkedInJob[]> {
   return results;
 }
 
-export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedInJob[]> {
+export async function scrapeLinkedInJobs(
+  params: ScrapeParams,
+  progressEmitter?: ProgressEmitter
+): Promise<LinkedInJob[]> {
   const MAX_PAGES = 10; // Reduced for faster execution
   let allJobs: LinkedInJob[] = [];
 
@@ -251,20 +255,30 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
     .map((country) => country.trim())
     .filter((country) => country.length > 0);
 
-  logger.info(`Starting LinkedIn scrape for ${searchKeywords.length} keywords: "${searchKeywords.join('", "')}" across ${countries.length} countries`);
+  const logMessage = `Starting LinkedIn scrape for ${searchKeywords.length} keywords: "${searchKeywords.join('", "')}" across ${countries.length} countries`;
+  logger.info(logMessage);
+  progressEmitter?.progress('initialization', logMessage, 0, searchKeywords.length * countries.length);
 
   try {
     // Iterate through each keyword
     for (let keywordIndex = 0; keywordIndex < searchKeywords.length; keywordIndex++) {
       const currentKeyword = searchKeywords[keywordIndex];
-      logger.info(`\n=== Keyword ${keywordIndex + 1}/${searchKeywords.length}: "${currentKeyword}" ===`);
+      const keywordMessage = `\n=== Keyword ${keywordIndex + 1}/${searchKeywords.length}: "${currentKeyword}" ===`;
+      logger.info(keywordMessage);
+      progressEmitter?.progress('scraping', keywordMessage, keywordIndex, searchKeywords.length);
 
       // For each keyword, search across all countries
       for (let countryIndex = 0; countryIndex < countries.length; countryIndex++) {
         const currentCountry = countries[countryIndex];
         const countryConfig = COUNTRY_CONFIGS[currentCountry];
 
-        logger.info(`  Scraping country ${countryIndex + 1}/${countries.length}: ${currentCountry}`);
+        const countryMessage = `  Scraping country ${countryIndex + 1}/${countries.length}: ${currentCountry}`;
+        logger.info(countryMessage);
+
+        const totalCombinations = searchKeywords.length * countries.length;
+        const currentCombination = keywordIndex * countries.length + countryIndex;
+
+        progressEmitter?.progress('scraping', countryMessage, currentCombination, totalCombinations);
 
         for (let currentPage = 0; currentPage < MAX_PAGES; currentPage++) {
           const url = buildJobSearchUrl(
@@ -272,7 +286,9 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
             countryConfig
           );
 
-          logger.info(`    Page ${currentPage + 1}: ${url}`);
+          const pageMessage = `    Page ${currentPage + 1}: ${url}`;
+          logger.info(pageMessage);
+          progressEmitter?.progress('scraping', pageMessage, currentCombination, totalCombinations);
 
           try {
             // Fetch the page HTML using axios
@@ -291,7 +307,9 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
             const jobs = await scrapeJobsFromHtml(response.data);
 
             if (!jobs || jobs.length === 0) {
-              logger.info(`    No jobs found on page ${currentPage + 1}, moving to next country`);
+              const noJobsMessage = `    No jobs found on page ${currentPage + 1}, moving to next country`;
+              logger.info(noJobsMessage);
+              progressEmitter?.progress('scraping', noJobsMessage, currentCombination, totalCombinations);
               break;
             }
 
@@ -305,7 +323,9 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
             }));
 
             allJobs.push(...jobsWithMetadata);
-            logger.info(`    Found ${jobs.length} jobs on this page (total: ${allJobs.length})`);
+            const foundJobsMessage = `    Found ${jobs.length} jobs on this page (total: ${allJobs.length})`;
+            logger.info(foundJobsMessage);
+            progressEmitter?.progress('scraping', foundJobsMessage, currentCombination, totalCombinations);
 
             // Small delay between page requests
             await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -336,12 +356,15 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
   // Only consider URLs that contain "http" as valid
   const seenUrls = new Set<string>();
   const uniqueJobs: LinkedInJob[] = [];
+  let invalidUrlCount = 0;
+  let duplicateCount = 0;
 
   for (const job of allJobs) {
     const normalizedUrl = job.url.toLowerCase().trim();
 
     // Skip jobs with invalid URLs (must contain http)
     if (!normalizedUrl.includes('http')) {
+      invalidUrlCount++;
       logger.warn(`Skipping job with invalid URL: "${job.url}" - ${job.title}`);
       continue;
     }
@@ -349,11 +372,36 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
     if (!seenUrls.has(normalizedUrl)) {
       seenUrls.add(normalizedUrl);
       uniqueJobs.push(job);
+    } else {
+      duplicateCount++;
     }
   }
 
-  logger.info(`Total jobs found: ${allJobs.length}`);
-  logger.info(`Unique jobs (after removing ${allJobs.length - uniqueJobs.length} duplicates by URL): ${uniqueJobs.length}`);
+  const totalMessage = `Total jobs scraped: ${allJobs.length}`;
+  const invalidMessage = `Invalid URLs skipped: ${invalidUrlCount}`;
+  const duplicateMessage = `Duplicate jobs removed: ${duplicateCount}`;
+  const uniqueMessage = `Unique jobs remaining: ${uniqueJobs.length}`;
+
+  logger.info(totalMessage);
+  logger.info(invalidMessage);
+  logger.info(duplicateMessage);
+  logger.info(uniqueMessage);
+
+  progressEmitter?.progress('deduplication', totalMessage);
+  progressEmitter?.progress('deduplication', invalidMessage);
+  progressEmitter?.progress('deduplication', duplicateMessage);
+  progressEmitter?.progress('deduplication', uniqueMessage);
+
+  progressEmitter?.complete(
+    'complete',
+    `Found ${uniqueJobs.length} unique jobs (${duplicateCount} duplicates removed, ${invalidUrlCount} invalid URLs skipped)`,
+    {
+      totalScraped: allJobs.length,
+      uniqueJobs: uniqueJobs.length,
+      duplicates: duplicateCount,
+      invalidUrls: invalidUrlCount,
+    }
+  );
 
   return uniqueJobs;
 }

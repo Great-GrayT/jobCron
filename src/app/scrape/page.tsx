@@ -1,6 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+
+interface ProgressLog {
+  timestamp: Date;
+  message: string;
+  percentage?: number;
+}
 
 export default function ScrapePage() {
   const [searchText, setSearchText] = useState("CFA");
@@ -9,6 +15,24 @@ export default function ScrapePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progressLogs, setProgressLogs] = useState<ProgressLog[]>([]);
+  const [currentProgress, setCurrentProgress] = useState<number>(0);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new logs are added
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [progressLogs]);
+
+  const addLog = (message: string, percentage?: number) => {
+    setProgressLogs(prev => [
+      ...prev,
+      { timestamp: new Date(), message, percentage }
+    ]);
+    if (percentage !== undefined) {
+      setCurrentProgress(percentage);
+    }
+  };
 
   const availableCountries = [
     "United States",
@@ -48,33 +72,95 @@ export default function ScrapePage() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setProgressLogs([]);
+    setCurrentProgress(0);
+
+    const keywords = searchText.split(",").map(k => k.trim()).filter(k => k);
+    const timeFilterHours = Math.round(parseInt(timeFilter) / 3600);
+
+    addLog(`🚀 Starting LinkedIn job scraper...`, 0);
+    addLog(`📋 Configuration:`);
+    addLog(`   - Keywords: ${keywords.join(", ")}`);
+    addLog(`   - Countries: ${countries.join(", ")}`);
+    addLog(`   - Time Filter: Last ${timeFilterHours} hours`);
+    addLog(`   - Total Searches: ${keywords.length} × ${countries.length} = ${keywords.length * countries.length}`);
+    addLog(``);
+
+    // Construct the streaming URL with parameters
+    const params = new URLSearchParams({
+      search: searchText,
+      countries: countries.join(", "),
+      timeFilter: timeFilter,
+    });
+
+    const url = `/api/scrape-jobs-stream?${params.toString()}`;
+
+    addLog(`🌐 Connecting to server...`, 5);
+    addLog(``);
+
+    const startTime = Date.now();
+    let eventSource: EventSource | null = null;
 
     try {
-      // Construct the GET URL with parameters
-      const params = new URLSearchParams({
-        search: searchText,
-        countries: countries.join(", "),
-        timeFilter: timeFilter,
+      // Use EventSource for Server-Sent Events
+      eventSource = new EventSource(url);
+
+      eventSource.addEventListener("log", (event) => {
+        const data = JSON.parse(event.data);
+        addLog(data.message, data.percentage);
       });
 
-      const url = `/api/scrape-jobs?${params.toString()}`;
+      eventSource.addEventListener("complete", (event) => {
+        const data = JSON.parse(event.data);
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-      // Trigger the API call
-      const response = await fetch(url, {
-        method: "GET",
+        addLog(``);
+        addLog(`✓ Scraping complete!`, 100);
+        addLog(`📈 Results Summary:`);
+        addLog(`   - Unique jobs found: ${data.jobCount}`);
+        addLog(`   - Keywords searched: ${keywords.length}`);
+        addLog(`   - Countries searched: ${countries.length}`);
+        addLog(`   - Total execution time: ${elapsed}s`);
+        if (data.filename) {
+          addLog(`   - Excel file: ${data.filename}`);
+          addLog(`   - File sent to Telegram ✓`);
+        }
+        addLog(``);
+        addLog(`🎉 All done!`);
+
+        setResult(data);
+        setLoading(false);
+        eventSource?.close();
       });
 
-      const data = await response.json();
+      eventSource.addEventListener("error", (event: any) => {
+        const errorData = event.data ? JSON.parse(event.data) : null;
+        const errorMsg = errorData?.message || "Connection error occurred";
 
-      if (!response.ok) {
-        throw new Error(data.error || data.message || "Failed to scrape jobs");
-      }
+        addLog(``);
+        addLog(`❌ Error occurred: ${errorMsg}`);
+        addLog(`💡 Please check the error message above and try again`);
+        setError(errorMsg);
+        setLoading(false);
+        eventSource?.close();
+      });
 
-      setResult(data);
+      eventSource.onerror = (err) => {
+        console.error("EventSource error:", err);
+        if (eventSource?.readyState === EventSource.CLOSED) {
+          // Connection was closed, check if we got a complete event
+          // If not, this is an unexpected error
+          setLoading(false);
+        }
+      };
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
+      const errorMsg = err instanceof Error ? err.message : "An error occurred";
+      addLog(``);
+      addLog(`❌ Error occurred: ${errorMsg}`);
+      addLog(`💡 Please check the error message above and try again`);
+      setError(errorMsg);
       setLoading(false);
+      eventSource?.close();
     }
   };
 
@@ -125,6 +211,11 @@ export default function ScrapePage() {
               borderRadius: "4px",
             }}
           >
+            <option value="3600">Last 1 hour</option>
+            <option value="7200">Last 2 hours</option>
+            <option value="10800">Last 3 hours</option>
+            <option value="21600">Last 6 hours</option>
+            <option value="43200">Last 12 hours</option>
             <option value="86400">Last 24 hours</option>
             <option value="172800">Last 2 days</option>
             <option value="259200">Last 3 days</option>
@@ -180,6 +271,70 @@ export default function ScrapePage() {
             }}
           >
             <strong>Error:</strong> {error}
+          </div>
+        )}
+
+        {/* Progress Display */}
+        {(loading || progressLogs.length > 0) && (
+          <div
+            style={{
+              marginBottom: "20px",
+              padding: "15px",
+              background: "#f5f5f5",
+              borderRadius: "4px",
+              border: "1px solid #ddd",
+            }}
+          >
+            <div style={{ marginBottom: "10px", fontWeight: "bold" }}>
+              Progress: {currentProgress}%
+            </div>
+            <div
+              style={{
+                width: "100%",
+                height: "8px",
+                background: "#ddd",
+                borderRadius: "4px",
+                overflow: "hidden",
+                marginBottom: "15px",
+              }}
+            >
+              <div
+                style={{
+                  width: `${currentProgress}%`,
+                  height: "100%",
+                  background: "#0073b1",
+                  transition: "width 0.3s ease",
+                }}
+              />
+            </div>
+            <div
+              style={{
+                maxHeight: "400px",
+                overflowY: "auto",
+                fontSize: "12px",
+                fontFamily: "monospace",
+                background: "#fff",
+                padding: "10px",
+                borderRadius: "4px",
+                lineHeight: "1.4",
+              }}
+            >
+              {progressLogs.map((log, index) => (
+                <div
+                  key={index}
+                  style={{
+                    padding: "4px 0",
+                    borderBottom: index < progressLogs.length - 1 ? "1px solid #eee" : "none",
+                  }}
+                >
+                  <span style={{ color: "#666", marginRight: "8px" }}>
+                    {log.timestamp.toLocaleTimeString()}
+                  </span>
+                  <span>{log.message}</span>
+                </div>
+              ))}
+              <div ref={logsEndRef} />
+            </div>
           </div>
         )}
 

@@ -39,12 +39,16 @@ export async function GET(request: NextRequest) {
 
     logger.info(`Scraping jobs for: "${searchText}" in "${locationText}"`);
 
+    // Create progress emitter for real-time updates (future use)
+    const { ProgressEmitter } = await import("@/lib/progress-emitter");
+    const progressEmitter = new ProgressEmitter();
+
     // Scrape jobs from LinkedIn
     const jobs = await scrapeLinkedInJobs({
       searchText,
       locationText,
       timeFilter,
-    });
+    }, progressEmitter);
 
     if (jobs.length === 0) {
       logger.info("No jobs found");
@@ -60,7 +64,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Create Excel file
-    logger.info(`Creating Excel file with ${jobs.length} jobs`);
+    const excelMessage = `Creating Excel file with ${jobs.length} jobs`;
+    logger.info(excelMessage);
+    progressEmitter.progress('excel', excelMessage);
     const excelBuffer = await createExcelFile(jobs);
 
     // Generate filename
@@ -70,12 +76,16 @@ export async function GET(request: NextRequest) {
     const filename = `linkedin_jobs_${jobs.length}_${keywords.length}keywords_${countries.length}countries_${timestamp}.xlsx`;
 
     // Send to Telegram
-    logger.info("Sending Excel file to Telegram");
+    const telegramMessage = "Sending Excel file to Telegram";
+    logger.info(telegramMessage);
+    progressEmitter.progress('telegram', telegramMessage);
     const caption = `📊 LinkedIn Job Scrape Complete\n\nKeywords: ${keywords.join(", ")}\nLocations: ${locationText}\n\n✅ Found ${jobs.length} unique jobs across ${countries.length} countries:\n${countries.map((c) => `  • ${c}: ${jobs.filter((j) => j.searchCountry === c).length} jobs`).join("\n")}`;
 
     await sendTelegramFile(excelBuffer, filename, caption);
 
-    logger.info("LinkedIn job scraping completed successfully");
+    const completedMessage = "LinkedIn job scraping completed successfully";
+    logger.info(completedMessage);
+    progressEmitter.complete('complete', completedMessage);
 
     return NextResponse.json({
       success: true,
@@ -84,6 +94,7 @@ export async function GET(request: NextRequest) {
       keywords: keywords,
       countries: countries,
       filename,
+      logs: progressEmitter.getLogs(), // Include detailed logs in response
     });
   } catch (error) {
     logger.error("Error during LinkedIn scraping:", error);
@@ -131,12 +142,16 @@ export async function POST(request: NextRequest) {
 
     logger.info(`Scraping jobs for: "${searchText}" in "${locationText}"`);
 
+    // Create progress emitter for real-time updates (future use)
+    const { ProgressEmitter } = await import("@/lib/progress-emitter");
+    const progressEmitter = new ProgressEmitter();
+
     // Scrape jobs from LinkedIn
     const jobs = await scrapeLinkedInJobs({
       searchText,
       locationText,
       timeFilter,
-    });
+    }, progressEmitter);
 
     if (jobs.length === 0) {
       logger.info("No jobs found");
@@ -152,7 +167,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Excel file
-    logger.info(`Creating Excel file with ${jobs.length} jobs`);
+    const excelMessage = `Creating Excel file with ${jobs.length} jobs`;
+    logger.info(excelMessage);
+    progressEmitter.progress('excel', excelMessage);
     const excelBuffer = await createExcelFile(jobs);
 
     // Generate filename
@@ -162,12 +179,16 @@ export async function POST(request: NextRequest) {
     const filename = `linkedin_jobs_${jobs.length}_${keywords.length}keywords_${countries.length}countries_${timestamp}.xlsx`;
 
     // Send to Telegram
-    logger.info("Sending Excel file to Telegram");
+    const telegramMessage = "Sending Excel file to Telegram";
+    logger.info(telegramMessage);
+    progressEmitter.progress('telegram', telegramMessage);
     const caption = `📊 LinkedIn Job Scrape Complete\n\nKeywords: ${keywords.join(", ")}\nLocations: ${locationText}\n\n✅ Found ${jobs.length} unique jobs across ${countries.length} countries:\n${countries.map((c) => `  • ${c}: ${jobs.filter((j) => j.searchCountry === c).length} jobs`).join("\n")}`;
 
     await sendTelegramFile(excelBuffer, filename, caption);
 
-    logger.info("LinkedIn job scraping completed successfully");
+    const completedMessage = "LinkedIn job scraping completed successfully";
+    logger.info(completedMessage);
+    progressEmitter.complete('complete', completedMessage);
 
     return NextResponse.json({
       success: true,
@@ -176,6 +197,7 @@ export async function POST(request: NextRequest) {
       keywords: keywords,
       countries: countries,
       filename,
+      logs: progressEmitter.getLogs(), // Include detailed logs in response
     });
   } catch (error) {
     logger.error("Error during LinkedIn scraping:", error);
