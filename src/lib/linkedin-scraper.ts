@@ -1,5 +1,5 @@
-import puppeteer, { Browser, Page } from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+import axios from "axios";
+import * as cheerio from "cheerio";
 import ExcelJS from "exceljs";
 import { logger } from "./logger";
 
@@ -135,94 +135,79 @@ function buildJobSearchUrl(
   }&f_TPR=r${timeFilter}`;
 }
 
-async function scrapeJobsFromPage(page: Page): Promise<LinkedInJob[]> {
-  return await page.evaluate(() => {
-    const collection = document.body.children;
-    const results: LinkedInJob[] = [];
+async function scrapeJobsFromHtml(html: string): Promise<LinkedInJob[]> {
+  const $ = cheerio.load(html);
+  const results: LinkedInJob[] = [];
 
-    for (let i = 0; i < collection.length; i++) {
-      try {
-        const item = collection.item(i);
-        if (!item) continue;
+  // LinkedIn job cards are typically in <li> elements
+  $("li").each((i, element) => {
+    try {
+      const $item = $(element);
 
-        const titleElem = item.getElementsByClassName("base-search-card__title")[0];
-        if (!titleElem) continue;
+      // Check if this is a job card by looking for the title
+      const titleElem = $item.find(".base-search-card__title");
+      if (!titleElem.length) return;
 
-        const title = titleElem.textContent?.trim() || "";
-        const imgSrc =
-          item.getElementsByTagName("img")[0]?.getAttribute("data-delayed-url") || "";
+      const title = titleElem.text().trim();
+      const imgSrc = $item.find("img").attr("data-delayed-url") || "";
 
-        const linkElem = (
-          item.getElementsByClassName("base-card__full-link")[0] ||
-          item.getElementsByClassName("base-search-card--link")[0]
-        ) as HTMLAnchorElement;
+      const linkElem = $item.find(".base-card__full-link, .base-search-card--link");
+      const url = linkElem.attr("href") || "";
 
-        const url = linkElem?.href || "";
+      const companyContainer = $item.find(".base-search-card__subtitle");
+      const companyUrl = companyContainer.find("a").attr("href") || "";
+      const companyName = companyContainer.text().trim();
 
-        const companyContainer = item.getElementsByClassName(
-          "base-search-card__subtitle"
-        )[0];
+      const companyLocation = $item.find(".job-search-card__location").text().trim();
 
-        const companyUrl =
-          companyContainer?.getElementsByTagName("a")[0]?.href || "";
-        const companyName = companyContainer?.textContent?.trim() || "";
-        const companyLocation = item
-          .getElementsByClassName("job-search-card__location")[0]
-          ?.textContent?.trim() || "";
+      const dateTimeElem = $item.find(".job-search-card__listdate, .job-search-card__listdate--new");
+      const dateTime = dateTimeElem.attr("datetime") || "";
+      const postedTimeAgo = dateTimeElem.text().trim();
 
-        const dateTimeElem = (
-          item.getElementsByClassName("job-search-card__listdate")[0] ||
-          item.getElementsByClassName("job-search-card__listdate--new")[0]
-        ) as HTMLElement;
+      const toDate = (dateString: string) => {
+        const [year, month, day] = dateString.split("-");
+        return new Date(
+          parseFloat(year),
+          parseFloat(month) - 1,
+          parseFloat(day)
+        );
+      };
 
-        const dateTime = dateTimeElem?.getAttribute("datetime") || "";
-        const postedTimeAgo = dateTimeElem?.textContent?.trim() || "";
+      const postedDate = dateTime ? toDate(dateTime).toISOString() : "";
 
-        const toDate = (dateString: string) => {
-          const [year, month, day] = dateString.split("-");
-          return new Date(
-            parseFloat(year),
-            parseFloat(month) - 1,
-            parseFloat(day)
-          );
-        };
+      const description = $item.find(".job-search-card__snippet").text().trim();
 
-        const postedDate = dateTime ? toDate(dateTime).toISOString() : "";
+      // Check for early applicant badge
+      const earlyApplicantText = $item.find(".job-posting-benefits__text").text().toLowerCase();
+      const earlyApplicant = earlyApplicantText.includes("early applicant");
 
-        const descriptionElem = item.getElementsByClassName(
-          "job-search-card__snippet"
-        )[0];
-        const description = descriptionElem?.textContent?.trim() || "";
+      const entityUrn = $item.children().first().attr("data-entity-urn") || `job-${i}`;
 
-        // Check for early applicant badge
-        const earlyApplicantElem = item.getElementsByClassName("job-posting-benefits__text")[0];
-        const earlyApplicant = earlyApplicantElem?.textContent?.toLowerCase().includes("early applicant") || false;
+      const result: LinkedInJob = {
+        id: entityUrn,
+        title,
+        company: companyName,
+        location: companyLocation,
+        searchCountry: "",
+        currency: "",
+        domain: "",
+        inputKeyword: "",
+        postedDate,
+        postedTimeAgo,
+        description,
+        url,
+        companyUrl,
+        img: imgSrc,
+        earlyApplicant,
+      };
 
-        const result: LinkedInJob = {
-          id: item.children[0]?.getAttribute("data-entity-urn") || `job-${i}`,
-          title,
-          company: companyName,
-          location: companyLocation,
-          searchCountry: "",
-          currency: "",
-          domain: "",
-          inputKeyword: "", // Will be set later
-          postedDate,
-          postedTimeAgo,
-          description,
-          url,
-          companyUrl,
-          img: imgSrc,
-          earlyApplicant,
-        };
-
-        results.push(result);
-      } catch (e) {
-        console.error(`Error retrieving linkedin page item: ${i}`, e);
-      }
+      results.push(result);
+    } catch (e) {
+      logger.error(`Error retrieving linkedin page item: ${i}`, e);
     }
-    return results;
   });
+
+  return results;
 }
 
 export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedInJob[]> {
@@ -242,61 +227,7 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
 
   logger.info(`Starting LinkedIn scrape for ${searchKeywords.length} keywords: "${searchKeywords.join('", "')}" across ${countries.length} countries`);
 
-  let browser: Browser | null = null;
-
   try {
-    // Check if running in production (Vercel) or local development
-    const isProduction = process.env.VERCEL || process.env.NODE_ENV === "production";
-
-    if (isProduction) {
-      // Use @sparticuz/chromium for serverless environments (Vercel)
-      logger.info("Launching browser for production (serverless)");
-
-      // Set font config for chromium
-      chromium.setGraphicsMode = false;
-
-      browser = await puppeteer.launch({
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath(),
-        headless: true,
-      });
-    } else {
-      // Use local Chrome/Chromium for development
-      logger.info("Launching browser for local development");
-
-      const chromePaths = [
-        process.env.CHROME_PATH,
-        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-        "/usr/bin/google-chrome",
-        "/usr/bin/chromium-browser",
-      ].filter(Boolean) as string[];
-
-      let executablePath: string | undefined;
-      const fs = await import("fs");
-
-      for (const path of chromePaths) {
-        if (fs.existsSync(path)) {
-          executablePath = path;
-          logger.info(`Found Chrome at: ${path}`);
-          break;
-        }
-      }
-
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          "--disable-gpu",
-          "--disable-dev-shm-usage",
-          "--disable-setuid-sandbox",
-          "--no-sandbox",
-        ],
-        executablePath,
-      });
-    }
-
     // Iterate through each keyword
     for (let keywordIndex = 0; keywordIndex < searchKeywords.length; keywordIndex++) {
       const currentKeyword = searchKeywords[keywordIndex];
@@ -309,16 +240,6 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
 
         logger.info(`  Scraping country ${countryIndex + 1}/${countries.length}: ${currentCountry}`);
 
-        const page = await browser.newPage();
-
-        if (countryConfig) {
-          await page.setExtraHTTPHeaders({
-            "Accept-Language": countryConfig.language,
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          });
-        }
-
         for (let currentPage = 0; currentPage < MAX_PAGES; currentPage++) {
           const url = buildJobSearchUrl(
             { searchText: currentKeyword, locationText: countryConfig?.locationParam || currentCountry, timeFilter: params.timeFilter, pageNumber: currentPage },
@@ -328,10 +249,20 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
           logger.info(`    Page ${currentPage + 1}: ${url}`);
 
           try {
-            await page.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
-            await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for content to load
+            // Fetch the page HTML using axios
+            const response = await axios.get(url, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": countryConfig?.language || "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+              },
+              timeout: 30000,
+            });
 
-            const jobs = await scrapeJobsFromPage(page);
+            const jobs = await scrapeJobsFromHtml(response.data);
 
             if (!jobs || jobs.length === 0) {
               logger.info(`    No jobs found on page ${currentPage + 1}, moving to next country`);
@@ -339,7 +270,7 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
             }
 
             // Add metadata including the input keyword
-            const jobsWithMetadata = jobs.map((job) => ({
+            const jobsWithMetadata = jobs.map((job: LinkedInJob) => ({
               ...job,
               searchCountry: currentCountry,
               currency: countryConfig?.currency || "USD",
@@ -349,33 +280,30 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
 
             allJobs.push(...jobsWithMetadata);
             logger.info(`    Found ${jobs.length} jobs on this page (total: ${allJobs.length})`);
+
+            // Small delay between page requests
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           } catch (err) {
             logger.error(`    Error on page ${currentPage + 1}:`, err);
             break;
           }
         }
 
-        await page.close();
-
         // Wait between countries
         if (countryIndex < countries.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 3000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       }
 
       // Wait between keywords
       if (keywordIndex < searchKeywords.length - 1) {
-        logger.info(`\nWaiting 5 seconds before next keyword...`);
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        logger.info(`\nWaiting 3 seconds before next keyword...`);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       }
     }
   } catch (error) {
-    logger.error("Browser error during scraping:", error);
+    logger.error("Error during scraping:", error);
     throw error;
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 
   // Remove duplicates based on job URL
