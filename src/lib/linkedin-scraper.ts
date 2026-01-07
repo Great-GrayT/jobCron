@@ -28,7 +28,7 @@ export interface LinkedInJob {
 export interface ScrapeParams {
   searchText: string;
   locationText: string;
-  timeFilter?: number; // seconds
+  timeFilter?: number; // in seconds
 }
 
 interface CountryConfig {
@@ -119,15 +119,12 @@ const COUNTRY_CONFIGS: Record<string, CountryConfig> = {
   },
 };
 
-const DEFAULT_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
 function buildJobSearchUrl(
   searchParams: ScrapeParams & { pageNumber: number },
   countryConfig?: CountryConfig
 ): string {
   const domain = countryConfig ? countryConfig.domain : "linkedin.com";
-  const timeFilter = searchParams.timeFilter ?? 86400; // 24h default
+  const timeFilter = searchParams.timeFilter || 86400; // Default to 24 hours
 
   return `https://${domain}/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(
     searchParams.searchText
@@ -139,63 +136,69 @@ function buildJobSearchUrl(
 }
 
 async function scrapeJobsFromPage(page: Page): Promise<LinkedInJob[]> {
-  const raw = await page.evaluate(() => {
-    const collection = document.body?.children ?? [];
+  return await page.evaluate(() => {
+    const collection = document.body.children;
     const results: LinkedInJob[] = [];
 
     for (let i = 0; i < collection.length; i++) {
       try {
-        const item = collection.item(i) as HTMLElement | null;
+        const item = collection.item(i);
         if (!item) continue;
 
         const titleElem = item.getElementsByClassName("base-search-card__title")[0];
         if (!titleElem) continue;
 
         const title = titleElem.textContent?.trim() || "";
-
         const imgSrc =
-          item.getElementsByTagName("img")[0]?.getAttribute("data-delayed-url") ||
-          item.getElementsByTagName("img")[0]?.getAttribute("src") ||
-          "";
+          item.getElementsByTagName("img")[0]?.getAttribute("data-delayed-url") || "";
 
-        const linkElem = (item.getElementsByClassName("base-card__full-link")[0] ||
-          item.getElementsByClassName("base-search-card--link")[0]) as HTMLAnchorElement | undefined;
+        const linkElem = (
+          item.getElementsByClassName("base-card__full-link")[0] ||
+          item.getElementsByClassName("base-search-card--link")[0]
+        ) as HTMLAnchorElement;
 
         const url = linkElem?.href || "";
 
-        const companyContainer = item.getElementsByClassName("base-search-card__subtitle")[0];
+        const companyContainer = item.getElementsByClassName(
+          "base-search-card__subtitle"
+        )[0];
 
-        const companyUrl = companyContainer?.getElementsByTagName("a")[0]?.href || "";
+        const companyUrl =
+          companyContainer?.getElementsByTagName("a")[0]?.href || "";
         const companyName = companyContainer?.textContent?.trim() || "";
+        const companyLocation = item
+          .getElementsByClassName("job-search-card__location")[0]
+          ?.textContent?.trim() || "";
 
-        const companyLocation =
-          item.getElementsByClassName("job-search-card__location")[0]?.textContent?.trim() ||
-          "";
-
-        const dateTimeElem = (item.getElementsByClassName("job-search-card__listdate")[0] ||
-          item.getElementsByClassName("job-search-card__listdate--new")[0]) as HTMLElement | undefined;
+        const dateTimeElem = (
+          item.getElementsByClassName("job-search-card__listdate")[0] ||
+          item.getElementsByClassName("job-search-card__listdate--new")[0]
+        ) as HTMLElement;
 
         const dateTime = dateTimeElem?.getAttribute("datetime") || "";
         const postedTimeAgo = dateTimeElem?.textContent?.trim() || "";
 
-        const toDateIso = (dateString: string) => {
-          const parts = dateString.split("-");
-          if (parts.length !== 3) return "";
-          const [year, month, day] = parts;
-          const d = new Date(Number(year), Number(month) - 1, Number(day));
-          return isNaN(d.getTime()) ? "" : d.toISOString();
+        const toDate = (dateString: string) => {
+          const [year, month, day] = dateString.split("-");
+          return new Date(
+            parseFloat(year),
+            parseFloat(month) - 1,
+            parseFloat(day)
+          );
         };
 
-        const postedDate = dateTime ? toDateIso(dateTime) : "";
+        const postedDate = dateTime ? toDate(dateTime).toISOString() : "";
 
-        const descriptionElem = item.getElementsByClassName("job-search-card__snippet")[0];
+        const descriptionElem = item.getElementsByClassName(
+          "job-search-card__snippet"
+        )[0];
         const description = descriptionElem?.textContent?.trim() || "";
 
+        // Check for early applicant badge
         const earlyApplicantElem = item.getElementsByClassName("job-posting-benefits__text")[0];
-        const earlyApplicant =
-          earlyApplicantElem?.textContent?.toLowerCase().includes("early applicant") || false;
+        const earlyApplicant = earlyApplicantElem?.textContent?.toLowerCase().includes("early applicant") || false;
 
-        results.push({
+        const result: LinkedInJob = {
           id: item.children[0]?.getAttribute("data-entity-urn") || `job-${i}`,
           title,
           company: companyName,
@@ -203,7 +206,7 @@ async function scrapeJobsFromPage(page: Page): Promise<LinkedInJob[]> {
           searchCountry: "",
           currency: "",
           domain: "",
-          inputKeyword: "",
+          inputKeyword: "", // Will be set later
           postedDate,
           postedTimeAgo,
           description,
@@ -211,60 +214,54 @@ async function scrapeJobsFromPage(page: Page): Promise<LinkedInJob[]> {
           companyUrl,
           img: imgSrc,
           earlyApplicant,
-        });
+        };
+
+        results.push(result);
       } catch (e) {
-        // keep going
+        console.error(`Error retrieving linkedin page item: ${i}`, e);
       }
     }
-
     return results;
   });
-
-  return raw as LinkedInJob[];
-}
-
-function isServerlessProd(): boolean {
-  const onVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true" || !!process.env.VERCEL_ENV;
-  const onLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-  const nodeEnvProd = process.env.NODE_ENV === "production";
-  return onVercel || onLambda || nodeEnvProd;
 }
 
 export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedInJob[]> {
-  const MAX_PAGES = 10;
-  const allJobs: LinkedInJob[] = [];
+  const MAX_PAGES = 10; // Reduced for faster execution
+  let allJobs: LinkedInJob[] = [];
 
+  // Parse search keywords (comma-separated)
   const searchKeywords = params.searchText
     .split(",")
-    .map((k) => k.trim())
-    .filter(Boolean);
+    .map((keyword) => keyword.trim())
+    .filter((keyword) => keyword.length > 0);
 
   const countries = params.locationText
     .split(",")
-    .map((c) => c.trim())
-    .filter(Boolean);
+    .map((country) => country.trim())
+    .filter((country) => country.length > 0);
 
-  logger.info(
-    `Starting LinkedIn scrape for ${searchKeywords.length} keywords across ${countries.length} countries`
-  );
+  logger.info(`Starting LinkedIn scrape for ${searchKeywords.length} keywords: "${searchKeywords.join('", "')}" across ${countries.length} countries`);
 
   let browser: Browser | null = null;
 
   try {
-    const production = isServerlessProd();
+    // Check if running in production (Vercel) or local development
+    const isProduction = process.env.VERCEL || process.env.NODE_ENV === "production";
 
-    if (production) {
-      logger.info("Launching browser for serverless/production");
+    if (isProduction) {
+      // Use @sparticuz/chromium for serverless environments (Vercel)
+      logger.info("Launching browser for production (serverless)");
+
       browser = await puppeteer.launch({
-        args: chromium.args,
+        args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
         defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath(),
+        executablePath: await chromium.executablePath('/tmp'),
         headless: chromium.headless,
       });
     } else {
+      // Use local Chrome/Chromium for development
       logger.info("Launching browser for local development");
 
-      const fs = await import("fs");
       const chromePaths = [
         process.env.CHROME_PATH,
         "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -272,128 +269,135 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         "/usr/bin/google-chrome",
         "/usr/bin/chromium-browser",
-        "/usr/bin/chromium",
       ].filter(Boolean) as string[];
 
       let executablePath: string | undefined;
-      for (const p of chromePaths) {
-        if (fs.existsSync(p)) {
-          executablePath = p;
-          logger.info(`Found Chrome at: ${p}`);
+      const fs = await import("fs");
+
+      for (const path of chromePaths) {
+        if (fs.existsSync(path)) {
+          executablePath = path;
+          logger.info(`Found Chrome at: ${path}`);
           break;
         }
       }
 
       browser = await puppeteer.launch({
         headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+        args: [
+          "--disable-gpu",
+          "--disable-dev-shm-usage",
+          "--disable-setuid-sandbox",
+          "--no-sandbox",
+        ],
         executablePath,
       });
     }
 
+    // Iterate through each keyword
     for (let keywordIndex = 0; keywordIndex < searchKeywords.length; keywordIndex++) {
       const currentKeyword = searchKeywords[keywordIndex];
-      logger.info(`Keyword ${keywordIndex + 1}/${searchKeywords.length}: "${currentKeyword}"`);
+      logger.info(`\n=== Keyword ${keywordIndex + 1}/${searchKeywords.length}: "${currentKeyword}" ===`);
 
+      // For each keyword, search across all countries
       for (let countryIndex = 0; countryIndex < countries.length; countryIndex++) {
         const currentCountry = countries[countryIndex];
         const countryConfig = COUNTRY_CONFIGS[currentCountry];
 
-        logger.info(`  Country ${countryIndex + 1}/${countries.length}: ${currentCountry}`);
+        logger.info(`  Scraping country ${countryIndex + 1}/${countries.length}: ${currentCountry}`);
 
         const page = await browser.newPage();
-        try {
-          await page.setUserAgent(DEFAULT_UA);
 
-          // Set language header if we have a config
-          if (countryConfig?.language) {
-            await page.setExtraHTTPHeaders({
-              "Accept-Language": countryConfig.language,
-            });
-          }
-
-          for (let currentPage = 0; currentPage < MAX_PAGES; currentPage++) {
-            const url = buildJobSearchUrl(
-              {
-                searchText: currentKeyword,
-                locationText: countryConfig?.locationParam || currentCountry,
-                timeFilter: params.timeFilter,
-                pageNumber: currentPage,
-              },
-              countryConfig
-            );
-
-            logger.info(`    Page ${currentPage + 1}/${MAX_PAGES}`);
-
-            try {
-              await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
-              await new Promise((r) => setTimeout(r, 1500));
-
-              const jobs = await scrapeJobsFromPage(page);
-
-              if (!jobs.length) {
-                logger.info(`    No jobs found, moving on`);
-                break;
-              }
-
-              allJobs.push(
-                ...jobs.map((job) => ({
-                  ...job,
-                  searchCountry: currentCountry,
-                  currency: countryConfig?.currency || "USD",
-                  domain: countryConfig?.domain || "linkedin.com",
-                  inputKeyword: currentKeyword,
-                }))
-              );
-
-              logger.info(`    Found ${jobs.length} jobs (running total: ${allJobs.length})`);
-            } catch (err) {
-              logger.error(`    Error on page ${currentPage + 1}:`, err);
-              break;
-            }
-          }
-        } finally {
-          await page.close();
+        if (countryConfig) {
+          await page.setExtraHTTPHeaders({
+            "Accept-Language": countryConfig.language,
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          });
         }
 
+        for (let currentPage = 0; currentPage < MAX_PAGES; currentPage++) {
+          const url = buildJobSearchUrl(
+            { searchText: currentKeyword, locationText: countryConfig?.locationParam || currentCountry, timeFilter: params.timeFilter, pageNumber: currentPage },
+            countryConfig
+          );
+
+          logger.info(`    Page ${currentPage + 1}: ${url}`);
+
+          try {
+            await page.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
+            await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for content to load
+
+            const jobs = await scrapeJobsFromPage(page);
+
+            if (!jobs || jobs.length === 0) {
+              logger.info(`    No jobs found on page ${currentPage + 1}, moving to next country`);
+              break;
+            }
+
+            // Add metadata including the input keyword
+            const jobsWithMetadata = jobs.map((job) => ({
+              ...job,
+              searchCountry: currentCountry,
+              currency: countryConfig?.currency || "USD",
+              domain: countryConfig?.domain || "linkedin.com",
+              inputKeyword: currentKeyword,
+            }));
+
+            allJobs.push(...jobsWithMetadata);
+            logger.info(`    Found ${jobs.length} jobs on this page (total: ${allJobs.length})`);
+          } catch (err) {
+            logger.error(`    Error on page ${currentPage + 1}:`, err);
+            break;
+          }
+        }
+
+        await page.close();
+
+        // Wait between countries
         if (countryIndex < countries.length - 1) {
-          await new Promise((r) => setTimeout(r, 2500));
+          await new Promise((resolve) => setTimeout(resolve, 3000));
         }
       }
 
+      // Wait between keywords
       if (keywordIndex < searchKeywords.length - 1) {
-        await new Promise((r) => setTimeout(r, 4000));
+        logger.info(`\nWaiting 5 seconds before next keyword...`);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     }
   } catch (error) {
     logger.error("Browser error during scraping:", error);
     throw error;
   } finally {
-    if (browser) await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 
-  // De-dupe by URL
-  const seen = new Set<string>();
-  const unique: LinkedInJob[] = [];
+  // Remove duplicates based on job URL
+  const seenUrls = new Set<string>();
+  const uniqueJobs: LinkedInJob[] = [];
 
   for (const job of allJobs) {
-    const normalized = (job.url || "").toLowerCase().trim();
-    if (!normalized) continue;
-    if (seen.has(normalized)) continue;
-    seen.add(normalized);
-    unique.push(job);
+    const normalizedUrl = job.url.toLowerCase().trim();
+    if (!seenUrls.has(normalizedUrl)) {
+      seenUrls.add(normalizedUrl);
+      uniqueJobs.push(job);
+    }
   }
 
   logger.info(`Total jobs found: ${allJobs.length}`);
-  logger.info(`Unique jobs: ${unique.length}`);
+  logger.info(`Unique jobs (after removing ${allJobs.length - uniqueJobs.length} duplicates by URL): ${uniqueJobs.length}`);
 
-  return unique;
+  return uniqueJobs;
 }
 
 export async function createExcelFile(jobs: LinkedInJob[]): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Job Listings");
 
+  // Define columns
   worksheet.columns = [
     { header: "Input Keyword", key: "inputKeyword", width: 20 },
     { header: "Title", key: "title", width: 30 },
@@ -409,7 +413,8 @@ export async function createExcelFile(jobs: LinkedInJob[]): Promise<Buffer> {
     { header: "Company URL", key: "companyUrl", width: 50 },
   ];
 
-  for (const job of jobs) {
+  // Add data rows
+  jobs.forEach((job) => {
     worksheet.addRow({
       inputKeyword: job.inputKeyword,
       title: job.title,
@@ -424,17 +429,21 @@ export async function createExcelFile(jobs: LinkedInJob[]): Promise<Buffer> {
       url: job.url,
       companyUrl: job.companyUrl || "",
     });
-  }
+  });
 
+  // Style the header row
   const headerRow = worksheet.getRow(1);
   headerRow.font = { bold: true, size: 11, color: { argb: "FFFFFFFF" } };
-  headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4A90E2" } };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF4A90E2" },
+  };
 
+  // Auto-filter
   worksheet.autoFilter = "A1:L1";
 
-  const out = await workbook.xlsx.writeBuffer();
-
-  // ExcelJS can return ArrayBuffer in many runtimes
-  if (out instanceof ArrayBuffer) return Buffer.from(new Uint8Array(out));
-  return Buffer.from(out as any);
+  // Generate buffer
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }
