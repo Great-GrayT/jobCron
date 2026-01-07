@@ -307,11 +307,19 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
   }
 
   // Remove duplicates based on job URL
+  // Only consider URLs that contain "http" as valid
   const seenUrls = new Set<string>();
   const uniqueJobs: LinkedInJob[] = [];
 
   for (const job of allJobs) {
     const normalizedUrl = job.url.toLowerCase().trim();
+
+    // Skip jobs with invalid URLs (must contain http)
+    if (!normalizedUrl.includes('http')) {
+      logger.warn(`Skipping job with invalid URL: "${job.url}" - ${job.title}`);
+      continue;
+    }
+
     if (!seenUrls.has(normalizedUrl)) {
       seenUrls.add(normalizedUrl);
       uniqueJobs.push(job);

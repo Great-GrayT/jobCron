@@ -9,6 +9,7 @@ import { RSS_FEED_URLS, CHECK_INTERVAL_MINUTES, RATE_LIMIT_DELAY_MS } from "@/co
 /**
  * Deduplicate jobs based on URL
  * A job is considered duplicate if its URL matches an already seen job
+ * Only URLs containing "http" are considered valid
  */
 function deduplicateJobs(jobs: JobItem[]): JobItem[] {
   const seenUrls = new Set<string>();
@@ -16,6 +17,12 @@ function deduplicateJobs(jobs: JobItem[]): JobItem[] {
 
   for (const job of jobs) {
     const normalizedUrl = job.link.toLowerCase().trim();
+
+    // Skip jobs with invalid URLs (must contain http)
+    if (!normalizedUrl.includes('http')) {
+      logger.warn(`Skipping job with invalid URL: "${job.link}" - ${job.title}`);
+      continue;
+    }
 
     // Skip if URL has been seen before
     if (!seenUrls.has(normalizedUrl)) {

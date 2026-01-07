@@ -93,13 +93,22 @@ export async function parseRSSFeeds(feedUrls: string[]): Promise<JobItem[]> {
   const feedResults = await Promise.all(feedPromises);
 
   // Deduplicate jobs by link
+  // Only consider URLs that contain "http" as valid
   const seenLinks = new Set<string>();
   const allJobs: JobItem[] = [];
 
   for (const jobs of feedResults) {
     for (const job of jobs) {
-      if (!seenLinks.has(job.link)) {
-        seenLinks.add(job.link);
+      const normalizedLink = job.link.toLowerCase().trim();
+
+      // Skip jobs with invalid URLs (must contain http)
+      if (!normalizedLink.includes('http')) {
+        console.warn(`Skipping job with invalid URL: "${job.link}" - ${job.title}`);
+        continue;
+      }
+
+      if (!seenLinks.has(normalizedLink)) {
+        seenLinks.add(normalizedLink);
         allJobs.push(job);
       }
     }
