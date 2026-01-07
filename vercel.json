@@ -1,15 +1,12 @@
 {
   "functions": {
     "app/api/scrape-jobs/route.ts": {
-      "memory": 1024,
+      "memory": 3008,
       "maxDuration": 60
     },
     "app/api/cron/check-jobs/route.ts": {
-      "memory": 1024,
+      "memory": 3008,
       "maxDuration": 60
     }
-  },
-  "env": {
-    "FONTCONFIG_PATH": "/tmp"
   }
 }

@@ -252,6 +252,9 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
       // Use @sparticuz/chromium for serverless environments (Vercel)
       logger.info("Launching browser for production (serverless)");
 
+      // Set font config for chromium
+      chromium.setGraphicsMode = false;
+
       browser = await puppeteer.launch({
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,

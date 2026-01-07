@@ -7,8 +7,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Ensure proper function configuration for Vercel
-  output: 'standalone',
 };
 
 module.exports = nextConfig;
