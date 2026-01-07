@@ -253,10 +253,10 @@ export async function scrapeLinkedInJobs(params: ScrapeParams): Promise<LinkedIn
       logger.info("Launching browser for production (serverless)");
 
       browser = await puppeteer.launch({
-        args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
+        args: chromium.args,
         defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath('/tmp'),
-        headless: chromium.headless,
+        executablePath: await chromium.executablePath(),
+        headless: true,
       });
     } else {
       // Use local Chrome/Chromium for development

@@ -13,7 +13,9 @@
       "Bash(pnpm install)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nFix Vercel chromium compatibility issues\n\n- Downgraded @sparticuz/chromium to v131.0.0 for better stability\n- Downgraded puppeteer-core to v23.9.0 for compatibility\n- Removed /tmp parameter from executablePath\\(\\) \n- Use chromium''s native defaultViewport and headless properties\n\nThis resolves brotli decompression errors in serverless environment\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm remove:*)"
     ]
   }
 }
