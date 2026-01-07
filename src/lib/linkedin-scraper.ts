@@ -151,8 +151,34 @@ async function scrapeJobsFromHtml(html: string): Promise<LinkedInJob[]> {
       const title = titleElem.text().trim();
       const imgSrc = $item.find("img").attr("data-delayed-url") || "";
 
-      const linkElem = $item.find(".base-card__full-link, .base-search-card--link");
-      const url = linkElem.attr("href") || "";
+      // Try multiple selectors to find the job URL
+      let url = "";
+      const linkSelectors = [
+        ".base-card__full-link",
+        ".base-search-card--link",
+        "a[href*='/jobs/view/']",
+        "a.base-card__full-link",
+        "a",
+      ];
+
+      for (const selector of linkSelectors) {
+        const link = $item.find(selector).first().attr("href");
+        if (link && link.includes("/jobs")) {
+          url = link.trim();
+          break;
+        }
+      }
+
+      // If still no URL, try to find any anchor tag
+      if (!url) {
+        $item.find("a").each((_, anchor) => {
+          const href = $(anchor).attr("href");
+          if (href && (href.includes("/jobs") || href.includes("linkedin.com"))) {
+            url = href.trim();
+            return false; // Break the loop
+          }
+        });
+      }
 
       const companyContainer = $item.find(".base-search-card__subtitle");
       const companyUrl = companyContainer.find("a").attr("href") || "";
