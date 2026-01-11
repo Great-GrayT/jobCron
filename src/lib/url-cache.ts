@@ -12,14 +12,16 @@ interface CacheData {
 }
 
 export class UrlCache {
-  private cacheFileName: string;
+  private cacheKey: string; // Unique key for this cache (e.g., 'url-scraper', 'url-rss')
   private cache: Set<string>;
+  private cacheTimestamp?: string;
   private isDirty: boolean = false;
   private useGitHubGist: boolean;
   private gistId?: string;
+  private readonly CACHE_EXPIRY_HOURS = 48;
 
-  constructor(cacheFileName: string = 'linkedin-jobs-cache.json') {
-    this.cacheFileName = cacheFileName;
+  constructor(cacheKey: string = 'url-scraper') {
+    this.cacheKey = cacheKey;
     this.cache = new Set<string>();
 
     // Use GitHub Gist if GITHUB_TOKEN and GIST_ID are available
@@ -31,7 +33,8 @@ export class UrlCache {
       : 'Local file system';
 
     logger.info(`Cache storage: ${storageType}`);
-    logger.info(`Cache file name: ${this.cacheFileName}`);
+    logger.info(`Cache key: ${this.cacheKey}`);
+    logger.info(`Cache expiry: ${this.CACHE_EXPIRY_HOURS} hours`);
   }
 
   /**
@@ -52,6 +55,16 @@ export class UrlCache {
   }
 
   /**
+   * Check if cache is expired (older than 48 hours)
+   */
+  private isCacheExpired(lastUpdated: string): boolean {
+    const cacheDate = new Date(lastUpdated);
+    const now = new Date();
+    const hoursDiff = (now.getTime() - cacheDate.getTime()) / (1000 * 60 * 60);
+    return hoursDiff > this.CACHE_EXPIRY_HOURS;
+  }
+
+  /**
    * Load cache from GitHub Gist
    */
   private async loadFromGitHubGist(): Promise<void> {
@@ -68,24 +81,36 @@ export class UrlCache {
       }
 
       const gist = await response.json();
-      const file = gist.files[this.cacheFileName];
+      const file = gist.files[this.cacheKey + '.json'];
 
       if (!file) {
-        logger.info(`No cache file in GitHub Gist. Starting with empty cache.`);
+        logger.info(`No cache for key "${this.cacheKey}" in GitHub Gist. Starting with empty cache.`);
         this.cache = new Set<string>();
         return;
       }
 
       const data: CacheData = JSON.parse(file.content);
+
+      // Check if cache is expired
+      if (this.isCacheExpired(data.lastUpdated)) {
+        logger.info(`⏰ Cache expired (older than ${this.CACHE_EXPIRY_HOURS} hours). Starting fresh.`);
+        logger.info(`  - Last updated: ${data.lastUpdated}`);
+        this.cache = new Set<string>();
+        this.cacheTimestamp = new Date().toISOString();
+        return;
+      }
+
       this.cache = new Set(data.urls);
+      this.cacheTimestamp = data.lastUpdated;
 
       logger.info(`✓ Cache loaded from GitHub Gist`);
       logger.info(`  - Gist URL: ${gist.html_url}`);
+      logger.info(`  - Cache key: ${this.cacheKey}`);
       logger.info(`  - URLs in cache: ${this.cache.size}`);
       logger.info(`  - Last updated: ${data.lastUpdated}`);
       logger.info(`  - Cache version: ${data.metadata.version}`);
     } catch (error: any) {
-      logger.info(`No existing cache in GitHub Gist. Starting with empty cache.`);
+      logger.info(`No existing cache for "${this.cacheKey}" in GitHub Gist. Starting with empty cache.`);
       this.cache = new Set<string>();
     }
   }
@@ -95,7 +120,7 @@ export class UrlCache {
    */
   private async loadFromLocalFile(): Promise<void> {
     const cacheDir = path.join(process.cwd(), 'cache');
-    const cacheFilePath = path.join(cacheDir, this.cacheFileName);
+    const cacheFilePath = path.join(cacheDir, this.cacheKey + '.json');
 
     try {
       // Ensure cache directory exists
@@ -105,20 +130,34 @@ export class UrlCache {
       const fileContent = await fs.readFile(cacheFilePath, 'utf-8');
       const data: CacheData = JSON.parse(fileContent);
 
+      // Check if cache is expired
+      if (this.isCacheExpired(data.lastUpdated)) {
+        logger.info(`⏰ Cache expired (older than ${this.CACHE_EXPIRY_HOURS} hours). Starting fresh.`);
+        logger.info(`  - Last updated: ${data.lastUpdated}`);
+        this.cache = new Set<string>();
+        this.cacheTimestamp = new Date().toISOString();
+        return;
+      }
+
       this.cache = new Set(data.urls);
+      this.cacheTimestamp = data.lastUpdated;
 
       logger.info(`✓ Cache loaded from local file`);
       logger.info(`  - File path: ${cacheFilePath}`);
+      logger.info(`  - Cache key: ${this.cacheKey}`);
       logger.info(`  - URLs in cache: ${this.cache.size}`);
       logger.info(`  - Last updated: ${data.lastUpdated}`);
       logger.info(`  - Cache version: ${data.metadata.version}`);
     } catch (error: any) {
       if (error.code === 'ENOENT') {
-        logger.info(`No existing cache file found. Starting with empty cache.`);
+        logger.info(`No existing cache file for "${this.cacheKey}". Starting with empty cache.`);
+        // Ensure directory exists for when we save
+        await fs.mkdir(cacheDir, { recursive: true });
       } else {
         throw error;
       }
       this.cache = new Set<string>();
+      this.cacheTimestamp = new Date().toISOString();
     }
   }
 
@@ -143,14 +182,19 @@ export class UrlCache {
    * Save cache to GitHub Gist
    */
   private async saveToGitHubGist(): Promise<void> {
+    const now = new Date().toISOString();
+    this.cacheTimestamp = this.cacheTimestamp || now;
+
     const data: CacheData = {
       urls: Array.from(this.cache),
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: this.cacheTimestamp,
       metadata: {
         totalUrlsCached: this.cache.size,
         version: '1.0.0',
       },
     };
+
+    const fileName = this.cacheKey + '.json';
 
     const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
       method: 'PATCH',
@@ -161,7 +205,7 @@ export class UrlCache {
       },
       body: JSON.stringify({
         files: {
-          [this.cacheFileName]: {
+          [fileName]: {
             content: JSON.stringify(data, null, 2),
           },
         },
@@ -176,6 +220,7 @@ export class UrlCache {
 
     logger.info(`✓ Cache saved to GitHub Gist`);
     logger.info(`  - Gist URL: ${gist.html_url}`);
+    logger.info(`  - Cache key: ${this.cacheKey}`);
     logger.info(`  - Total URLs cached: ${this.cache.size}`);
   }
 
@@ -184,11 +229,14 @@ export class UrlCache {
    */
   private async saveToLocalFile(): Promise<void> {
     const cacheDir = path.join(process.cwd(), 'cache');
-    const cacheFilePath = path.join(cacheDir, this.cacheFileName);
+    const cacheFilePath = path.join(cacheDir, this.cacheKey + '.json');
+
+    const now = new Date().toISOString();
+    this.cacheTimestamp = this.cacheTimestamp || now;
 
     const data: CacheData = {
       urls: Array.from(this.cache),
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: this.cacheTimestamp,
       metadata: {
         totalUrlsCached: this.cache.size,
         version: '1.0.0',
@@ -203,6 +251,7 @@ export class UrlCache {
 
     logger.info(`✓ Cache saved to local file`);
     logger.info(`  - File path: ${cacheFilePath}`);
+    logger.info(`  - Cache key: ${this.cacheKey}`);
     logger.info(`  - Total URLs cached: ${this.cache.size}`);
   }
 
@@ -259,7 +308,7 @@ export class UrlCache {
     return {
       totalUrls: this.cache.size,
       storageType: this.useGitHubGist ? 'GitHub Gist' : 'Local File',
-      cacheFileName: this.cacheFileName,
+      cacheKey: this.cacheKey,
       isDirty: this.isDirty,
     };
   }

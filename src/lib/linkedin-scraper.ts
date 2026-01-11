@@ -246,7 +246,7 @@ export async function scrapeLinkedInJobs(
   let allJobs: LinkedInJob[] = [];
 
   // Initialize persistent URL cache
-  const urlCache = new UrlCache();
+  const urlCache = new UrlCache('url-scraper');
   await urlCache.load();
 
   logger.info(`\n=== Cache Status at Start ===`);

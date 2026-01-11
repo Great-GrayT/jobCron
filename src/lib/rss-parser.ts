@@ -1,4 +1,6 @@
 import { JobItem } from "@/types/job";
+import { UrlCache } from "./url-cache";
+import { logger } from "./logger";
 
 export class RSSParseError extends Error {
   constructor(message: string, public readonly feedUrl: string) {
@@ -83,6 +85,13 @@ function cleanCDATA(text: string): string {
  * Parses multiple RSS feeds and returns deduplicated job items
  */
 export async function parseRSSFeeds(feedUrls: string[]): Promise<JobItem[]> {
+  // Initialize persistent URL cache for RSS feeds
+  const urlCache = new UrlCache('url-rss');
+  await urlCache.load();
+
+  logger.info(`\n=== RSS Cache Status at Start ===`);
+  logger.info(`URLs already in cache: ${urlCache.size()}`);
+
   const feedPromises = feedUrls.map(url =>
     parseSingleFeed(url).catch(error => {
       console.error(`Error fetching feed ${url}:`, error);
@@ -92,10 +101,11 @@ export async function parseRSSFeeds(feedUrls: string[]): Promise<JobItem[]> {
 
   const feedResults = await Promise.all(feedPromises);
 
-  // Deduplicate jobs by link
+  // Deduplicate jobs by link using persistent cache
   // Only consider URLs that contain "http" as valid
-  const seenLinks = new Set<string>();
   const allJobs: JobItem[] = [];
+
+  logger.info(`\n=== RSS Feed Deduplication ===`);
 
   for (const jobs of feedResults) {
     for (const job of jobs) {
@@ -103,16 +113,26 @@ export async function parseRSSFeeds(feedUrls: string[]): Promise<JobItem[]> {
 
       // Skip jobs with invalid URLs (must contain http)
       if (!normalizedLink.includes('http')) {
-        console.warn(`Skipping job with invalid URL: "${job.link}" - ${job.title}`);
+        logger.info(`⊘ SKIPPED (invalid URL): "${job.link}" - ${job.title}`);
         continue;
       }
 
-      if (!seenLinks.has(normalizedLink)) {
-        seenLinks.add(normalizedLink);
+      if (!urlCache.has(normalizedLink)) {
+        urlCache.add(normalizedLink);
         allJobs.push(job);
+        logger.info(`✓ NEW job added to cache: ${normalizedLink}`);
+      } else {
+        logger.info(`✗ DUPLICATE (already cached): ${normalizedLink} - ${job.title}`);
       }
     }
   }
+
+  // Save cache after processing all jobs
+  await urlCache.save();
+
+  logger.info(`\n=== RSS Cache Summary ===`);
+  logger.info(`Total unique jobs in this run: ${allJobs.length}`);
+  logger.info(`Total URLs in cache: ${urlCache.size()}`);
 
   return allJobs;
 }
