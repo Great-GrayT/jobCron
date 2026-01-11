@@ -49,16 +49,25 @@ export class UrlCache {
    * Load cache from Vercel Blob Storage
    */
   private async loadFromVercelBlob(): Promise<void> {
-    const { head, download } = await import('@vercel/blob');
+    const { list } = await import('@vercel/blob');
 
     try {
-      // Check if blob exists
-      const blobUrl = `https://${process.env.BLOB_READ_WRITE_TOKEN!.split('_')[1]}.public.blob.vercel-storage.com/${this.cacheFileName}`;
-
-      // Try to download the blob
-      const { text } = await download(blobUrl, {
+      // List blobs to check if our cache file exists
+      const { blobs } = await list({
         token: process.env.BLOB_READ_WRITE_TOKEN,
       });
+
+      const cacheBlob = blobs.find(blob => blob.pathname === this.cacheFileName);
+
+      if (!cacheBlob) {
+        logger.info(`No existing cache in Vercel Blob. Starting with empty cache.`);
+        this.cache = new Set<string>();
+        return;
+      }
+
+      // Fetch the blob content using the URL
+      const response = await fetch(cacheBlob.url);
+      const text = await response.text();
 
       const data: CacheData = JSON.parse(text);
       this.cache = new Set(data.urls);
@@ -68,7 +77,7 @@ export class UrlCache {
       logger.info(`  - Last updated: ${data.lastUpdated}`);
       logger.info(`  - Cache version: ${data.metadata.version}`);
     } catch (error: any) {
-      // Blob doesn't exist yet
+      // Blob doesn't exist yet or error occurred
       logger.info(`No existing cache in Vercel Blob. Starting with empty cache.`);
       this.cache = new Set<string>();
     }
