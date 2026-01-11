@@ -3,6 +3,7 @@ import { scrapeLinkedInJobs, createExcelFile } from "@/lib/linkedin-scraper";
 import { sendTelegramFile, sendTelegramMessage } from "@/lib/telegram";
 import { logger } from "@/lib/logger";
 import { validateEnvironmentVariables } from "@/lib/validation";
+import { UrlCache } from "@/lib/url-cache";
 
 export const maxDuration = 300; // 5 minutes timeout for Vercel
 export const dynamic = "force-dynamic";
@@ -63,23 +64,68 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Create Excel file
-    const excelMessage = `Creating Excel file with ${jobs.length} jobs`;
+    // Load persistent cache and filter out already cached jobs
+    const urlCache = new UrlCache('url-scraper');
+    await urlCache.load();
+
+    logger.info(`\n=== Cache Check Before Excel Creation ===`);
+    logger.info(`Total scraped jobs: ${jobs.length}`);
+    logger.info(`URLs already in cache: ${urlCache.size()}`);
+
+    const newJobs = jobs.filter(job => {
+      const normalizedUrl = job.url.toLowerCase().trim();
+      if (urlCache.has(normalizedUrl)) {
+        logger.info(`✗ Filtering out cached job: ${normalizedUrl}`);
+        return false;
+      }
+      return true;
+    });
+
+    logger.info(`Jobs after cache filter: ${newJobs.length} (filtered out ${jobs.length - newJobs.length} already cached)`);
+
+    // If all jobs are already cached, don't create or send Excel
+    if (newJobs.length === 0) {
+      logger.info("All jobs already cached - no Excel file to send");
+      await sendTelegramMessage(
+        `🔍 LinkedIn Job Scrape Complete\n\nSearch: "${searchText}"\nLocations: ${locationText}\n\nℹ️ All ${jobs.length} jobs were already processed in previous runs.`
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: "No new jobs to send (all already cached)",
+        jobCount: 0,
+        totalScraped: jobs.length,
+        alreadyCached: jobs.length,
+      });
+    }
+
+    // Create Excel file with only new jobs
+    const excelMessage = `Creating Excel file with ${newJobs.length} new jobs`;
     logger.info(excelMessage);
     progressEmitter.progress('excel', excelMessage);
-    const excelBuffer = await createExcelFile(jobs);
+    const excelBuffer = await createExcelFile(newJobs);
+
+    // Add new job URLs to cache BEFORE sending
+    for (const job of newJobs) {
+      const normalizedUrl = job.url.toLowerCase().trim();
+      urlCache.add(normalizedUrl);
+      logger.info(`✓ Added to cache: ${normalizedUrl}`);
+    }
+
+    await urlCache.save();
+    logger.info(`Cache saved with ${urlCache.size()} total URLs`);
 
     // Generate filename
     const timestamp = new Date().toISOString().split("T")[0];
-    const countries = [...new Set(jobs.map((job) => job.searchCountry))];
-    const keywords = [...new Set(jobs.map((job) => job.inputKeyword))];
-    const filename = `linkedin_jobs_${jobs.length}_${keywords.length}keywords_${countries.length}countries_${timestamp}.xlsx`;
+    const countries = [...new Set(newJobs.map((job) => job.searchCountry))];
+    const keywords = [...new Set(newJobs.map((job) => job.inputKeyword))];
+    const filename = `linkedin_jobs_${newJobs.length}_${keywords.length}keywords_${countries.length}countries_${timestamp}.xlsx`;
 
     // Send to Telegram
     const telegramMessage = "Sending Excel file to Telegram";
     logger.info(telegramMessage);
     progressEmitter.progress('telegram', telegramMessage);
-    const caption = `📊 LinkedIn Job Scrape Complete\n\nKeywords: ${keywords.join(", ")}\nLocations: ${locationText}\n\n✅ Found ${jobs.length} unique jobs across ${countries.length} countries:\n${countries.map((c) => `  • ${c}: ${jobs.filter((j) => j.searchCountry === c).length} jobs`).join("\n")}`;
+    const caption = `📊 LinkedIn Job Scrape Complete\n\nKeywords: ${keywords.join(", ")}\nLocations: ${locationText}\n\n✅ Found ${newJobs.length} NEW jobs (${jobs.length - newJobs.length} already cached) across ${countries.length} countries:\n${countries.map((c) => `  • ${c}: ${newJobs.filter((j) => j.searchCountry === c).length} jobs`).join("\n")}`;
 
     await sendTelegramFile(excelBuffer, filename, caption);
 
@@ -90,7 +136,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Jobs scraped and sent to Telegram",
-      jobCount: jobs.length,
+      jobCount: newJobs.length,
+      totalScraped: jobs.length,
+      alreadyCached: jobs.length - newJobs.length,
       keywords: keywords,
       countries: countries,
       filename,
@@ -166,23 +214,68 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create Excel file
-    const excelMessage = `Creating Excel file with ${jobs.length} jobs`;
+    // Load persistent cache and filter out already cached jobs
+    const urlCache = new UrlCache('url-scraper');
+    await urlCache.load();
+
+    logger.info(`\n=== Cache Check Before Excel Creation ===`);
+    logger.info(`Total scraped jobs: ${jobs.length}`);
+    logger.info(`URLs already in cache: ${urlCache.size()}`);
+
+    const newJobs = jobs.filter(job => {
+      const normalizedUrl = job.url.toLowerCase().trim();
+      if (urlCache.has(normalizedUrl)) {
+        logger.info(`✗ Filtering out cached job: ${normalizedUrl}`);
+        return false;
+      }
+      return true;
+    });
+
+    logger.info(`Jobs after cache filter: ${newJobs.length} (filtered out ${jobs.length - newJobs.length} already cached)`);
+
+    // If all jobs are already cached, don't create or send Excel
+    if (newJobs.length === 0) {
+      logger.info("All jobs already cached - no Excel file to send");
+      await sendTelegramMessage(
+        `🔍 LinkedIn Job Scrape Complete\n\nSearch: "${searchText}"\nLocations: ${locationText}\n\nℹ️ All ${jobs.length} jobs were already processed in previous runs.`
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: "No new jobs to send (all already cached)",
+        jobCount: 0,
+        totalScraped: jobs.length,
+        alreadyCached: jobs.length,
+      });
+    }
+
+    // Create Excel file with only new jobs
+    const excelMessage = `Creating Excel file with ${newJobs.length} new jobs`;
     logger.info(excelMessage);
     progressEmitter.progress('excel', excelMessage);
-    const excelBuffer = await createExcelFile(jobs);
+    const excelBuffer = await createExcelFile(newJobs);
+
+    // Add new job URLs to cache BEFORE sending
+    for (const job of newJobs) {
+      const normalizedUrl = job.url.toLowerCase().trim();
+      urlCache.add(normalizedUrl);
+      logger.info(`✓ Added to cache: ${normalizedUrl}`);
+    }
+
+    await urlCache.save();
+    logger.info(`Cache saved with ${urlCache.size()} total URLs`);
 
     // Generate filename
     const timestamp = new Date().toISOString().split("T")[0];
-    const countries = [...new Set(jobs.map((job) => job.searchCountry))];
-    const keywords = [...new Set(jobs.map((job) => job.inputKeyword))];
-    const filename = `linkedin_jobs_${jobs.length}_${keywords.length}keywords_${countries.length}countries_${timestamp}.xlsx`;
+    const countries = [...new Set(newJobs.map((job) => job.searchCountry))];
+    const keywords = [...new Set(newJobs.map((job) => job.inputKeyword))];
+    const filename = `linkedin_jobs_${newJobs.length}_${keywords.length}keywords_${countries.length}countries_${timestamp}.xlsx`;
 
     // Send to Telegram
     const telegramMessage = "Sending Excel file to Telegram";
     logger.info(telegramMessage);
     progressEmitter.progress('telegram', telegramMessage);
-    const caption = `📊 LinkedIn Job Scrape Complete\n\nKeywords: ${keywords.join(", ")}\nLocations: ${locationText}\n\n✅ Found ${jobs.length} unique jobs across ${countries.length} countries:\n${countries.map((c) => `  • ${c}: ${jobs.filter((j) => j.searchCountry === c).length} jobs`).join("\n")}`;
+    const caption = `📊 LinkedIn Job Scrape Complete\n\nKeywords: ${keywords.join(", ")}\nLocations: ${locationText}\n\n✅ Found ${newJobs.length} NEW jobs (${jobs.length - newJobs.length} already cached) across ${countries.length} countries:\n${countries.map((c) => `  • ${c}: ${newJobs.filter((j) => j.searchCountry === c).length} jobs`).join("\n")}`;
 
     await sendTelegramFile(excelBuffer, filename, caption);
 
@@ -193,7 +286,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Jobs scraped and sent to Telegram",
-      jobCount: jobs.length,
+      jobCount: newJobs.length,
+      totalScraped: jobs.length,
+      alreadyCached: jobs.length - newJobs.length,
       keywords: keywords,
       countries: countries,
       filename,

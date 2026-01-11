@@ -4,6 +4,7 @@ import { formatJobMessage } from "./job-formatter";
 import { sendMessagesWithRateLimit } from "./telegram";
 import { logger } from "./logger";
 import { dailyJobCache } from "./daily-cache";
+import { UrlCache } from "./url-cache";
 import { RSS_FEED_URLS, CHECK_INTERVAL_MINUTES, RATE_LIMIT_DELAY_MS } from "@/config/constants";
 
 /**
@@ -60,12 +61,29 @@ export async function checkAndSendJobs(): Promise<CronJobResult> {
     const recentJobs = filterRecentJobs(uniqueJobs, CHECK_INTERVAL_MINUTES);
     logger.info(`Found ${recentJobs.length} recent jobs (within ${CHECK_INTERVAL_MINUTES} minutes)`);
 
-    // Filter out jobs that have already been sent today (using URL as unique identifier)
-    const newJobs = recentJobs.filter(job => !dailyJobCache.hasBeenSent(job.link));
-    logger.info(`${newJobs.length} new jobs to send (${recentJobs.length - newJobs.length} already sent today)`);
+    // Load persistent cache and filter out already cached jobs
+    const urlCache = new UrlCache('url-rss');
+    await urlCache.load();
+
+    logger.info(`\n=== Cache Check Before Sending to Telegram ===`);
+    logger.info(`Recent jobs to check: ${recentJobs.length}`);
+    logger.info(`URLs already in cache: ${urlCache.size()}`);
+
+    // Filter out jobs that have already been sent (using persistent cache)
+    const newJobs = recentJobs.filter(job => {
+      const normalizedUrl = job.link.toLowerCase().trim();
+      if (urlCache.has(normalizedUrl)) {
+        logger.info(`✗ Filtering out cached job: ${normalizedUrl}`);
+        return false;
+      }
+      return true;
+    });
+
+    logger.info(`Jobs after cache filter: ${newJobs.length} (filtered out ${recentJobs.length - newJobs.length} already cached)`);
 
     // If no new jobs, return early
     if (newJobs.length === 0) {
+      logger.info("No new jobs to send - all already cached");
       return { total: allJobs.length, sent: 0, failed: 0, pubDates };
     }
 
@@ -78,12 +96,17 @@ export async function checkAndSendJobs(): Promise<CronJobResult> {
       RATE_LIMIT_DELAY_MS
     );
 
-    // CRITICAL: Only mark SUCCESSFULLY sent jobs in the cache
+    // CRITICAL: Only mark SUCCESSFULLY sent jobs in the persistent cache
     // Failed jobs should NOT be cached so they can be retried
     if (sent > 0) {
-      const sentJobUrls = newJobs.slice(0, sent).map(job => job.link);
-      dailyJobCache.markMultipleAsSent(sentJobUrls);
-      logger.info(`Marked ${sent} successfully sent jobs in daily cache`);
+      const sentJobs = newJobs.slice(0, sent);
+      for (const job of sentJobs) {
+        const normalizedUrl = job.link.toLowerCase().trim();
+        urlCache.add(normalizedUrl);
+        logger.info(`✓ Added to cache after successful send: ${normalizedUrl}`);
+      }
+      await urlCache.save();
+      logger.info(`Cache saved with ${urlCache.size()} total URLs`);
     }
 
     // Log failed jobs for debugging
