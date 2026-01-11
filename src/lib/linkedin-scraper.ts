@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 import ExcelJS from "exceljs";
 import { logger } from "./logger";
 import { ProgressEmitter } from "./progress-emitter";
+import { UrlCache } from "./url-cache";
 
 export interface LinkedInJob {
   id: string;
@@ -244,6 +245,13 @@ export async function scrapeLinkedInJobs(
   const MAX_PAGES = 10; // Reduced for faster execution
   let allJobs: LinkedInJob[] = [];
 
+  // Initialize persistent URL cache
+  const urlCache = new UrlCache();
+  await urlCache.load();
+
+  logger.info(`\n=== Cache Status at Start ===`);
+  logger.info(`URLs already in cache: ${urlCache.size()}`);
+
   // Parse search keywords (comma-separated)
   const searchKeywords = params.searchText
     .split(",")
@@ -352,15 +360,17 @@ export async function scrapeLinkedInJobs(
     throw error;
   }
 
-  // Remove duplicates based on job URL
+  // Remove duplicates based on job URL (using persistent cache)
   // Only consider URLs that contain "http" as valid
-  const seenUrls = new Set<string>();
   const uniqueJobs: LinkedInJob[] = [];
   let invalidUrlCount = 0;
   let duplicateCount = 0;
+  let newUrlsCount = 0;
+  let alreadyCachedCount = 0;
 
   logger.info(`\n=== Starting Deduplication Process ===`);
-  logger.info(`Total jobs to process: ${allJobs.length}`);
+  logger.info(`Total jobs scraped this run: ${allJobs.length}`);
+  logger.info(`URLs in persistent cache before processing: ${urlCache.size()}`);
 
   for (const job of allJobs) {
     const normalizedUrl = job.url.toLowerCase().trim();
@@ -368,49 +378,59 @@ export async function scrapeLinkedInJobs(
     // Skip jobs with invalid URLs (must contain http)
     if (!normalizedUrl.includes('http')) {
       invalidUrlCount++;
-      logger.warn(`Skipping job with invalid URL: "${job.url}" - ${job.title}`);
+      logger.warn(`⚠ Skipping job with invalid URL: "${job.url}" - ${job.title}`);
       continue;
     }
 
-    if (!seenUrls.has(normalizedUrl)) {
-      seenUrls.add(normalizedUrl);
+    // Check if URL is already in persistent cache
+    if (!urlCache.has(normalizedUrl)) {
+      // New URL - add to cache and include in results
+      urlCache.add(normalizedUrl);
       uniqueJobs.push(job);
-      logger.info(`✓ Added to cache: ${normalizedUrl}`);
+      newUrlsCount++;
+      logger.info(`✓ NEW job added to cache: ${normalizedUrl}`);
     } else {
+      // URL already exists in cache (from previous runs or this run)
+      alreadyCachedCount++;
       duplicateCount++;
-      logger.info(`✗ Duplicate found (already in cache): ${normalizedUrl} - ${job.title}`);
+      logger.info(`✗ DUPLICATE (already cached): ${normalizedUrl} - ${job.title}`);
     }
   }
 
-  logger.info(`\n=== Cache Contents (${seenUrls.size} URLs) ===`);
-  const urlsArray = Array.from(seenUrls);
-  urlsArray.forEach((url, index) => {
-    logger.info(`${index + 1}. ${url}`);
-  });
+  // Save the updated cache to file
+  await urlCache.save();
 
-  const totalMessage = `Total jobs scraped: ${allJobs.length}`;
+  logger.info(`\n=== Deduplication Summary ===`);
+  logger.info(`Jobs scraped this run: ${allJobs.length}`);
+  logger.info(`Invalid URLs skipped: ${invalidUrlCount}`);
+  logger.info(`New unique jobs (added to cache): ${newUrlsCount}`);
+  logger.info(`Already cached (duplicates): ${alreadyCachedCount}`);
+  logger.info(`Total URLs now in persistent cache: ${urlCache.size()}`);
+
+  // Log all cached URLs
+  urlCache.logAll();
+
+  const totalMessage = `Total jobs scraped this run: ${allJobs.length}`;
+  const newJobsMessage = `New jobs (not in cache): ${newUrlsCount}`;
+  const duplicateMessage = `Duplicates (already in cache): ${alreadyCachedCount}`;
   const invalidMessage = `Invalid URLs skipped: ${invalidUrlCount}`;
-  const duplicateMessage = `Duplicate jobs removed: ${duplicateCount}`;
-  const uniqueMessage = `Unique jobs remaining: ${uniqueJobs.length}`;
-
-  logger.info(totalMessage);
-  logger.info(invalidMessage);
-  logger.info(duplicateMessage);
-  logger.info(uniqueMessage);
+  const cacheMessage = `Total URLs in persistent cache: ${urlCache.size()}`;
 
   progressEmitter?.progress('deduplication', totalMessage);
-  progressEmitter?.progress('deduplication', invalidMessage);
+  progressEmitter?.progress('deduplication', newJobsMessage);
   progressEmitter?.progress('deduplication', duplicateMessage);
-  progressEmitter?.progress('deduplication', uniqueMessage);
+  progressEmitter?.progress('deduplication', invalidMessage);
+  progressEmitter?.progress('deduplication', cacheMessage);
 
   progressEmitter?.complete(
     'complete',
-    `Found ${uniqueJobs.length} unique jobs (${duplicateCount} duplicates removed, ${invalidUrlCount} invalid URLs skipped)`,
+    `Found ${newUrlsCount} new jobs (${alreadyCachedCount} already cached, ${invalidUrlCount} invalid URLs). Total in cache: ${urlCache.size()}`,
     {
       totalScraped: allJobs.length,
-      uniqueJobs: uniqueJobs.length,
-      duplicates: duplicateCount,
+      newJobs: newUrlsCount,
+      alreadyCached: alreadyCachedCount,
       invalidUrls: invalidUrlCount,
+      totalCached: urlCache.size(),
     }
   );
 

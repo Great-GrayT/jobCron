@@ -14,7 +14,10 @@ A Next.js-based cron job application that monitors RSS feeds for new job posting
   - Job type classification
 - **Telegram Notifications**: Sends formatted job alerts to your Telegram chat
 - **Rate Limiting**: Prevents API throttling with configurable delays
-- **Duplicate Detection**: Filters out duplicate job postings
+- **Persistent Duplicate Detection**: Uses Vercel Blob Storage to cache job URLs across all cron runs
+  - Eliminates duplicate job postings across all executions
+  - Survives function cold starts and redeployments
+  - Automatic fallback to local file storage for development
 - **Error Handling**: Comprehensive error handling and logging
 
 ## Project Structure
@@ -153,6 +156,19 @@ vercel
 4. Deploy
 
 The cron job is configured in `vercel.json` to run every 5 minutes automatically.
+
+### 7. Set Up Persistent Cache (Recommended)
+
+To enable persistent duplicate detection across all cron executions:
+
+1. Go to your Vercel project → **Storage** → **Create Database** → **Blob**
+2. Copy the `BLOB_READ_WRITE_TOKEN` from the environment variables
+3. Add it to your Vercel project environment variables
+4. Redeploy
+
+**📖 Detailed instructions**: See [VERCEL_BLOB_SETUP.md](./VERCEL_BLOB_SETUP.md)
+
+Without this setup, the cache will still work but only within a single execution (duplicates within the same run will be filtered, but not across different cron runs).
 
 ## Configuration
 
@@ -300,6 +316,22 @@ The application follows a modular architecture:
 3. Make your changes
 4. Test thoroughly
 5. Submit a pull request
+
+## URL Cache System
+
+The application uses a smart caching system to prevent duplicate job postings:
+
+- **Development**: Cache stored in `./cache/linkedin-jobs-cache.json`
+- **Production (Vercel)**: Cache stored in Vercel Blob Storage for persistence
+
+**Key Benefits:**
+- Eliminates duplicate notifications across all cron runs
+- Survives serverless function cold starts
+- Automatically logs all cached URLs for debugging
+
+**Learn More:**
+- [Cache Documentation](./CACHE.md) - Detailed explanation of how the cache works
+- [Vercel Blob Setup Guide](./VERCEL_BLOB_SETUP.md) - Step-by-step setup instructions
 
 ## License
 
