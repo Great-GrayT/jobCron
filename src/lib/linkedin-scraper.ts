@@ -359,6 +359,9 @@ export async function scrapeLinkedInJobs(
   let invalidUrlCount = 0;
   let duplicateCount = 0;
 
+  logger.info(`\n=== Starting Deduplication Process ===`);
+  logger.info(`Total jobs to process: ${allJobs.length}`);
+
   for (const job of allJobs) {
     const normalizedUrl = job.url.toLowerCase().trim();
 
@@ -372,10 +375,18 @@ export async function scrapeLinkedInJobs(
     if (!seenUrls.has(normalizedUrl)) {
       seenUrls.add(normalizedUrl);
       uniqueJobs.push(job);
+      logger.info(`✓ Added to cache: ${normalizedUrl}`);
     } else {
       duplicateCount++;
+      logger.info(`✗ Duplicate found (already in cache): ${normalizedUrl} - ${job.title}`);
     }
   }
+
+  logger.info(`\n=== Cache Contents (${seenUrls.size} URLs) ===`);
+  const urlsArray = Array.from(seenUrls);
+  urlsArray.forEach((url, index) => {
+    logger.info(`${index + 1}. ${url}`);
+  });
 
   const totalMessage = `Total jobs scraped: ${allJobs.length}`;
   const invalidMessage = `Invalid URLs skipped: ${invalidUrlCount}`;
