@@ -14,9 +14,10 @@ A Next.js-based cron job application that monitors RSS feeds for new job posting
   - Job type classification
 - **Telegram Notifications**: Sends formatted job alerts to your Telegram chat
 - **Rate Limiting**: Prevents API throttling with configurable delays
-- **Persistent Duplicate Detection**: Uses Vercel Blob Storage to cache job URLs across all cron runs
+- **Persistent Duplicate Detection**: Uses GitHub Gist to cache job URLs across all cron runs
   - Eliminates duplicate job postings across all executions
-  - Survives function cold starts and redeployments
+  - Survives function cold starts and redeployments forever
+  - 100% free with GitHub
   - Automatic fallback to local file storage for development
 - **Error Handling**: Comprehensive error handling and logging
 
@@ -157,16 +158,16 @@ vercel
 
 The cron job is configured in `vercel.json` to run every 5 minutes automatically.
 
-### 7. Set Up Persistent Cache (Recommended)
+### 7. Set Up Persistent Cache (Recommended - 100% Free)
 
-To enable persistent duplicate detection across all cron executions:
+To enable persistent duplicate detection across all cron executions using GitHub Gist:
 
-1. Go to your Vercel project → **Storage** → **Create Database** → **Blob**
-2. Copy the `BLOB_READ_WRITE_TOKEN` from the environment variables
-3. Add it to your Vercel project environment variables
+1. Create a GitHub Personal Access Token with `gist` scope
+2. Create a new Gist at https://gist.github.com
+3. Add `GITHUB_TOKEN` and `GIST_ID` to your Vercel environment variables
 4. Redeploy
 
-**📖 Detailed instructions**: See [VERCEL_BLOB_SETUP.md](./VERCEL_BLOB_SETUP.md)
+**📖 Detailed instructions**: See [GITHUB_GIST_SETUP.md](./GITHUB_GIST_SETUP.md) (3-minute setup!)
 
 Without this setup, the cache will still work but only within a single execution (duplicates within the same run will be filtered, but not across different cron runs).
 
@@ -322,16 +323,18 @@ The application follows a modular architecture:
 The application uses a smart caching system to prevent duplicate job postings:
 
 - **Development**: Cache stored in `./cache/linkedin-jobs-cache.json`
-- **Production (Vercel)**: Cache stored in Vercel Blob Storage for persistence
+- **Production (Vercel)**: Cache stored in **GitHub Gist** for persistence
 
 **Key Benefits:**
-- Eliminates duplicate notifications across all cron runs
-- Survives serverless function cold starts
-- Automatically logs all cached URLs for debugging
+- ✅ Eliminates duplicate notifications across all cron runs
+- ✅ Survives serverless function cold starts forever
+- ✅ 100% free with GitHub
+- ✅ View your cache in browser anytime
+- ✅ Automatically logs all cached URLs for debugging
 
 **Learn More:**
+- [GitHub Gist Setup Guide](./GITHUB_GIST_SETUP.md) - 3-minute setup instructions
 - [Cache Documentation](./CACHE.md) - Detailed explanation of how the cache works
-- [Vercel Blob Setup Guide](./VERCEL_BLOB_SETUP.md) - Step-by-step setup instructions
 
 ## License
 

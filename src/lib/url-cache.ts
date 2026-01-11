@@ -15,26 +15,32 @@ export class UrlCache {
   private cacheFileName: string;
   private cache: Set<string>;
   private isDirty: boolean = false;
-  private useVercelBlob: boolean;
+  private useGitHubGist: boolean;
+  private gistId?: string;
 
   constructor(cacheFileName: string = 'linkedin-jobs-cache.json') {
     this.cacheFileName = cacheFileName;
     this.cache = new Set<string>();
 
-    // Use Vercel Blob if BLOB_READ_WRITE_TOKEN is available
-    this.useVercelBlob = !!process.env.BLOB_READ_WRITE_TOKEN;
+    // Use GitHub Gist if GITHUB_TOKEN and GIST_ID are available
+    this.useGitHubGist = !!(process.env.GITHUB_TOKEN && process.env.GIST_ID);
+    this.gistId = process.env.GIST_ID;
 
-    logger.info(`Cache storage: ${this.useVercelBlob ? 'Vercel Blob (persistent)' : 'Local file system'}`);
+    const storageType = this.useGitHubGist
+      ? 'GitHub Gist (persistent)'
+      : 'Local file system';
+
+    logger.info(`Cache storage: ${storageType}`);
     logger.info(`Cache file name: ${this.cacheFileName}`);
   }
 
   /**
-   * Load cache from storage (Vercel Blob or local file)
+   * Load cache from storage (GitHub Gist or local file)
    */
   async load(): Promise<void> {
     try {
-      if (this.useVercelBlob) {
-        await this.loadFromVercelBlob();
+      if (this.useGitHubGist) {
+        await this.loadFromGitHubGist();
       } else {
         await this.loadFromLocalFile();
       }
@@ -46,39 +52,40 @@ export class UrlCache {
   }
 
   /**
-   * Load cache from Vercel Blob Storage
+   * Load cache from GitHub Gist
    */
-  private async loadFromVercelBlob(): Promise<void> {
-    const { list } = await import('@vercel/blob');
-
+  private async loadFromGitHubGist(): Promise<void> {
     try {
-      // List blobs to check if our cache file exists
-      const { blobs } = await list({
-        token: process.env.BLOB_READ_WRITE_TOKEN,
+      const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
+        headers: {
+          'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github.v3+json',
+        },
       });
 
-      const cacheBlob = blobs.find(blob => blob.pathname === this.cacheFileName);
+      if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.status}`);
+      }
 
-      if (!cacheBlob) {
-        logger.info(`No existing cache in Vercel Blob. Starting with empty cache.`);
+      const gist = await response.json();
+      const file = gist.files[this.cacheFileName];
+
+      if (!file) {
+        logger.info(`No cache file in GitHub Gist. Starting with empty cache.`);
         this.cache = new Set<string>();
         return;
       }
 
-      // Fetch the blob content using the URL
-      const response = await fetch(cacheBlob.url);
-      const text = await response.text();
-
-      const data: CacheData = JSON.parse(text);
+      const data: CacheData = JSON.parse(file.content);
       this.cache = new Set(data.urls);
 
-      logger.info(`✓ Cache loaded from Vercel Blob`);
+      logger.info(`✓ Cache loaded from GitHub Gist`);
+      logger.info(`  - Gist URL: ${gist.html_url}`);
       logger.info(`  - URLs in cache: ${this.cache.size}`);
       logger.info(`  - Last updated: ${data.lastUpdated}`);
       logger.info(`  - Cache version: ${data.metadata.version}`);
     } catch (error: any) {
-      // Blob doesn't exist yet or error occurred
-      logger.info(`No existing cache in Vercel Blob. Starting with empty cache.`);
+      logger.info(`No existing cache in GitHub Gist. Starting with empty cache.`);
       this.cache = new Set<string>();
     }
   }
@@ -116,12 +123,12 @@ export class UrlCache {
   }
 
   /**
-   * Save cache to storage (Vercel Blob or local file)
+   * Save cache to storage (GitHub Gist or local file)
    */
   async save(): Promise<void> {
     try {
-      if (this.useVercelBlob) {
-        await this.saveToVercelBlob();
+      if (this.useGitHubGist) {
+        await this.saveToGitHubGist();
       } else {
         await this.saveToLocalFile();
       }
@@ -133,11 +140,9 @@ export class UrlCache {
   }
 
   /**
-   * Save cache to Vercel Blob Storage
+   * Save cache to GitHub Gist
    */
-  private async saveToVercelBlob(): Promise<void> {
-    const { put } = await import('@vercel/blob');
-
+  private async saveToGitHubGist(): Promise<void> {
     const data: CacheData = {
       urls: Array.from(this.cache),
       lastUpdated: new Date().toISOString(),
@@ -147,13 +152,30 @@ export class UrlCache {
       },
     };
 
-    const blob = await put(this.cacheFileName, JSON.stringify(data, null, 2), {
-      access: 'public',
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+    const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        files: {
+          [this.cacheFileName]: {
+            content: JSON.stringify(data, null, 2),
+          },
+        },
+      }),
     });
 
-    logger.info(`✓ Cache saved to Vercel Blob`);
-    logger.info(`  - Blob URL: ${blob.url}`);
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.status}`);
+    }
+
+    const gist = await response.json();
+
+    logger.info(`✓ Cache saved to GitHub Gist`);
+    logger.info(`  - Gist URL: ${gist.html_url}`);
     logger.info(`  - Total URLs cached: ${this.cache.size}`);
   }
 
@@ -236,7 +258,7 @@ export class UrlCache {
   getStats() {
     return {
       totalUrls: this.cache.size,
-      storageType: this.useVercelBlob ? 'Vercel Blob' : 'Local File',
+      storageType: this.useGitHubGist ? 'GitHub Gist' : 'Local File',
       cacheFileName: this.cacheFileName,
       isDirty: this.isDirty,
     };
