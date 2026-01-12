@@ -1,3 +1,5 @@
+import './globals.css';
+
 export const metadata = {
   title: 'LinkedIn Jobs Monitor',
   description: 'Automated job monitoring and Telegram notifications',

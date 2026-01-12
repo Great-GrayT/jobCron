@@ -237,11 +237,131 @@ async function scrapeJobsFromHtml(html: string): Promise<LinkedInJob[]> {
   return results;
 }
 
+/**
+ * Helper function to run promises with controlled concurrency
+ */
+async function runWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  concurrency: number
+): Promise<T[]> {
+  const results: T[] = [];
+  const executing: Promise<void>[] = [];
+
+  for (const task of tasks) {
+    const promise = task().then((result) => {
+      results.push(result);
+      // Remove from executing array when done
+      const index = executing.indexOf(promise);
+      if (index > -1) executing.splice(index, 1);
+    });
+
+    executing.push(promise);
+
+    if (executing.length >= concurrency) {
+      await Promise.race(executing);
+    }
+  }
+
+  await Promise.all(executing);
+  return results;
+}
+
+/**
+ * Scrapes a single page for a keyword/country combination
+ */
+async function scrapeSinglePage(
+  keyword: string,
+  country: string,
+  countryConfig: CountryConfig | undefined,
+  pageNumber: number,
+  timeFilter: number | undefined
+): Promise<LinkedInJob[]> {
+  const url = buildJobSearchUrl(
+    {
+      searchText: keyword,
+      locationText: countryConfig?.locationParam || country,
+      timeFilter,
+      pageNumber,
+    },
+    countryConfig
+  );
+
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": countryConfig?.language || "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        Connection: "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+      },
+      timeout: 30000,
+    });
+
+    const jobs = await scrapeJobsFromHtml(response.data);
+
+    if (!jobs || jobs.length === 0) {
+      return [];
+    }
+
+    // Add metadata
+    const jobsWithMetadata = jobs.map((job: LinkedInJob) => ({
+      ...job,
+      searchCountry: country,
+      currency: countryConfig?.currency || "USD",
+      domain: countryConfig?.domain || "linkedin.com",
+      inputKeyword: keyword,
+    }));
+
+    logger.info(`✓ Found ${jobs.length} jobs: ${keyword} in ${country} (page ${pageNumber + 1})`);
+    return jobsWithMetadata;
+  } catch (err) {
+    logger.error(`✗ Error: ${keyword} in ${country} (page ${pageNumber + 1})`, err);
+    return [];
+  }
+}
+
+/**
+ * Scrapes all pages for a single keyword/country combination
+ */
+async function scrapeKeywordCountry(
+  keyword: string,
+  country: string,
+  countryConfig: CountryConfig | undefined,
+  timeFilter: number | undefined,
+  maxPages: number
+): Promise<LinkedInJob[]> {
+  const allJobsForCombo: LinkedInJob[] = [];
+
+  // Scrape pages sequentially for each keyword/country combo to avoid overwhelming
+  for (let page = 0; page < maxPages; page++) {
+    const jobs = await scrapeSinglePage(keyword, country, countryConfig, page, timeFilter);
+
+    if (jobs.length === 0) {
+      // No jobs found, stop pagination for this combo
+      break;
+    }
+
+    allJobsForCombo.push(...jobs);
+
+    // Small delay between pages for the same combo
+    if (page < maxPages - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+
+  return allJobsForCombo;
+}
+
 export async function scrapeLinkedInJobs(
   params: ScrapeParams,
   progressEmitter?: ProgressEmitter
 ): Promise<LinkedInJob[]> {
-  const MAX_PAGES = 10; // Reduced for faster execution
+  const MAX_PAGES = 10;
+  const CONCURRENCY = 10; // Number of concurrent keyword/country combinations
   let allJobs: LinkedInJob[] = [];
 
   // Parse search keywords (comma-separated)
@@ -255,98 +375,44 @@ export async function scrapeLinkedInJobs(
     .map((country) => country.trim())
     .filter((country) => country.length > 0);
 
-  const logMessage = `Starting LinkedIn scrape for ${searchKeywords.length} keywords: "${searchKeywords.join('", "')}" across ${countries.length} countries`;
+  const totalCombinations = searchKeywords.length * countries.length;
+  const logMessage = `Starting CONCURRENT LinkedIn scrape for ${searchKeywords.length} keywords across ${countries.length} countries (${totalCombinations} combinations, ${CONCURRENCY} at a time)`;
   logger.info(logMessage);
-  progressEmitter?.progress('initialization', logMessage, 0, searchKeywords.length * countries.length);
+  progressEmitter?.progress('initialization', logMessage, 0, totalCombinations);
 
   try {
-    // Iterate through each keyword
-    for (let keywordIndex = 0; keywordIndex < searchKeywords.length; keywordIndex++) {
-      const currentKeyword = searchKeywords[keywordIndex];
-      const keywordMessage = `\n=== Keyword ${keywordIndex + 1}/${searchKeywords.length}: "${currentKeyword}" ===`;
-      logger.info(keywordMessage);
-      progressEmitter?.progress('scraping', keywordMessage, keywordIndex, searchKeywords.length);
+    // Create all keyword/country combination tasks
+    const tasks: (() => Promise<LinkedInJob[]>)[] = [];
 
-      // For each keyword, search across all countries
-      for (let countryIndex = 0; countryIndex < countries.length; countryIndex++) {
-        const currentCountry = countries[countryIndex];
-        const countryConfig = COUNTRY_CONFIGS[currentCountry];
+    for (const keyword of searchKeywords) {
+      for (const country of countries) {
+        const countryConfig = COUNTRY_CONFIGS[country];
 
-        const countryMessage = `  Scraping country ${countryIndex + 1}/${countries.length}: ${currentCountry}`;
-        logger.info(countryMessage);
-
-        const totalCombinations = searchKeywords.length * countries.length;
-        const currentCombination = keywordIndex * countries.length + countryIndex;
-
-        progressEmitter?.progress('scraping', countryMessage, currentCombination, totalCombinations);
-
-        for (let currentPage = 0; currentPage < MAX_PAGES; currentPage++) {
-          const url = buildJobSearchUrl(
-            { searchText: currentKeyword, locationText: countryConfig?.locationParam || currentCountry, timeFilter: params.timeFilter, pageNumber: currentPage },
-            countryConfig
-          );
-
-          const pageMessage = `    Page ${currentPage + 1}: ${url}`;
-          logger.info(pageMessage);
-          progressEmitter?.progress('scraping', pageMessage, currentCombination, totalCombinations);
-
-          try {
-            // Fetch the page HTML using axios
-            const response = await axios.get(url, {
-              headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                "Accept-Language": countryConfig?.language || "en-US,en;q=0.9",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
-                "Upgrade-Insecure-Requests": "1",
-              },
-              timeout: 30000,
-            });
-
-            const jobs = await scrapeJobsFromHtml(response.data);
-
-            if (!jobs || jobs.length === 0) {
-              const noJobsMessage = `    No jobs found on page ${currentPage + 1}, moving to next country`;
-              logger.info(noJobsMessage);
-              progressEmitter?.progress('scraping', noJobsMessage, currentCombination, totalCombinations);
-              break;
-            }
-
-            // Add metadata including the input keyword
-            const jobsWithMetadata = jobs.map((job: LinkedInJob) => ({
-              ...job,
-              searchCountry: currentCountry,
-              currency: countryConfig?.currency || "USD",
-              domain: countryConfig?.domain || "linkedin.com",
-              inputKeyword: currentKeyword,
-            }));
-
-            allJobs.push(...jobsWithMetadata);
-            const foundJobsMessage = `    Found ${jobs.length} jobs on this page (total: ${allJobs.length})`;
-            logger.info(foundJobsMessage);
-            progressEmitter?.progress('scraping', foundJobsMessage, currentCombination, totalCombinations);
-
-            // Small delay between page requests
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          } catch (err) {
-            logger.error(`    Error on page ${currentPage + 1}:`, err);
-            break;
-          }
-        }
-
-        // Wait between countries
-        if (countryIndex < countries.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-        }
-      }
-
-      // Wait between keywords
-      if (keywordIndex < searchKeywords.length - 1) {
-        logger.info(`\nWaiting 3 seconds before next keyword...`);
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        // Create a task for each keyword/country combination
+        tasks.push(() =>
+          scrapeKeywordCountry(
+            keyword,
+            country,
+            countryConfig,
+            params.timeFilter,
+            MAX_PAGES
+          )
+        );
       }
     }
+
+    logger.info(`Created ${tasks.length} scraping tasks to run with concurrency of ${CONCURRENCY}`);
+
+    // Run all tasks with controlled concurrency
+    const results = await runWithConcurrency(tasks, CONCURRENCY);
+
+    // Flatten all results into allJobs
+    for (const jobsFromCombo of results) {
+      allJobs.push(...jobsFromCombo);
+    }
+
+    logger.info(`\n=== Concurrent Scraping Complete ===`);
+    logger.info(`Total jobs scraped: ${allJobs.length}`);
   } catch (error) {
     logger.error("Error during scraping:", error);
     throw error;

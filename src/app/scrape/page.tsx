@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import "./scrape.css";
 
 interface ProgressLog {
   timestamp: Date;
@@ -19,10 +20,39 @@ export default function ScrapePage() {
   const [currentProgress, setCurrentProgress] = useState<number>(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
+  // Easter egg states
+  const [badgeHovers, setBadgeHovers] = useState(0);
+  const [secretVisible, setSecretVisible] = useState(false);
+  const [konamiProgress, setKonamiProgress] = useState(0);
+  const [titleClicks, setTitleClicks] = useState(0);
+  const [matrixMode, setMatrixMode] = useState(false);
+  const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+
   // Auto-scroll to bottom when new logs are added
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [progressLogs]);
+
+  // Konami code easter egg
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === konamiCode[konamiProgress]) {
+        const newProgress = konamiProgress + 1;
+        setKonamiProgress(newProgress);
+
+        if (newProgress === konamiCode.length) {
+          setSecretVisible(true);
+          setTimeout(() => setSecretVisible(false), 5000);
+          setKonamiProgress(0);
+        }
+      } else {
+        setKonamiProgress(0);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [konamiProgress]);
 
   const addLog = (message: string, percentage?: number) => {
     setProgressLogs(prev => [
@@ -58,6 +88,39 @@ export default function ScrapePage() {
     );
   };
 
+  const handleBadgeClick = () => {
+    const newHovers = badgeHovers + 1;
+    setBadgeHovers(newHovers);
+    if (newHovers === 5) {
+      setTimeout(() => setBadgeHovers(0), 3000);
+    }
+  };
+
+  // Easter egg: Triple click on title for Matrix mode
+  const handleTitleClick = () => {
+    const newClicks = titleClicks + 1;
+    setTitleClicks(newClicks);
+
+    if (newClicks === 3) {
+      setMatrixMode(true);
+      setTimeout(() => {
+        setMatrixMode(false);
+        setTitleClicks(0);
+      }, 2000);
+    }
+
+    // Reset click count after 1 second of no clicks
+    setTimeout(() => setTitleClicks(0), 1000);
+  };
+
+  // Easter egg: Right-click on country button
+  const handleCountryRightClick = (e: React.MouseEvent, country: string) => {
+    e.preventDefault();
+    const btn = e.currentTarget;
+    btn.classList.add('easter-egg');
+    setTimeout(() => btn.classList.remove('easter-egg'), 2000);
+  };
+
   const handleScrape = async () => {
     if (countries.length === 0) {
       setError("Please select at least one country");
@@ -86,7 +149,6 @@ export default function ScrapePage() {
     addLog(`   - Total Searches: ${keywords.length} × ${countries.length} = ${keywords.length * countries.length}`);
     addLog(``);
 
-    // Construct the streaming URL with parameters
     const params = new URLSearchParams({
       search: searchText,
       countries: countries.join(", "),
@@ -102,7 +164,6 @@ export default function ScrapePage() {
     let eventSource: EventSource | null = null;
 
     try {
-      // Use EventSource for Server-Sent Events
       eventSource = new EventSource(url);
 
       eventSource.addEventListener("log", (event) => {
@@ -117,7 +178,11 @@ export default function ScrapePage() {
         addLog(``);
         addLog(`✓ Scraping complete!`, 100);
         addLog(`📈 Results Summary:`);
-        addLog(`   - Unique jobs found: ${data.jobCount}`);
+        addLog(`   - NEW jobs found: ${data.jobCount}`);
+        if (data.totalScraped) {
+          addLog(`   - Total scraped: ${data.totalScraped}`);
+          addLog(`   - Already cached: ${data.alreadyCached}`);
+        }
         addLog(`   - Keywords searched: ${keywords.length}`);
         addLog(`   - Countries searched: ${countries.length}`);
         addLog(`   - Total execution time: ${elapsed}s`);
@@ -148,8 +213,6 @@ export default function ScrapePage() {
       eventSource.onerror = (err) => {
         console.error("EventSource error:", err);
         if (eventSource?.readyState === EventSource.CLOSED) {
-          // Connection was closed, check if we got a complete event
-          // If not, this is an unexpected error
           setLoading(false);
         }
       };
@@ -165,249 +228,168 @@ export default function ScrapePage() {
   };
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", maxWidth: "800px", margin: "50px auto", padding: "20px" }}>
-      <h1 style={{ textAlign: "center", color: "#0073b1" }}>LinkedIn Job Scraper</h1>
-      <p style={{ textAlign: "center", color: "#666" }}>
-        Scrape LinkedIn jobs and send the results to Telegram
-      </p>
-
-      <div style={{ background: "#fff", padding: "30px", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-        {/* Search Text */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", fontWeight: "bold", marginBottom: "5px" }}>
-            Search Keywords (comma-separated):
-          </label>
-          <input
-            type="text"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder="e.g., CFA, Financial Analyst, CEO"
-            style={{
-              width: "100%",
-              padding: "10px",
-              fontSize: "14px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-            }}
-          />
-          <p style={{ margin: "5px 0 0 0", fontSize: "12px", color: "#666" }}>
-            Enter multiple keywords separated by commas. Each will be searched separately and combined in the final results.
+    <div className="scrape-page">
+      <div className="container">
+        <div className="header">
+          <div
+            className="badge"
+            onClick={handleBadgeClick}
+            data-hovers={badgeHovers >= 5 ? "5" : "0"}
+          >
+            Powered by AI
+          </div>
+          <h1
+            className={`title ${matrixMode ? 'matrix-mode' : ''}`}
+            onClick={handleTitleClick}
+          >
+            LinkedIn Job Scraper
+          </h1>
+          <p className="subtitle">
+            Supercharge your job hunt with concurrent processing & smart caching 🚀
           </p>
         </div>
 
-        {/* Time Filter */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", fontWeight: "bold", marginBottom: "5px" }}>
-            Time Filter:
-          </label>
-          <select
-            value={timeFilter}
-            onChange={(e) => setTimeFilter(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              fontSize: "14px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-            }}
-          >
-            <option value="3600">Last 1 hour</option>
-            <option value="7200">Last 2 hours</option>
-            <option value="10800">Last 3 hours</option>
-            <option value="21600">Last 6 hours</option>
-            <option value="43200">Last 12 hours</option>
-            <option value="86400">Last 24 hours</option>
-            <option value="172800">Last 2 days</option>
-            <option value="259200">Last 3 days</option>
-            <option value="604800">Last 7 days</option>
-            <option value="1209600">Last 14 days</option>
-            <option value="2592000">Last 30 days</option>
-          </select>
-        </div>
-
-        {/* Countries */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", fontWeight: "bold", marginBottom: "10px" }}>
-            Select Countries:
-          </label>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
-            {availableCountries.map((country) => (
-              <div
-                key={country}
-                onClick={() => toggleCountry(country)}
-                style={{
-                  padding: "10px",
-                  background: countries.includes(country) ? "#0073b1" : "#f0f2f5",
-                  color: countries.includes(country) ? "#fff" : "#333",
-                  border: "2px solid",
-                  borderColor: countries.includes(country) ? "#0073b1" : "#ddd",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  fontWeight: countries.includes(country) ? "bold" : "normal",
-                  fontSize: "14px",
-                }}
-              >
-                {country}
+        <div className="card-container">
+          <div className="inner-container">
+            <div className="card-content">
+              {/* Search Text */}
+              <div className="form-group">
+                <label className="label">
+                  Search Keywords (comma-separated):
+                </label>
+                <input
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="e.g., CFA, Financial Analyst, CEO"
+                  className="input"
+                />
+                <p className="hint">
+                  Enter multiple keywords separated by commas. Each will be searched separately.
+                </p>
               </div>
-            ))}
+
+              {/* Time Filter */}
+              <div className="form-group">
+                <label className="label">Time Filter:</label>
+                <select value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)} className="select">
+                  <option value="3600">Last 1 hour</option>
+                  <option value="7200">Last 2 hours</option>
+                  <option value="10800">Last 3 hours</option>
+                  <option value="21600">Last 6 hours</option>
+                  <option value="43200">Last 12 hours</option>
+                  <option value="86400">Last 24 hours</option>
+                  <option value="172800">Last 2 days</option>
+                  <option value="259200">Last 3 days</option>
+                  <option value="604800">Last 7 days</option>
+                  <option value="1209600">Last 14 days</option>
+                  <option value="2592000">Last 30 days</option>
+                </select>
+              </div>
+
+              {/* Countries */}
+              <div className="form-group">
+                <label className="label">Select Countries:</label>
+                <div className="country-grid">
+                  {availableCountries.map((country) => (
+                    <button
+                      key={country}
+                      onClick={() => toggleCountry(country)}
+                      onContextMenu={(e) => handleCountryRightClick(e, country)}
+                      className={`country-btn ${countries.includes(country) ? 'selected' : ''}`}
+                    >
+                      {country}
+                    </button>
+                  ))}
+                </div>
+                <p className="hint">
+                  {countries.length} {countries.length === 1 ? "country" : "countries"} selected
+                </p>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="alert alert-error">
+                  <div>
+                    <strong>Oops!</strong> {error}
+                  </div>
+                </div>
+              )}
+
+              {/* Progress Display */}
+              {(loading || progressLogs.length > 0) && (
+                <div className="progress-container">
+                  <div className="progress-header">
+                    <span>Progress: {currentProgress}%</span>
+                  </div>
+                  <div className="progress-bar-bg">
+                    <div className="progress-bar" style={{ width: `${currentProgress}%` }} />
+                  </div>
+                  <div className="logs-container">
+                    {progressLogs.map((log, index) => (
+                      <div key={index} className="log-entry">
+                        <span className="log-time">{log.timestamp.toLocaleTimeString()}</span>
+                        <span className="log-message">{log.message}</span>
+                      </div>
+                    ))}
+                    <div ref={logsEndRef} />
+                  </div>
+                </div>
+              )}
+
+              {/* Success Message */}
+              {result && (
+                <div className="alert alert-success">
+                  <div>
+                    <strong>Success!</strong> {result.message}
+                    <br /><br />
+                    {result.jobCount > 0 && (
+                      <>
+                        <div><strong>NEW Jobs Found:</strong> {result.jobCount}</div>
+                        {result.totalScraped && (
+                          <>
+                            <div><strong>Total Scraped:</strong> {result.totalScraped}</div>
+                            <div><strong>Already Cached:</strong> {result.alreadyCached}</div>
+                          </>
+                        )}
+                        {result.keywords && result.keywords.length > 0 && (
+                          <div><strong>Keywords:</strong> {result.keywords.join(", ")}</div>
+                        )}
+                        <div><strong>Countries:</strong> {result.countries?.join(", ")}</div>
+                        <div><strong>File:</strong> {result.filename}</div>
+                        <div style={{ marginTop: "12px", fontSize: "13px", opacity: 0.9 }}>
+                          Excel file sent to your Telegram! Each job shows which keyword found it. 📊
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Scrape Button */}
+              <button
+                onClick={handleScrape}
+                disabled={loading}
+                className={`scrape-btn ${loading ? 'disabled' : ''}`}
+              >
+                {loading ? "🔥 Scraping in progress..." : "🚀 Start Scraping"}
+              </button>
+
+              <p className="footer-text">
+                Concurrent processing (10x faster) • Smart caching • 48h auto-reset
+              </p>
+            </div>
           </div>
-          <p style={{ margin: "10px 0 0 0", fontSize: "12px", color: "#666" }}>
-            {countries.length} {countries.length === 1 ? "country" : "countries"} selected
-          </p>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div
-            style={{
-              padding: "15px",
-              background: "#fff0f0",
-              color: "#d32f2f",
-              borderRadius: "4px",
-              marginBottom: "20px",
-              border: "1px solid #ffcdd2",
-            }}
-          >
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-
-        {/* Progress Display */}
-        {(loading || progressLogs.length > 0) && (
-          <div
-            style={{
-              marginBottom: "20px",
-              padding: "15px",
-              background: "#f5f5f5",
-              borderRadius: "4px",
-              border: "1px solid #ddd",
-            }}
-          >
-            <div style={{ marginBottom: "10px", fontWeight: "bold" }}>
-              Progress: {currentProgress}%
-            </div>
-            <div
-              style={{
-                width: "100%",
-                height: "8px",
-                background: "#ddd",
-                borderRadius: "4px",
-                overflow: "hidden",
-                marginBottom: "15px",
-              }}
-            >
-              <div
-                style={{
-                  width: `${currentProgress}%`,
-                  height: "100%",
-                  background: "#0073b1",
-                  transition: "width 0.3s ease",
-                }}
-              />
-            </div>
-            <div
-              style={{
-                maxHeight: "400px",
-                overflowY: "auto",
-                fontSize: "12px",
-                fontFamily: "monospace",
-                background: "#fff",
-                padding: "10px",
-                borderRadius: "4px",
-                lineHeight: "1.4",
-              }}
-            >
-              {progressLogs.map((log, index) => (
-                <div
-                  key={index}
-                  style={{
-                    padding: "4px 0",
-                    borderBottom: index < progressLogs.length - 1 ? "1px solid #eee" : "none",
-                  }}
-                >
-                  <span style={{ color: "#666", marginRight: "8px" }}>
-                    {log.timestamp.toLocaleTimeString()}
-                  </span>
-                  <span>{log.message}</span>
-                </div>
-              ))}
-              <div ref={logsEndRef} />
-            </div>
-          </div>
-        )}
-
-        {/* Success Message */}
-        {result && (
-          <div
-            style={{
-              padding: "15px",
-              background: "#e8f5e9",
-              color: "#2e7d32",
-              borderRadius: "4px",
-              marginBottom: "20px",
-              border: "1px solid #c8e6c9",
-            }}
-          >
-            <strong>Success!</strong> {result.message}
-            <br />
-            <br />
-            {result.jobCount > 0 && (
-              <>
-                <div>
-                  <strong>Unique Jobs Found:</strong> {result.jobCount}
-                </div>
-                {result.keywords && result.keywords.length > 0 && (
-                  <div>
-                    <strong>Keywords:</strong> {result.keywords.join(", ")}
-                  </div>
-                )}
-                <div>
-                  <strong>Countries:</strong> {result.countries?.join(", ")}
-                </div>
-                <div>
-                  <strong>File:</strong> {result.filename}
-                </div>
-                <div style={{ marginTop: "10px", fontSize: "14px" }}>
-                  Excel file has been sent to your Telegram chat with the "Input Keyword" column showing which search term found each job.
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Scrape Button */}
-        <button
-          onClick={handleScrape}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "15px",
-            fontSize: "16px",
-            fontWeight: "bold",
-            background: loading ? "#ccc" : "#0073b1",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: loading ? "not-allowed" : "pointer",
-            transition: "background 0.2s",
-          }}
-        >
-          {loading ? "Scraping... (this may take a few minutes)" : "Scrape Jobs & Send to Telegram"}
-        </button>
-
-        <p style={{ marginTop: "15px", fontSize: "12px", color: "#666", textAlign: "center" }}>
-          The scraper will fetch jobs from LinkedIn and send an Excel file to your Telegram chat.
-          <br />
-          This process may take 2-5 minutes depending on the number of countries selected.
-        </p>
+        <div className="back-link">
+          <a href="/">Back to Home</a>
+        </div>
       </div>
 
-      <div style={{ marginTop: "30px", textAlign: "center" }}>
-        <a href="/" style={{ color: "#0073b1", textDecoration: "none" }}>
-          ← Back to Home
-        </a>
+      {/* Secret credit easter egg */}
+      <div className={`secret-credit ${secretVisible ? 'visible' : ''}`}>
+        🎨 Crafted with love by reza
       </div>
     </div>
   );
