@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Briefcase, Radio, Search, Database, Clock, Rocket, Settings, Smartphone, Zap, ArrowRight, ArrowUpRight, Github } from "lucide-react";
+import { Briefcase, Radio, Search, Database, Clock, Rocket, Settings, Smartphone, Zap, ArrowRight, ArrowUpRight, Github, BarChart3 } from "lucide-react";
 import "./home.css";
 
 export default function Home() {
@@ -115,6 +115,19 @@ export default function Home() {
               <div className="action-content">
                 <h3>LinkedIn Scraper</h3>
                 <p>Search LinkedIn jobs with custom keywords and countries</p>
+              </div>
+              <div className="action-arrow">
+                <ArrowRight size={32} strokeWidth={2} />
+              </div>
+            </Link>
+
+            <Link href="/stats" className="action-card card">
+              <div className="action-icon">
+                <BarChart3 size={40} strokeWidth={1.5} />
+              </div>
+              <div className="action-content">
+                <h3>Job Statistics</h3>
+                <p>View comprehensive analytics and insights from RSS feeds</p>
               </div>
               <div className="action-arrow">
                 <ArrowRight size={32} strokeWidth={2} />

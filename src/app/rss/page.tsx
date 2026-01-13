@@ -242,6 +242,10 @@ export default function RSSPage() {
             <ArrowLeft size={16} />
             <span>Home</span>
           </Link>
+          <Link href="/stats" className="nav-link">
+            <span>Statistics</span>
+            <ArrowRight size={16} />
+          </Link>
           <Link href="/scrape" className="nav-link nav-link-primary">
             <span>LinkedIn Scraper</span>
             <ArrowRight size={16} />

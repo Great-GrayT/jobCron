@@ -78,7 +78,6 @@ export const certificationPatterns: Array<{ name: string; pattern: RegExp }> = [
 
   // Healthcare
   { name: 'MD', pattern: /\bM\.?D\.?\b|Doctor\s+of\s+Medicine/gi },
-  { name: 'DO', pattern: /\bD\.?O\.?\b|Doctor\s+of\s+Osteopathic/gi },
   { name: 'RN', pattern: /\bR\.?N\.?\b|Registered\s+Nurse/gi },
   { name: 'NP', pattern: /\bN\.?P\.?\b|Nurse\s+Practitioner/gi },
   { name: 'PA-C', pattern: /\bPA-C\b|Physician\s+Assistant/gi },

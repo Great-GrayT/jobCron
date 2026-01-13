@@ -3,6 +3,8 @@ export interface JobItem {
   link: string;
   pubDate: string;
   description: string;
+  company?: string;
+  location?: string;
 }
 
 export interface JobDetails {

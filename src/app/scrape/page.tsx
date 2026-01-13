@@ -384,6 +384,10 @@ export default function ScrapePage() {
 
         <div className="back-link">
           <a href="/">Back to Home</a>
+          <span style={{ margin: "0 1rem", opacity: 0.5 }}>|</span>
+          <a href="/stats">View Statistics</a>
+          <span style={{ margin: "0 1rem", opacity: 0.5 }}>|</span>
+          <a href="/rss">RSS Monitor</a>
         </div>
       </div>
 
