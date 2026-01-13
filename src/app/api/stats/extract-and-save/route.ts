@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseRSSFeeds } from "@/lib/rss-parser";
 import { JobStatisticsCache, JobStatistic } from "@/lib/job-statistics-cache";
 import { JobMetadataExtractor } from "@/lib/job-metadata-extractor";
+import { SalaryExtractor } from "@/lib/salary-extractor";
+import { LocationExtractor } from "@/lib/location-extractor";
+import { extractJobDetails } from "@/lib/job-analyzer";
 import { validateEnvironmentVariables } from "@/lib/validation";
 import { logger } from "@/lib/logger";
 
@@ -59,20 +62,63 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        // Extract metadata
+        // Step 1: Extract company, position, and location using job-analyzer method first
+        const jobDetails = extractJobDetails(rssJob.title);
+
+        // Step 2: Use job-analyzer results with fallback to RSS data
+        let finalCompany = jobDetails.company !== 'N/A' ? jobDetails.company : (rssJob.company || 'Unknown Company');
+        let finalPosition = jobDetails.position;
+        let extractedLocation = jobDetails.location !== 'N/A' ? jobDetails.location : null;
+
+        // Step 3: Extract location properly - try job-analyzer result first, then LocationExtractor
+        let locationData = { country: null as string | null, city: null as string | null, region: null as 'Europe' | 'America' | 'Middle East' | null };
+
+        // First, try location from job-analyzer if available
+        if (extractedLocation) {
+          locationData = LocationExtractor.extractLocation(
+            extractedLocation,
+            rssJob.link,
+            null,
+            ''
+          );
+        }
+
+        // If location is still not found, fall back to current logic
+        if (!locationData.country && !locationData.city) {
+          locationData = LocationExtractor.extractLocation(
+            rssJob.title,
+            rssJob.link,
+            rssJob.location,
+            rssJob.description || ''
+          );
+        }
+
+        // Format location for display
+        const formattedLocation = extractedLocation || LocationExtractor.formatLocation(locationData);
+
+        // Extract metadata using the final company name
         const metadata = JobMetadataExtractor.extractAllMetadata({
-          title: rssJob.title,
-          company: rssJob.company || 'Unknown Company',
+          title: finalPosition,
+          company: finalCompany,
           description: rssJob.description || '',
           url: rssJob.link,
         });
+
+        // Extract salary information
+        const salary = SalaryExtractor.extractSalary(
+          rssJob.title,
+          rssJob.description || ''
+        );
 
         // Create job statistic object
         const jobStat: JobStatistic = {
           id: metadata.id,
           title: rssJob.title,
-          company: rssJob.company || 'Unknown Company',
-          location: rssJob.location || 'Unknown Location',
+          company: finalCompany,
+          location: rssJob.location || formattedLocation,
+          country: locationData.country,
+          city: locationData.city,
+          region: locationData.region,
           url: rssJob.link,
           postedDate: rssJob.pubDate,
           extractedDate: new Date().toISOString(),
@@ -81,6 +127,7 @@ export async function GET(request: NextRequest) {
           industry: metadata.industry,
           seniority: metadata.seniority,
           description: rssJob.description || '',
+          salary: salary,
         };
 
         // Add to cache (will skip if already exists)

@@ -1,10 +1,14 @@
 import { logger } from './logger';
+import { SalaryData } from './salary-extractor';
 
 export interface JobStatistic {
   id: string;
   title: string;
   company: string;
   location: string;
+  country: string | null;
+  city: string | null;
+  region: 'Europe' | 'America' | 'Middle East' | null;
   url: string;
   postedDate: string;
   extractedDate: string;
@@ -13,6 +17,7 @@ export interface JobStatistic {
   industry: string;
   seniority: string;
   description: string;
+  salary?: SalaryData | null;
 }
 
 export interface MonthlyStatistics {
@@ -23,7 +28,29 @@ export interface MonthlyStatistics {
   byKeyword: Record<string, number>;
   bySeniority: Record<string, number>;
   byLocation: Record<string, number>;
+  byCountry: Record<string, number>;
+  byCity: Record<string, number>;
+  byRegion: Record<string, number>;
   byCompany: Record<string, number>;
+  salaryStats?: {
+    totalWithSalary: number;
+    averageSalary: number | null;
+    medianSalary: number | null;
+    byIndustry: Record<string, { avg: number; median: number; count: number }>;
+    bySeniority: Record<string, { avg: number; median: number; count: number }>;
+    byLocation: Record<string, { avg: number; median: number; count: number }>;
+    byCountry: Record<string, { avg: number; median: number; count: number }>;
+    byCity: Record<string, { avg: number; median: number; count: number }>;
+    byCurrency: Record<string, number>;
+    salaryRanges: {
+      '0-30k': number;
+      '30-50k': number;
+      '50-75k': number;
+      '75-100k': number;
+      '100-150k': number;
+      '150k+': number;
+    };
+  };
 }
 
 export interface CurrentMonthData {
@@ -114,6 +141,23 @@ export class JobStatisticsCache {
   }
 
   /**
+   * Migrate old statistics data to new schema (add missing fields)
+   */
+  private migrateStatistics(stats: any): MonthlyStatistics {
+    return {
+      ...stats,
+      byCountry: stats.byCountry || {},
+      byCity: stats.byCity || {},
+      byRegion: stats.byRegion || {},
+      salaryStats: stats.salaryStats ? {
+        ...stats.salaryStats,
+        byCountry: stats.salaryStats.byCountry || {},
+        byCity: stats.salaryStats.byCity || {},
+      } : undefined,
+    };
+  }
+
+  /**
    * Create empty statistics object
    */
   private createEmptyStatistics(): MonthlyStatistics {
@@ -125,7 +169,29 @@ export class JobStatisticsCache {
       byKeyword: {},
       bySeniority: {},
       byLocation: {},
+      byCountry: {},
+      byCity: {},
+      byRegion: {},
       byCompany: {},
+      salaryStats: {
+        totalWithSalary: 0,
+        averageSalary: null,
+        medianSalary: null,
+        byIndustry: {},
+        bySeniority: {},
+        byLocation: {},
+        byCountry: {},
+        byCity: {},
+        byCurrency: {},
+        salaryRanges: {
+          '0-30k': 0,
+          '30-50k': 0,
+          '50-75k': 0,
+          '75-100k': 0,
+          '100-150k': 0,
+          '150k+': 0,
+        },
+      },
     };
   }
 
@@ -157,7 +223,6 @@ export class JobStatisticsCache {
           'Accept': 'application/vnd.github.v3+json',
         },
         cache: 'no-store', // Disable caching to get fresh data
-        next: { revalidate: 0 }, // Next.js specific cache control
       });
 
       if (!response.ok) {
@@ -169,30 +234,86 @@ export class JobStatisticsCache {
       // Load summary
       const summaryFile = gist.files['job-statistics-summary.json'];
       if (summaryFile) {
-        this.summaryData = JSON.parse(summaryFile.content);
-        logger.info(`✓ Loaded summary: ${this.summaryData.totalJobsAllTime} total jobs`);
+        try {
+          this.summaryData = JSON.parse(summaryFile.content);
+          logger.info(`✓ Loaded summary: ${this.summaryData.totalJobsAllTime} total jobs`);
+        } catch (error) {
+          logger.error('Error parsing summary file:', error);
+        }
       }
 
       // Load current month data
       const currentFile = gist.files['job-statistics-current.json'];
       if (currentFile) {
-        const data: CurrentMonthData = JSON.parse(currentFile.content);
+        // Check if file is truncated (GitHub API limitation for large files)
+        if (currentFile.truncated) {
+          logger.warn('⚠ Current month file is truncated. Fetching raw content...');
 
-        // Check if we need to archive the current data (new month started)
-        const currentMonth = this.getCurrentMonthString();
-        if (data.month !== currentMonth) {
-          logger.info(`Month changed from ${data.month} to ${currentMonth}. Archiving...`);
-          await this.archiveMonth(data);
-          // Start fresh for new month
-          this.currentMonthData = {
-            month: currentMonth,
-            lastUpdated: new Date().toISOString(),
-            jobs: [],
-            statistics: this.createEmptyStatistics(),
-          };
+          // Fetch raw content directly
+          const rawResponse = await fetch(currentFile.raw_url, {
+            headers: {
+              'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+            },
+          });
+
+          if (!rawResponse.ok) {
+            throw new Error(`Failed to fetch raw content: ${rawResponse.status}`);
+          }
+
+          const rawContent = await rawResponse.text();
+
+          if (!rawContent || rawContent.trim().length === 0) {
+            throw new Error('Raw content is empty');
+          }
+
+          const data: CurrentMonthData = JSON.parse(rawContent);
+
+          // Migrate statistics to new schema if needed
+          data.statistics = this.migrateStatistics(data.statistics);
+
+          // Check if we need to archive the current data (new month started)
+          const currentMonth = this.getCurrentMonthString();
+          if (data.month !== currentMonth) {
+            logger.info(`Month changed from ${data.month} to ${currentMonth}. Archiving...`);
+            await this.archiveMonth(data);
+            // Start fresh for new month
+            this.currentMonthData = {
+              month: currentMonth,
+              lastUpdated: new Date().toISOString(),
+              jobs: [],
+              statistics: this.createEmptyStatistics(),
+            };
+          } else {
+            this.currentMonthData = data;
+            logger.info(`✓ Loaded current month (${currentMonth}): ${data.jobs.length} jobs`);
+          }
         } else {
-          this.currentMonthData = data;
-          logger.info(`✓ Loaded current month (${currentMonth}): ${data.jobs.length} jobs`);
+          // Content not truncated, use directly
+          if (!currentFile.content || currentFile.content.trim().length === 0) {
+            throw new Error('File content is empty');
+          }
+
+          const data: CurrentMonthData = JSON.parse(currentFile.content);
+
+          // Migrate statistics to new schema if needed
+          data.statistics = this.migrateStatistics(data.statistics);
+
+          // Check if we need to archive the current data (new month started)
+          const currentMonth = this.getCurrentMonthString();
+          if (data.month !== currentMonth) {
+            logger.info(`Month changed from ${data.month} to ${currentMonth}. Archiving...`);
+            await this.archiveMonth(data);
+            // Start fresh for new month
+            this.currentMonthData = {
+              month: currentMonth,
+              lastUpdated: new Date().toISOString(),
+              jobs: [],
+              statistics: this.createEmptyStatistics(),
+            };
+          } else {
+            this.currentMonthData = data;
+            logger.info(`✓ Loaded current month (${currentMonth}): ${data.jobs.length} jobs`);
+          }
         }
       }
     } catch (error: any) {
@@ -306,10 +427,236 @@ export class JobStatisticsCache {
       stats.byLocation[job.location] = (stats.byLocation[job.location] || 0) + 1;
     }
 
+    // By country
+    if (job.country) {
+      stats.byCountry[job.country] = (stats.byCountry[job.country] || 0) + 1;
+    }
+
+    // By city
+    if (job.city) {
+      stats.byCity[job.city] = (stats.byCity[job.city] || 0) + 1;
+    }
+
+    // By region
+    if (job.region) {
+      stats.byRegion[job.region] = (stats.byRegion[job.region] || 0) + 1;
+    }
+
     // By company
     if (job.company) {
       stats.byCompany[job.company] = (stats.byCompany[job.company] || 0) + 1;
     }
+
+    // Recalculate salary statistics for all jobs
+    this.recalculateSalaryStats();
+  }
+
+  /**
+   * Recalculate salary statistics from all current month jobs
+   */
+  private recalculateSalaryStats(): void {
+    const stats = this.currentMonthData.statistics;
+    const jobsWithSalary = this.currentMonthData.jobs.filter(j => j.salary);
+
+    // Ensure salaryStats exists
+    if (!stats.salaryStats) {
+      stats.salaryStats = {
+        totalWithSalary: 0,
+        averageSalary: null,
+        medianSalary: null,
+        byIndustry: {},
+        bySeniority: {},
+        byLocation: {},
+        byCountry: {},
+        byCity: {},
+        byCurrency: {},
+        salaryRanges: {
+          '0-30k': 0,
+          '30-50k': 0,
+          '50-75k': 0,
+          '75-100k': 0,
+          '100-150k': 0,
+          '150k+': 0,
+        },
+      };
+    }
+
+    const salaryStats = stats.salaryStats;
+    salaryStats.totalWithSalary = jobsWithSalary.length;
+
+    if (jobsWithSalary.length === 0) {
+      salaryStats.averageSalary = null;
+      salaryStats.medianSalary = null;
+      return;
+    }
+
+    // Calculate midpoint salaries
+    const salaries: number[] = [];
+    const industryGroups: Record<string, number[]> = {};
+    const seniorityGroups: Record<string, number[]> = {};
+    const locationGroups: Record<string, number[]> = {};
+    const countryGroups: Record<string, number[]> = {};
+    const cityGroups: Record<string, number[]> = {};
+
+    // Reset salary ranges
+    salaryStats.salaryRanges = {
+      '0-30k': 0,
+      '30-50k': 0,
+      '50-75k': 0,
+      '75-100k': 0,
+      '100-150k': 0,
+      '150k+': 0,
+    };
+    salaryStats.byCurrency = {};
+
+    jobsWithSalary.forEach(job => {
+      if (!job.salary) return;
+
+      const midpoint = job.salary.min !== null && job.salary.max !== null
+        ? (job.salary.min + job.salary.max) / 2
+        : (job.salary.min || job.salary.max || 0);
+
+      if (midpoint > 0) {
+        salaries.push(midpoint);
+
+        // Group by industry
+        if (job.industry) {
+          if (!industryGroups[job.industry]) industryGroups[job.industry] = [];
+          industryGroups[job.industry].push(midpoint);
+        }
+
+        // Group by seniority
+        if (job.seniority) {
+          if (!seniorityGroups[job.seniority]) seniorityGroups[job.seniority] = [];
+          seniorityGroups[job.seniority].push(midpoint);
+        }
+
+        // Group by location
+        if (job.location) {
+          if (!locationGroups[job.location]) locationGroups[job.location] = [];
+          locationGroups[job.location].push(midpoint);
+        }
+
+        // Group by country
+        if (job.country) {
+          if (!countryGroups[job.country]) countryGroups[job.country] = [];
+          countryGroups[job.country].push(midpoint);
+        }
+
+        // Group by city
+        if (job.city) {
+          if (!cityGroups[job.city]) cityGroups[job.city] = [];
+          cityGroups[job.city].push(midpoint);
+        }
+
+        // Currency count
+        salaryStats.byCurrency[job.salary.currency] =
+          (salaryStats.byCurrency[job.salary.currency] || 0) + 1;
+
+        // Salary ranges (assuming USD or equivalent)
+        if (midpoint < 30000) {
+          salaryStats.salaryRanges['0-30k']++;
+        } else if (midpoint < 50000) {
+          salaryStats.salaryRanges['30-50k']++;
+        } else if (midpoint < 75000) {
+          salaryStats.salaryRanges['50-75k']++;
+        } else if (midpoint < 100000) {
+          salaryStats.salaryRanges['75-100k']++;
+        } else if (midpoint < 150000) {
+          salaryStats.salaryRanges['100-150k']++;
+        } else {
+          salaryStats.salaryRanges['150k+']++;
+        }
+      }
+    });
+
+    // Calculate overall average and median
+    if (salaries.length > 0) {
+      salaryStats.averageSalary = Math.round(
+        salaries.reduce((a, b) => a + b, 0) / salaries.length
+      );
+
+      const sorted = [...salaries].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      salaryStats.medianSalary = sorted.length % 2 === 0
+        ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+        : Math.round(sorted[mid]);
+    }
+
+    // Calculate by industry
+    Object.entries(industryGroups).forEach(([industry, values]) => {
+      if (values.length > 0) {
+        const sorted = [...values].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        salaryStats.byIndustry[industry] = {
+          avg: Math.round(values.reduce((a, b) => a + b, 0) / values.length),
+          median: sorted.length % 2 === 0
+            ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+            : Math.round(sorted[mid]),
+          count: values.length,
+        };
+      }
+    });
+
+    // Calculate by seniority
+    Object.entries(seniorityGroups).forEach(([seniority, values]) => {
+      if (values.length > 0) {
+        const sorted = [...values].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        salaryStats.bySeniority[seniority] = {
+          avg: Math.round(values.reduce((a, b) => a + b, 0) / values.length),
+          median: sorted.length % 2 === 0
+            ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+            : Math.round(sorted[mid]),
+          count: values.length,
+        };
+      }
+    });
+
+    // Calculate by location
+    Object.entries(locationGroups).forEach(([location, values]) => {
+      if (values.length > 0) {
+        const sorted = [...values].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        salaryStats.byLocation[location] = {
+          avg: Math.round(values.reduce((a, b) => a + b, 0) / values.length),
+          median: sorted.length % 2 === 0
+            ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+            : Math.round(sorted[mid]),
+          count: values.length,
+        };
+      }
+    });
+
+    // Calculate by country
+    Object.entries(countryGroups).forEach(([country, values]) => {
+      if (values.length > 0) {
+        const sorted = [...values].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        salaryStats.byCountry[country] = {
+          avg: Math.round(values.reduce((a, b) => a + b, 0) / values.length),
+          median: sorted.length % 2 === 0
+            ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+            : Math.round(sorted[mid]),
+          count: values.length,
+        };
+      }
+    });
+
+    // Calculate by city
+    Object.entries(cityGroups).forEach(([city, values]) => {
+      if (values.length > 0) {
+        const sorted = [...values].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        salaryStats.byCity[city] = {
+          avg: Math.round(values.reduce((a, b) => a + b, 0) / values.length),
+          median: sorted.length % 2 === 0
+            ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+            : Math.round(sorted[mid]),
+          count: values.length,
+        };
+      }
+    });
   }
 
   /**
@@ -517,6 +864,27 @@ export class JobStatisticsCache {
             aggregated.byLocation[location] = (aggregated.byLocation[location] || 0) + count;
           }
 
+          // Merge byCountry (if available)
+          if (archive.statistics.byCountry) {
+            for (const [country, count] of Object.entries(archive.statistics.byCountry)) {
+              aggregated.byCountry[country] = (aggregated.byCountry[country] || 0) + count;
+            }
+          }
+
+          // Merge byCity (if available)
+          if (archive.statistics.byCity) {
+            for (const [city, count] of Object.entries(archive.statistics.byCity)) {
+              aggregated.byCity[city] = (aggregated.byCity[city] || 0) + count;
+            }
+          }
+
+          // Merge byRegion (if available)
+          if (archive.statistics.byRegion) {
+            for (const [region, count] of Object.entries(archive.statistics.byRegion)) {
+              aggregated.byRegion[region] = (aggregated.byRegion[region] || 0) + count;
+            }
+          }
+
           // Merge byCompany
           for (const [company, count] of Object.entries(archive.statistics.byCompany)) {
             aggregated.byCompany[company] = (aggregated.byCompany[company] || 0) + count;
@@ -545,6 +913,24 @@ export class JobStatisticsCache {
       }
       for (const [location, count] of Object.entries(this.currentMonthData.statistics.byLocation)) {
         aggregated.byLocation[location] = (aggregated.byLocation[location] || 0) + count;
+      }
+      // Merge byCountry (if available - for backward compatibility)
+      if (this.currentMonthData.statistics.byCountry) {
+        for (const [country, count] of Object.entries(this.currentMonthData.statistics.byCountry)) {
+          aggregated.byCountry[country] = (aggregated.byCountry[country] || 0) + count;
+        }
+      }
+      // Merge byCity (if available - for backward compatibility)
+      if (this.currentMonthData.statistics.byCity) {
+        for (const [city, count] of Object.entries(this.currentMonthData.statistics.byCity)) {
+          aggregated.byCity[city] = (aggregated.byCity[city] || 0) + count;
+        }
+      }
+      // Merge byRegion (if available - for backward compatibility)
+      if (this.currentMonthData.statistics.byRegion) {
+        for (const [region, count] of Object.entries(this.currentMonthData.statistics.byRegion)) {
+          aggregated.byRegion[region] = (aggregated.byRegion[region] || 0) + count;
+        }
       }
       for (const [company, count] of Object.entries(this.currentMonthData.statistics.byCompany)) {
         aggregated.byCompany[company] = (aggregated.byCompany[company] || 0) + count;

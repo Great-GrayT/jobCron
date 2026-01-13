@@ -81,15 +81,51 @@ export class UrlCache {
       }
 
       const gist = await response.json();
-      const file = gist.files[this.cacheKey + '.json'];
+
+      // Debug: Log all available files in the Gist
+      const availableFiles = Object.keys(gist.files || {});
+      logger.info(`Available files in Gist: ${availableFiles.join(', ')}`);
+      logger.info(`Looking for file: ${this.cacheKey}.json`);
+
+      const fileName = this.cacheKey + '.json';
+      const file = gist.files[fileName];
 
       if (!file) {
+        logger.warn(`File "${fileName}" not found in Gist. Available files: ${availableFiles.join(', ')}`);
         logger.info(`No cache for key "${this.cacheKey}" in GitHub Gist. Starting with empty cache.`);
         this.cache = new Set<string>();
         return;
       }
 
-      const data: CacheData = JSON.parse(file.content);
+      logger.info(`Found file "${fileName}" in Gist. Content length: ${file.content?.length || 0}, Truncated: ${file.truncated || false}`);
+
+      let fileContent = file.content;
+
+      // If file is truncated or has no content, fetch from raw_url
+      if (!fileContent || file.truncated) {
+        logger.info(`File is ${!fileContent ? 'empty' : 'truncated'}. Fetching from raw URL: ${file.raw_url}`);
+
+        const rawResponse = await fetch(file.raw_url, {
+          headers: {
+            'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+          },
+        });
+
+        if (!rawResponse.ok) {
+          throw new Error(`Failed to fetch raw file: ${rawResponse.status}`);
+        }
+
+        fileContent = await rawResponse.text();
+        logger.info(`Fetched raw content. Length: ${fileContent.length}`);
+      }
+
+      if (!fileContent || fileContent.trim() === '') {
+        logger.warn(`File "${fileName}" is empty after fetching. Starting with empty cache.`);
+        this.cache = new Set<string>();
+        return;
+      }
+
+      const data: CacheData = JSON.parse(fileContent);
 
       // Check if cache is expired
       if (this.isCacheExpired(data.lastUpdated)) {
@@ -110,6 +146,7 @@ export class UrlCache {
       logger.info(`  - Last updated: ${data.lastUpdated}`);
       logger.info(`  - Cache version: ${data.metadata.version}`);
     } catch (error: any) {
+      logger.error(`Error loading from GitHub Gist:`, error);
       logger.info(`No existing cache for "${this.cacheKey}" in GitHub Gist. Starting with empty cache.`);
       this.cache = new Set<string>();
     }

@@ -39,6 +39,65 @@ async function parseSingleFeed(url: string): Promise<JobItem[]> {
 }
 
 /**
+ * Extract company name from LinkedIn job URL
+ * Pattern: /-at-{company-name}-in-/ or /-at-{company-name}-{numbers}
+ */
+function extractCompanyFromLink(link: string): string | undefined {
+  const atIndex = link.indexOf('-at-');
+  if (atIndex === -1) return undefined;
+
+  const afterAt = link.substring(atIndex + 4); // Skip '-at-'
+
+  // Find end of company name: either '-in-' or first digit
+  const inIndex = afterAt.indexOf('-in-');
+  const digitMatch = afterAt.match(/\-\d/);
+
+  let companyPart: string;
+  if (inIndex !== -1) {
+    companyPart = afterAt.substring(0, inIndex);
+  } else if (digitMatch && digitMatch.index !== undefined) {
+    companyPart = afterAt.substring(0, digitMatch.index);
+  } else {
+    return undefined;
+  }
+
+  // Convert kebab-case to Title Case
+  const company = companyPart
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+    .trim();
+
+  return company || undefined;
+}
+
+/**
+ * Extract location from LinkedIn job URL
+ * Pattern: /-in-{location}-{numbers}
+ */
+function extractLocationFromLink(link: string): string | undefined {
+  const inIndex = link.indexOf('-in-');
+  if (inIndex === -1) return undefined;
+
+  const afterIn = link.substring(inIndex + 4); // Skip '-in-'
+
+  // Find end of location: first digit
+  const digitMatch = afterIn.match(/\-\d/);
+  if (!digitMatch || digitMatch.index === undefined) return undefined;
+
+  const locationPart = afterIn.substring(0, digitMatch.index);
+
+  // Convert kebab-case to Title Case
+  const location = locationPart
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+    .trim();
+
+  return location || undefined;
+}
+
+/**
  * Extracts job items from RSS XML text
  */
 function extractJobsFromXML(xmlText: string): JobItem[] {
@@ -52,11 +111,19 @@ function extractJobsFromXML(xmlText: string): JobItem[] {
     const description = extractXMLTag(itemXml, 'description');
 
     if (title && link && pubDate) {
+      const cleanLink = link.trim();
+
+      // Extract company and location from link
+      const company = extractCompanyFromLink(cleanLink);
+      const location = extractLocationFromLink(cleanLink);
+
       items.push({
         title: cleanCDATA(title),
-        link: link.trim(),
+        link: cleanLink,
         pubDate: pubDate.trim(),
         description: cleanCDATA(description),
+        company,
+        location,
       });
     }
   }
