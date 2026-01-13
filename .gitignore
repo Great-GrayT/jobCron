@@ -35,3 +35,6 @@ next-env.d.ts
 
 # cache
 /cache
+
+# Claude Code settings (may contain sensitive tokens)
+.claude/settings.local.json

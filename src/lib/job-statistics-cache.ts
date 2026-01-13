@@ -156,6 +156,8 @@ export class JobStatisticsCache {
           'Authorization': `token ${process.env.GITHUB_TOKEN}`,
           'Accept': 'application/vnd.github.v3+json',
         },
+        cache: 'no-store', // Disable caching to get fresh data
+        next: { revalidate: 0 }, // Next.js specific cache control
       });
 
       if (!response.ok) {
@@ -194,7 +196,8 @@ export class JobStatisticsCache {
         }
       }
     } catch (error: any) {
-      logger.info('No existing statistics in GitHub Gist. Starting fresh.');
+      logger.error('Error loading from GitHub Gist:', error);
+      logger.info('Starting fresh with empty data.');
     }
   }
 
@@ -438,6 +441,8 @@ export class JobStatisticsCache {
           'Authorization': `token ${process.env.GITHUB_TOKEN}`,
           'Accept': 'application/vnd.github.v3+json',
         },
+        cache: 'no-store', // Disable caching
+        next: { revalidate: 0 }, // Next.js cache control
       });
 
       if (!response.ok) {
