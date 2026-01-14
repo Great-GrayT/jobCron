@@ -6,7 +6,7 @@ import { parseRSSFeeds } from "@/lib/rss-parser";
 import { JobMetadataExtractor } from "@/lib/job-metadata-extractor";
 import { SalaryExtractor } from "@/lib/salary-extractor";
 import { LocationExtractor } from "@/lib/location-extractor";
-import { extractJobDetails } from "@/lib/job-analyzer";
+import { extractJobDetails, analyzeJobDescription } from "@/lib/job-analyzer";
 import { softwareKeywords } from "@/lib/dictionaries/software";
 import { programmingKeywords } from "@/lib/dictionaries/programming-languages";
 
@@ -139,6 +139,22 @@ export async function GET(request: NextRequest) {
             }
           }
 
+          // Extract years of experience and academic degrees using job analyzer
+          const analysis = analyzeJobDescription(description);
+
+          // Validate yearsExperience - if it's more than 15 years, set to null
+          let validatedYearsExperience: string | null = null;
+          if (analysis.yearsExperience) {
+            // Extract the numeric value from the years experience string
+            const yearsMatch = analysis.yearsExperience.match(/(\d+)/);
+            if (yearsMatch) {
+              const years = parseInt(yearsMatch[1], 10);
+              if (years <= 15) {
+                validatedYearsExperience = analysis.yearsExperience;
+              }
+            }
+          }
+
           // Create job statistic object
           const jobStat: JobStatistic = {
             id: metadata.id,
@@ -159,6 +175,8 @@ export async function GET(request: NextRequest) {
             salary: salary,
             software: software.length > 0 ? software : undefined,
             programmingSkills: programmingSkills.length > 0 ? programmingSkills : undefined,
+            yearsExperience: validatedYearsExperience,
+            academicDegrees: analysis.academicDegrees.length > 0 ? analysis.academicDegrees : undefined,
           };
 
           // Add to cache

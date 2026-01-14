@@ -1,6 +1,29 @@
 import { logger } from './logger';
 import { SalaryData } from './salary-extractor';
 
+/**
+ * Normalize city names for consistent statistics
+ */
+function normalizeCity(cityName: string | null): string | null {
+  if (!cityName) return null;
+
+  const normalized = cityName
+    .replace(/\s+Area$/i, '')
+    .replace(/^City of\s+/i, '')
+    .replace(/^Greater\s+/i, '')
+    .trim();
+
+  // Filter out non-city names
+  if (/^England$/i.test(normalized) ||
+      /^Scotland$/i.test(normalized) ||
+      /^Wales$/i.test(normalized) ||
+      /^United Kingdom$/i.test(normalized)) {
+    return null;
+  }
+
+  return normalized;
+}
+
 export interface JobStatistic {
   id: string;
   title: string;
@@ -20,6 +43,8 @@ export interface JobStatistic {
   salary?: SalaryData | null;
   software?: string[];
   programmingSkills?: string[];
+  yearsExperience?: string | null;
+  academicDegrees?: string[];
 }
 
 export interface MonthlyStatistics {
@@ -36,6 +61,8 @@ export interface MonthlyStatistics {
   byCompany: Record<string, number>;
   bySoftware: Record<string, number>;
   byProgrammingSkill: Record<string, number>;
+  byYearsExperience: Record<string, number>;
+  byAcademicDegree: Record<string, number>;
   salaryStats?: {
     totalWithSalary: number;
     averageSalary: number | null;
@@ -155,6 +182,8 @@ export class JobStatisticsCache {
       byRegion: stats.byRegion || {},
       bySoftware: stats.bySoftware || {},
       byProgrammingSkill: stats.byProgrammingSkill || {},
+      byYearsExperience: stats.byYearsExperience || {},
+      byAcademicDegree: stats.byAcademicDegree || {},
       salaryStats: stats.salaryStats ? {
         ...stats.salaryStats,
         byCountry: stats.salaryStats.byCountry || {},
@@ -181,6 +210,8 @@ export class JobStatisticsCache {
       byCompany: {},
       bySoftware: {},
       byProgrammingSkill: {},
+      byYearsExperience: {},
+      byAcademicDegree: {},
       salaryStats: {
         totalWithSalary: 0,
         averageSalary: null,
@@ -440,9 +471,10 @@ export class JobStatisticsCache {
       stats.byCountry[job.country] = (stats.byCountry[job.country] || 0) + 1;
     }
 
-    // By city
-    if (job.city) {
-      stats.byCity[job.city] = (stats.byCity[job.city] || 0) + 1;
+    // By city (normalized)
+    const normalizedCity = normalizeCity(job.city);
+    if (normalizedCity) {
+      stats.byCity[normalizedCity] = (stats.byCity[normalizedCity] || 0) + 1;
     }
 
     // By region
@@ -466,6 +498,18 @@ export class JobStatisticsCache {
     if (job.programmingSkills) {
       job.programmingSkills.forEach(skill => {
         stats.byProgrammingSkill[skill] = (stats.byProgrammingSkill[skill] || 0) + 1;
+      });
+    }
+
+    // By years of experience
+    if (job.yearsExperience) {
+      stats.byYearsExperience[job.yearsExperience] = (stats.byYearsExperience[job.yearsExperience] || 0) + 1;
+    }
+
+    // By academic degrees
+    if (job.academicDegrees) {
+      job.academicDegrees.forEach(degree => {
+        stats.byAcademicDegree[degree] = (stats.byAcademicDegree[degree] || 0) + 1;
       });
     }
 
@@ -565,10 +609,11 @@ export class JobStatisticsCache {
           countryGroups[job.country].push(midpoint);
         }
 
-        // Group by city
-        if (job.city) {
-          if (!cityGroups[job.city]) cityGroups[job.city] = [];
-          cityGroups[job.city].push(midpoint);
+        // Group by city (normalized)
+        const normalizedCity = normalizeCity(job.city);
+        if (normalizedCity) {
+          if (!cityGroups[normalizedCity]) cityGroups[normalizedCity] = [];
+          cityGroups[normalizedCity].push(midpoint);
         }
 
         // Currency count
@@ -925,6 +970,20 @@ export class JobStatisticsCache {
               aggregated.byProgrammingSkill[skill] = (aggregated.byProgrammingSkill[skill] || 0) + count;
             }
           }
+
+          // Merge byYearsExperience (if available)
+          if (archive.statistics.byYearsExperience) {
+            for (const [years, count] of Object.entries(archive.statistics.byYearsExperience)) {
+              aggregated.byYearsExperience[years] = (aggregated.byYearsExperience[years] || 0) + count;
+            }
+          }
+
+          // Merge byAcademicDegree (if available)
+          if (archive.statistics.byAcademicDegree) {
+            for (const [degree, count] of Object.entries(archive.statistics.byAcademicDegree)) {
+              aggregated.byAcademicDegree[degree] = (aggregated.byAcademicDegree[degree] || 0) + count;
+            }
+          }
         }
       }
 
@@ -981,6 +1040,18 @@ export class JobStatisticsCache {
       if (this.currentMonthData.statistics.byProgrammingSkill) {
         for (const [skill, count] of Object.entries(this.currentMonthData.statistics.byProgrammingSkill)) {
           aggregated.byProgrammingSkill[skill] = (aggregated.byProgrammingSkill[skill] || 0) + count;
+        }
+      }
+      // Merge byYearsExperience (if available - for backward compatibility)
+      if (this.currentMonthData.statistics.byYearsExperience) {
+        for (const [years, count] of Object.entries(this.currentMonthData.statistics.byYearsExperience)) {
+          aggregated.byYearsExperience[years] = (aggregated.byYearsExperience[years] || 0) + count;
+        }
+      }
+      // Merge byAcademicDegree (if available - for backward compatibility)
+      if (this.currentMonthData.statistics.byAcademicDegree) {
+        for (const [degree, count] of Object.entries(this.currentMonthData.statistics.byAcademicDegree)) {
+          aggregated.byAcademicDegree[degree] = (aggregated.byAcademicDegree[degree] || 0) + count;
         }
       }
 

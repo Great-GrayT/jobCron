@@ -549,3 +549,45 @@
   background: #00d4ff;
   color: #000;
 }
+
+/* Job Description Popup */
+.job-description-popup {
+  scrollbar-width: thin;
+  scrollbar-color: #00d4ff #0f1419;
+}
+
+.job-description-popup img {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+  margin: 0.5rem 0;
+  width: auto !important;
+}
+
+.job-description-popup div {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.job-description-popup ul,
+.job-description-popup ol {
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.job-description-popup li {
+  margin-bottom: 0.3rem;
+}
+
+.job-description-popup strong {
+  color: #00d4ff;
+  font-weight: 700;
+}
+
+.job-description-popup br {
+  display: block;
+  content: "";
+  margin-top: 0.3rem;
+}

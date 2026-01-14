@@ -34,6 +34,8 @@ interface JobStatistic {
   salary?: SalaryData | null;
   software?: string[];
   programmingSkills?: string[];
+  yearsExperience?: string | null;
+  academicDegrees?: string[];
 }
 
 interface SalaryStats {
@@ -70,6 +72,8 @@ interface MonthlyStatistics {
   byCompany: Record<string, number>;
   bySoftware?: Record<string, number>;
   byProgrammingSkill?: Record<string, number>;
+  byYearsExperience?: Record<string, number>;
+  byAcademicDegree?: Record<string, number>;
   salaryStats?: SalaryStats;
 }
 
@@ -136,6 +140,8 @@ export default function StatsPage() {
     city: [],
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [hoveredJob, setHoveredJob] = useState<JobStatistic | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Chart colors - Bloomberg terminal style
   const COLORS = ['#00d4ff', '#00ff88', '#ffcc00', '#ff6b6b', '#9d4edd', '#06ffa5', '#ff006e', '#4cc9f0'];
@@ -253,11 +259,18 @@ export default function StatsPage() {
       if (activeFilters.location.length > 0 && !activeFilters.location.some(loc => job.location.toLowerCase().includes(loc.toLowerCase()))) return false;
       if (activeFilters.company.length > 0 && !activeFilters.company.includes(job.company)) return false;
       if (activeFilters.keyword.length > 0 && !job.keywords.some(k => activeFilters.keyword.includes(k))) return false;
-      if (activeFilters.country.length > 0 && job.country && !activeFilters.country.includes(job.country)) return false;
+
+      // Country filter: exclude jobs without country or with invalid country
+      if (activeFilters.country.length > 0) {
+        if (!job.country || !activeFilters.country.includes(job.country)) return false;
+      }
+
+      // City filter: exclude jobs without city or with invalid city
       if (activeFilters.city.length > 0) {
         const normalizedJobCity = normalizeCity(job.city);
         if (!normalizedJobCity || !activeFilters.city.includes(normalizedJobCity)) return false;
       }
+
       if (selectedDate) {
         const jobDate = job.extractedDate.split('T')[0];
         if (jobDate !== selectedDate) return false;
@@ -286,6 +299,10 @@ export default function StatsPage() {
       byCity: {},
       byRegion: {},
       byCompany: {},
+      bySoftware: {},
+      byProgrammingSkill: {},
+      byYearsExperience: {},
+      byAcademicDegree: {},
     };
 
     filteredJobs.forEach(job => {
@@ -317,9 +334,30 @@ export default function StatsPage() {
           filtered.byProgrammingSkill[skill] = (filtered.byProgrammingSkill[skill] || 0) + 1;
         });
       }
+      if (job.yearsExperience) {
+        if (!filtered.byYearsExperience) filtered.byYearsExperience = {};
+        filtered.byYearsExperience[job.yearsExperience] = (filtered.byYearsExperience[job.yearsExperience] || 0) + 1;
+      }
+      if (job.academicDegrees) {
+        job.academicDegrees.forEach(degree => {
+          if (!filtered.byAcademicDegree) filtered.byAcademicDegree = {};
+          filtered.byAcademicDegree[degree] = (filtered.byAcademicDegree[degree] || 0) + 1;
+        });
+      }
     });
 
     return filtered;
+  };
+
+  // Helper function to check if value should be filtered out
+  const shouldFilterOut = (value: string): boolean => {
+    const normalizedValue = value.toLowerCase().trim();
+    return normalizedValue === 'n/a' ||
+           normalizedValue === 'na' ||
+           normalizedValue === 'unknown' ||
+           normalizedValue === 'not specified' ||
+           normalizedValue === '' ||
+           normalizedValue === 'null';
   };
 
   // Chart data functions
@@ -327,6 +365,7 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats) return [];
     return Object.entries(stats.byIndustry)
+      .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
       .slice(0, 8)
       .map(([name, value]) => ({ name, value }));
@@ -336,6 +375,7 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats) return [];
     return Object.entries(stats.bySeniority)
+      .filter(([name]) => !shouldFilterOut(name))
       .map(([name, value]) => ({ name, value }));
   };
 
@@ -358,6 +398,7 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats) return [];
     return Object.entries(stats.byCertificate)
+      .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10)
       .map(([name, value]) => ({ name, value }));
@@ -367,6 +408,7 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats) return [];
     return Object.entries(stats.byKeyword)
+      .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
       .slice(0, 15);
   };
@@ -375,6 +417,7 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats) return [];
     return Object.entries(stats.byLocation)
+      .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
       .slice(0, 8)
       .map(([name, value]) => ({ name, value }));
@@ -384,6 +427,7 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats) return [];
     return Object.entries(stats.byCompany)
+      .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
       .slice(0, 8)
       .map(([name, value]) => ({ name, value }));
@@ -394,6 +438,7 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats || !stats.byRegion) return [];
     return Object.entries(stats.byRegion)
+      .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
       .map(([name, value]) => ({ name, value }));
   };
@@ -402,6 +447,7 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats || !stats.byCountry) return [];
     return Object.entries(stats.byCountry)
+      .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10)
       .map(([name, value]) => ({ name, value }));
@@ -411,6 +457,7 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats || !stats.byCity) return [];
     return Object.entries(stats.byCity)
+      .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
       .slice(0, 12)
       .map(([name, value]) => ({ name, value }));
@@ -588,6 +635,7 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats || !stats.bySoftware) return [];
     return Object.entries(stats.bySoftware)
+      .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
       .slice(0, 15)
       .map(([name, value]) => ({ name, value }));
@@ -598,8 +646,56 @@ export default function StatsPage() {
     const stats = getFilteredStatistics();
     if (!stats || !stats.byProgrammingSkill) return [];
     return Object.entries(stats.byProgrammingSkill)
+      .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
       .slice(0, 15)
+      .map(([name, value]) => ({ name, value }));
+  };
+
+  // Years of experience data helpers
+  const getYearsExperienceData = () => {
+    const stats = getFilteredStatistics();
+    if (!stats || !stats.byYearsExperience) return [];
+
+    // Helper to extract numeric value for sorting
+    const getNumericValue = (yearString: string): number => {
+      // Match patterns like "2+ years", "3-5 years", "0-2 years"
+      const rangeMatch = yearString.match(/(\d+)\s*-\s*(\d+)/);
+      if (rangeMatch) {
+        // For ranges like "3-5 years", use the average
+        const min = parseInt(rangeMatch[1], 10);
+        const max = parseInt(rangeMatch[2], 10);
+        return (min + max) / 2;
+      }
+
+      const plusMatch = yearString.match(/(\d+)\+/);
+      if (plusMatch) {
+        // For patterns like "2+ years", use the number
+        return parseInt(plusMatch[1], 10);
+      }
+
+      // Fallback: try to extract any number
+      const numberMatch = yearString.match(/(\d+)/);
+      if (numberMatch) {
+        return parseInt(numberMatch[1], 10);
+      }
+
+      return 0;
+    };
+
+    return Object.entries(stats.byYearsExperience)
+      .filter(([name]) => !shouldFilterOut(name))
+      .sort(([a], [b]) => getNumericValue(a) - getNumericValue(b))
+      .map(([name, value]) => ({ name, value }));
+  };
+
+  // Academic degrees data helpers
+  const getAcademicDegreesData = () => {
+    const stats = getFilteredStatistics();
+    if (!stats || !stats.byAcademicDegree) return [];
+    return Object.entries(stats.byAcademicDegree)
+      .filter(([name]) => !shouldFilterOut(name))
+      .sort(([, a], [, b]) => b - a)
       .map(([name, value]) => ({ name, value }));
   };
 
@@ -608,6 +704,8 @@ export default function StatsPage() {
   const hasSalaryData = filteredStats?.salaryStats && filteredStats.salaryStats.totalWithSalary > 0;
   const hasSoftwareData = filteredStats?.bySoftware && Object.keys(filteredStats.bySoftware).length > 0;
   const hasProgrammingData = filteredStats?.byProgrammingSkill && Object.keys(filteredStats.byProgrammingSkill).length > 0;
+  const hasYearsExperienceData = filteredStats?.byYearsExperience && Object.keys(filteredStats.byYearsExperience).length > 0;
+  const hasAcademicDegreesData = filteredStats?.byAcademicDegree && Object.keys(filteredStats.byAcademicDegree).length > 0;
 
   // Get publication time analysis data
   const getPublicationTimeData = () => {
@@ -1200,8 +1298,20 @@ export default function StatsPage() {
                         backgroundColor: index % 2 === 0 ? 'transparent' : '#0a0e1a80'
                       }}
                       onClick={() => window.open(job.url, '_blank')}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#00d4ff20'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'transparent' : '#0a0e1a80'}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#00d4ff20';
+                        setHoveredJob(job);
+                        // Center the popup in the viewport
+                        setPopupPosition({
+                          x: window.innerWidth / 2 - 200, // Center horizontally (400px width / 2)
+                          y: window.innerHeight / 2 - 250  // Center vertically (500px height / 2)
+                        });
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'transparent' : '#0a0e1a80';
+                        setHoveredJob(null);
+                        setPopupPosition(null);
+                      }}
                     >
                       <td style={{ padding: '8px', color: '#00ff88' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1302,6 +1412,28 @@ export default function StatsPage() {
                       </td>
                     </tr>
                   )}
+                  {hasYearsExperienceData && (
+                    <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                      <td style={{ padding: '8px', color: '#4a5568' }}>Years of Experience</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#4cc9f0', fontWeight: 'bold' }}>
+                        {Object.values(filteredStats?.byYearsExperience || {}).reduce((a, b) => a + b, 0)}
+                      </td>
+                      <td style={{ padding: '8px', color: '#4a5568' }}>
+                        Most Common: {Object.entries(filteredStats?.byYearsExperience || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.byYearsExperience || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
+                      </td>
+                    </tr>
+                  )}
+                  {hasAcademicDegreesData && (
+                    <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                      <td style={{ padding: '8px', color: '#4a5568' }}>Academic Degrees</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#ffcc00', fontWeight: 'bold' }}>
+                        {Object.values(filteredStats?.byAcademicDegree || {}).reduce((a, b) => a + b, 0)}
+                      </td>
+                      <td style={{ padding: '8px', color: '#4a5568' }}>
+                        Most Required: {Object.entries(filteredStats?.byAcademicDegree || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.byAcademicDegree || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
+                      </td>
+                    </tr>
+                  )}
                   {hasSalaryData && (
                     <>
                       <tr style={{ borderBottom: '1px solid #1a2332' }}>
@@ -1381,6 +1513,71 @@ export default function StatsPage() {
             </div>
           )}
 
+          {/* Years of Experience Analysis */}
+          {hasYearsExperienceData && (
+            <div className="terminal-panel">
+              <div className="panel-header">
+                <Target size={14} />
+                <span>YEARS OF EXPERIENCE REQUIRED</span>
+              </div>
+              <div className="chart-container compact">
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={getYearsExperienceData()} margin={{ top: 5, right: 20, left: 5, bottom: 50 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                    <XAxis
+                      dataKey="name"
+                      stroke="#4a5568"
+                      tick={{ fontSize: 9 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                    />
+                    <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #4cc9f0', fontSize: 11 }}
+                      labelStyle={{ color: '#4cc9f0' }}
+                    />
+                    <Bar dataKey="value" fill="#4cc9f0" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Academic Degrees Analysis */}
+          {hasAcademicDegreesData && (
+            <div className="terminal-panel">
+              <div className="panel-header">
+                <Award size={14} />
+                <span>ACADEMIC DEGREES REQUIRED</span>
+              </div>
+              <div className="chart-container compact">
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie
+                      data={getAcademicDegreesData()}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value, percent }) => `${name}: ${value} (${((percent || 0) * 100).toFixed(0)}%)`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {getAcademicDegreesData().map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #ffcc00', fontSize: 11 }}
+                      labelStyle={{ color: '#ffcc00' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
           {/* Keyword Analysis Table */}
           <div className="terminal-panel span-full">
             <div className="panel-header">
@@ -1445,6 +1642,38 @@ export default function StatsPage() {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Job Description Popup */}
+      {hoveredJob && popupPosition && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${popupPosition.x}px`,
+            top: `${popupPosition.y}px`,
+            width: '400px',
+            maxHeight: '500px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            backgroundColor: '#0a0e1a',
+            border: '2px solid #00d4ff',
+            borderRadius: '8px',
+            padding: '16px',
+            zIndex: 9999,
+            boxShadow: '0 8px 32px rgba(0, 212, 255, 0.5)',
+            pointerEvents: 'none',
+          }}
+          className="job-description-popup"
+        >
+          <div
+            style={{
+              color: '#e2e8f0',
+              fontSize: '11px',
+              lineHeight: '1.5',
+            }}
+            dangerouslySetInnerHTML={{ __html: hoveredJob.description }}
+          />
         </div>
       )}
     </div>
