@@ -114,9 +114,9 @@ interface ActiveFilters {
 
 export default function StatsPage() {
   const [loading, setLoading] = useState(false);
-  const [extracting, setExtracting] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [statsData, setStatsData] = useState<StatsData | null>(null);
-  const [extractResult, setExtractResult] = useState<ExtractResult | null>(null);
+  const [updateResult, setUpdateResult] = useState<ExtractResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [useAggregated, setUseAggregated] = useState<boolean>(true);
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
@@ -139,7 +139,7 @@ export default function StatsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/stats/get');
+      const response = await fetch('/api/stats/load');
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       setStatsData(data);
@@ -150,24 +150,23 @@ export default function StatsPage() {
     }
   };
 
-  const handleExtractAndSave = async () => {
-    setExtracting(true);
+  const handleUpdateGist = async () => {
+    setUpdating(true);
     setError(null);
-    setExtractResult(null);
+    setUpdateResult(null);
     try {
-      const response = await fetch('/api/stats/extract-and-save');
+      const response = await fetch('/api/stats/get');
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
-      setExtractResult({
+      setUpdateResult({
         processed: data.processed,
         newJobs: data.newJobs,
-        currentMonthTotal: data.currentMonthTotal,
+        currentMonthTotal: data.summary?.currentMonthJobs || 0,
       });
-      await loadStatistics();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
-      setExtracting(false);
+      setUpdating(false);
     }
   };
 
@@ -523,12 +522,20 @@ export default function StatsPage() {
         </div>
         <div className="terminal-topbar-right">
           <button
-            onClick={handleExtractAndSave}
-            disabled={extracting}
-            className={`terminal-btn ${extracting ? 'loading' : ''}`}
+            onClick={handleUpdateGist}
+            disabled={updating}
+            className={`terminal-btn ${updating ? 'loading' : ''}`}
           >
-            {extracting ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}
-            <span>SYNC</span>
+            {updating ? <Loader2 size={14} className="spin" /> : <TrendingUp size={14} />}
+            <span>UPDATE GIST</span>
+          </button>
+          <button
+            onClick={loadStatistics}
+            disabled={loading}
+            className={`terminal-btn ${loading ? 'loading' : ''}`}
+          >
+            {loading ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}
+            <span>LOAD DATA</span>
           </button>
           <Link href="/" className="terminal-btn">
             <ArrowLeft size={14} />
@@ -562,9 +569,9 @@ export default function StatsPage() {
       )}
 
       {/* Alerts */}
-      {extractResult && (
+      {updateResult && (
         <div className="terminal-alert success">
-          ✓ SYNC COMPLETE: {extractResult.newJobs} new jobs added | Total: {extractResult.currentMonthTotal}
+          ✓ GIST UPDATED: {updateResult.newJobs} new jobs added | Total: {updateResult.currentMonthTotal}
         </div>
       )}
       {error && (
