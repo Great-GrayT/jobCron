@@ -32,6 +32,8 @@ interface JobStatistic {
   seniority: string;
   description: string;
   salary?: SalaryData | null;
+  software?: string[];
+  programmingSkills?: string[];
 }
 
 interface SalaryStats {
@@ -66,6 +68,8 @@ interface MonthlyStatistics {
   byCity: Record<string, number>;
   byRegion: Record<string, number>;
   byCompany: Record<string, number>;
+  bySoftware?: Record<string, number>;
+  byProgrammingSkill?: Record<string, number>;
   salaryStats?: SalaryStats;
 }
 
@@ -110,6 +114,8 @@ interface ActiveFilters {
   location: string[];
   company: string[];
   keyword: string[];
+  country: string[];
+  city: string[];
 }
 
 export default function StatsPage() {
@@ -126,7 +132,10 @@ export default function StatsPage() {
     location: [],
     company: [],
     keyword: [],
+    country: [],
+    city: [],
   });
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Chart colors - Bloomberg terminal style
   const COLORS = ['#00d4ff', '#00ff88', '#ffcc00', '#ff6b6b', '#9d4edd', '#06ffa5', '#ff006e', '#4cc9f0'];
@@ -189,7 +198,10 @@ export default function StatsPage() {
       location: [],
       company: [],
       keyword: [],
+      country: [],
+      city: [],
     });
+    setSelectedDate(null);
   };
 
   const removeFilter = (category: keyof ActiveFilters, value: string) => {
@@ -199,7 +211,7 @@ export default function StatsPage() {
     }));
   };
 
-  const hasActiveFilters = Object.values(activeFilters).some(arr => arr.length > 0);
+  const hasActiveFilters = Object.values(activeFilters).some(arr => arr.length > 0) || selectedDate !== null;
 
   // Get active statistics
   const getActiveStatistics = (): MonthlyStatistics | null => {
@@ -208,6 +220,27 @@ export default function StatsPage() {
       return statsData.aggregated.statistics;
     }
     return statsData.currentMonth.statistics;
+  };
+
+  // Normalize city names
+  const normalizeCity = (cityName: string | null): string | null => {
+    if (!cityName) return null;
+
+    const normalized = cityName
+      .replace(/\s+Area$/i, '')
+      .replace(/^City of\s+/i, '')
+      .replace(/^Greater\s+/i, '')
+      .trim();
+
+    // Filter out non-city names
+    if (/^England$/i.test(normalized) ||
+        /^Scotland$/i.test(normalized) ||
+        /^Wales$/i.test(normalized) ||
+        /^United Kingdom$/i.test(normalized)) {
+      return null;
+    }
+
+    return normalized;
   };
 
   // Filter jobs based on active filters
@@ -220,6 +253,15 @@ export default function StatsPage() {
       if (activeFilters.location.length > 0 && !activeFilters.location.some(loc => job.location.toLowerCase().includes(loc.toLowerCase()))) return false;
       if (activeFilters.company.length > 0 && !activeFilters.company.includes(job.company)) return false;
       if (activeFilters.keyword.length > 0 && !job.keywords.some(k => activeFilters.keyword.includes(k))) return false;
+      if (activeFilters.country.length > 0 && job.country && !activeFilters.country.includes(job.country)) return false;
+      if (activeFilters.city.length > 0) {
+        const normalizedJobCity = normalizeCity(job.city);
+        if (!normalizedJobCity || !activeFilters.city.includes(normalizedJobCity)) return false;
+      }
+      if (selectedDate) {
+        const jobDate = job.extractedDate.split('T')[0];
+        if (jobDate !== selectedDate) return false;
+      }
       return true;
     });
   };
@@ -253,7 +295,8 @@ export default function StatsPage() {
       filtered.bySeniority[job.seniority] = (filtered.bySeniority[job.seniority] || 0) + 1;
       filtered.byLocation[job.location] = (filtered.byLocation[job.location] || 0) + 1;
       if (job.country) filtered.byCountry[job.country] = (filtered.byCountry[job.country] || 0) + 1;
-      if (job.city) filtered.byCity[job.city] = (filtered.byCity[job.city] || 0) + 1;
+      const normalizedCity = normalizeCity(job.city);
+      if (normalizedCity) filtered.byCity[normalizedCity] = (filtered.byCity[normalizedCity] || 0) + 1;
       if (job.region) filtered.byRegion[job.region] = (filtered.byRegion[job.region] || 0) + 1;
       filtered.byCompany[job.company] = (filtered.byCompany[job.company] || 0) + 1;
       job.certificates.forEach(cert => {
@@ -262,6 +305,18 @@ export default function StatsPage() {
       job.keywords.forEach(keyword => {
         filtered.byKeyword[keyword] = (filtered.byKeyword[keyword] || 0) + 1;
       });
+      if (job.software) {
+        job.software.forEach(soft => {
+          if (!filtered.bySoftware) filtered.bySoftware = {};
+          filtered.bySoftware[soft] = (filtered.bySoftware[soft] || 0) + 1;
+        });
+      }
+      if (job.programmingSkills) {
+        job.programmingSkills.forEach(skill => {
+          if (!filtered.byProgrammingSkill) filtered.byProgrammingSkill = {};
+          filtered.byProgrammingSkill[skill] = (filtered.byProgrammingSkill[skill] || 0) + 1;
+        });
+      }
     });
 
     return filtered;
@@ -295,6 +350,7 @@ export default function StatsPage() {
       .map(([date, count]) => ({
         date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         jobs: count,
+        rawDate: date,
       }));
   };
 
@@ -506,9 +562,94 @@ export default function StatsPage() {
       }));
   };
 
+  // Handler for date click on POSTING VELOCITY chart
+  const handleDateClick = (data: any) => {
+    if (!data || !data.activePayload || !data.activePayload[0]) return;
+    const clickedDate = data.activePayload[0].payload.rawDate;
+    if (!clickedDate) return;
+    setSelectedDate(selectedDate === clickedDate ? null : clickedDate);
+  };
+
+  // Handler for country/city clicks
+  const handleCountryClick = (data: any) => {
+    if (data && data.name) {
+      toggleFilter('country', data.name);
+    }
+  };
+
+  const handleCityClick = (data: any) => {
+    if (data && data.name) {
+      toggleFilter('city', data.name);
+    }
+  };
+
+  // Software data helpers
+  const getSoftwareData = () => {
+    const stats = getFilteredStatistics();
+    if (!stats || !stats.bySoftware) return [];
+    return Object.entries(stats.bySoftware)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 15)
+      .map(([name, value]) => ({ name, value }));
+  };
+
+  // Programming skills data helpers
+  const getProgrammingSkillsData = () => {
+    const stats = getFilteredStatistics();
+    if (!stats || !stats.byProgrammingSkill) return [];
+    return Object.entries(stats.byProgrammingSkill)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 15)
+      .map(([name, value]) => ({ name, value }));
+  };
+
   const filteredStats = getFilteredStatistics();
   const filteredJobs = getFilteredJobs();
   const hasSalaryData = filteredStats?.salaryStats && filteredStats.salaryStats.totalWithSalary > 0;
+  const hasSoftwareData = filteredStats?.bySoftware && Object.keys(filteredStats.bySoftware).length > 0;
+  const hasProgrammingData = filteredStats?.byProgrammingSkill && Object.keys(filteredStats.byProgrammingSkill).length > 0;
+
+  // Get publication time analysis data
+  const getPublicationTimeData = () => {
+    const jobs = getFilteredJobs();
+    const timeSlots: Record<string, number> = {};
+
+    jobs.forEach(job => {
+      const date = new Date(job.postedDate);
+      const hours = date.getUTCHours();
+      const minutes = date.getUTCMinutes();
+
+      // Round to nearest 10-minute slot
+      const roundedMinutes = Math.floor(minutes / 10) * 10;
+      const timeKey = `${String(hours).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`;
+
+      timeSlots[timeKey] = (timeSlots[timeKey] || 0) + 1;
+    });
+
+    // Convert to array and sort by time
+    return Object.entries(timeSlots)
+      .map(([time, count]) => ({ time, count }))
+      .sort((a, b) => a.time.localeCompare(b.time));
+  };
+
+  // Get jobs sorted by publish time (most recent first)
+  const getSortedJobs = () => {
+    return getFilteredJobs()
+      .sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime())
+      .slice(0, 100);
+  };
+
+  // Format date for display
+  const formatPublishDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <div className="terminal-page">
@@ -649,6 +790,15 @@ export default function StatsPage() {
                 </button>
               </div>
               <div className="filter-chips">
+                {selectedDate && (
+                  <div key="date-filter" className="filter-chip">
+                    <span className="filter-category">DATE:</span>
+                    <span className="filter-value">{selectedDate}</span>
+                    <button onClick={() => setSelectedDate(null)}>
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
                 {Object.entries(activeFilters).map(([category, values]) =>
                   values.map((value: string) => (
                     <div key={`${category}-${value}`} className="filter-chip">
@@ -665,24 +815,62 @@ export default function StatsPage() {
           )}
 
           {/* Time Series Chart */}
-          <div className="terminal-panel span-2">
+          <div className="terminal-panel">
             <div className="panel-header">
               <TrendingUp size={14} />
               <span>POSTING VELOCITY</span>
+              {selectedDate && <span style={{ marginLeft: '8px', color: '#00d4ff', fontSize: '10px' }}>(FILTERED: {selectedDate})</span>}
             </div>
             <div className="chart-container compact">
               <ResponsiveContainer width="100%" height={180}>
-                <ComposedChart data={getDateChartData()}>
+                <ComposedChart data={getDateChartData()} onClick={handleDateClick}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
                   <XAxis dataKey="date" stroke="#4a5568" tick={{ fontSize: 10 }} />
                   <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #00d4ff', fontSize: 11 }}
                     labelStyle={{ color: '#00d4ff' }}
+                    cursor={{ fill: '#00d4ff20' }}
                   />
                   <Area type="monotone" dataKey="jobs" fill="#00d4ff20" stroke="none" />
-                  <Line type="monotone" dataKey="jobs" stroke="#00d4ff" strokeWidth={2} dot={{ fill: '#00d4ff', r: 3 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="jobs"
+                    stroke="#00d4ff"
+                    strokeWidth={2}
+                    dot={{ fill: '#00d4ff', r: 4, cursor: 'pointer' }}
+                  />
                 </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Publication Time Analysis */}
+          <div className="terminal-panel">
+            <div className="panel-header">
+              <Calendar size={14} />
+              <span>PUBLICATION TIME ANALYSIS</span>
+            </div>
+            <div className="chart-container compact">
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={getPublicationTimeData()} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                  <XAxis
+                    dataKey="time"
+                    stroke="#4a5568"
+                    tick={{ fontSize: 8 }}
+                    interval="preserveStartEnd"
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #ffcc00', fontSize: 11 }}
+                    labelStyle={{ color: '#ffcc00' }}
+                  />
+                  <Bar dataKey="count" fill="#ffcc00" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -800,20 +988,27 @@ export default function StatsPage() {
           {/* Top Countries */}
           <div className="terminal-panel">
             <div className="panel-header">
-              <MapPin size={14} />
+              <Globe size={14} />
               <span>TOP COUNTRIES</span>
             </div>
             <div className="chart-container compact">
-              <ResponsiveContainer width="100%" height={240}>
+              <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={getCountryData()} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
                   <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
-                  <YAxis dataKey="name" type="category" stroke="#4a5568" width={100} tick={{ fontSize: 9 }} />
+                  <YAxis dataKey="name" type="category" stroke="#4a5568" width={120} tick={{ fontSize: 9 }} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #06ffa5', fontSize: 11 }}
                     labelStyle={{ color: '#06ffa5' }}
+                    formatter={(value: number | undefined) => value ? [`${value} jobs`, 'Count'] : ['0 jobs', 'Count']}
                   />
-                  <Bar dataKey="value" fill="#06ffa5" radius={[0, 4, 4, 0]} />
+                  <Bar
+                    dataKey="value"
+                    fill="#06ffa5"
+                    onClick={handleCountryClick}
+                    cursor="pointer"
+                    radius={[0, 4, 4, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -825,21 +1020,26 @@ export default function StatsPage() {
               <MapPin size={14} />
               <span>TOP CITIES</span>
             </div>
-            <div className="keywords-compact">
-              {getCityData().map(({name, value}, index) => (
-                <button
-                  key={name}
-                  className="keyword-compact"
-                  style={{
-                    background: `linear-gradient(135deg, #06ffa5 0%, #00c878 100%)`,
-                    border: '1px solid #06ffa5',
-                    opacity: 1 - (index * 0.05)
-                  }}
-                >
-                  <span className="keyword-name">{name}</span>
-                  <span className="keyword-value">{value}</span>
-                </button>
-              ))}
+            <div className="chart-container compact">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={getCityData()} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                  <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
+                  <YAxis dataKey="name" type="category" stroke="#4a5568" width={100} tick={{ fontSize: 9 }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #4cc9f0', fontSize: 11 }}
+                    labelStyle={{ color: '#4cc9f0' }}
+                    formatter={(value: number | undefined) => value ? [`${value} jobs`, 'Count'] : ['0 jobs', 'Count']}
+                  />
+                  <Bar
+                    dataKey="value"
+                    fill="#4cc9f0"
+                    onClick={handleCityClick}
+                    cursor="pointer"
+                    radius={[0, 4, 4, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
@@ -865,6 +1065,367 @@ export default function StatsPage() {
             </div>
           </div>
 
+          {/* Salary Analysis Section */}
+          {hasSalaryData && (
+            <>
+              {/* Salary Distribution by Range */}
+              <div className="terminal-panel">
+                <div className="panel-header">
+                  <DollarSign size={14} />
+                  <span>SALARY DISTRIBUTION</span>
+                </div>
+                <div className="chart-container compact">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={getSalaryRangeChartData()} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                      <XAxis dataKey="range" stroke="#4a5568" tick={{ fontSize: 9 }} />
+                      <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #ffcc00', fontSize: 11 }}
+                        labelStyle={{ color: '#ffcc00' }}
+                      />
+                      <Bar dataKey="count" fill="#ffcc00" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Salary by Industry */}
+              <div className="terminal-panel">
+                <div className="panel-header">
+                  <Building2 size={14} />
+                  <span>SALARY BY INDUSTRY</span>
+                </div>
+                <div className="chart-container compact">
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={getSalaryByIndustryData()} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                      <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} />
+                      <YAxis dataKey="name" type="category" stroke="#4a5568" width={100} tick={{ fontSize: 9 }} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #00ff88', fontSize: 11 }}
+                        labelStyle={{ color: '#00ff88' }}
+                        formatter={(value: number | undefined) => value ? [`$${(value / 1000).toFixed(0)}k`, 'Avg Salary'] : ['N/A', 'Avg Salary']}
+                      />
+                      <Bar dataKey="avg" fill="#00ff88" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Salary by Seniority */}
+              <div className="terminal-panel">
+                <div className="panel-header">
+                  <Users size={14} />
+                  <span>SALARY BY SENIORITY</span>
+                </div>
+                <div className="chart-container compact">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={getSalaryBySeniorityData()} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                      <XAxis dataKey="name" stroke="#4a5568" tick={{ fontSize: 9 }} />
+                      <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #9d4edd', fontSize: 11 }}
+                        labelStyle={{ color: '#9d4edd' }}
+                        formatter={(value: number | undefined) => value ? [`$${(value / 1000).toFixed(0)}k`, 'Avg Salary'] : ['N/A', 'Avg Salary']}
+                      />
+                      <Bar dataKey="avg" fill="#9d4edd" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Salary Overview Stats */}
+              <div className="terminal-panel">
+                <div className="panel-header">
+                  <DollarSign size={14} />
+                  <span>SALARY OVERVIEW</span>
+                </div>
+                <div style={{ padding: '12px' }}>
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    <div style={{ borderBottom: '1px solid #1a2332', paddingBottom: '8px' }}>
+                      <div style={{ fontSize: '10px', color: '#4a5568', marginBottom: '4px' }}>JOBS WITH SALARY INFO</div>
+                      <div style={{ fontSize: '20px', color: '#00d4ff', fontWeight: 'bold' }}>
+                        {filteredStats.salaryStats?.totalWithSalary || 0} / {filteredStats.totalJobs}
+                        <span style={{ fontSize: '12px', color: '#4a5568', marginLeft: '8px' }}>
+                          ({(((filteredStats.salaryStats?.totalWithSalary || 0) / filteredStats.totalJobs) * 100).toFixed(1)}%)
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#4a5568', marginBottom: '4px' }}>AVERAGE</div>
+                        <div style={{ fontSize: '18px', color: '#00ff88', fontWeight: 'bold' }}>
+                          {formatSalary(filteredStats.salaryStats?.averageSalary || null)}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#4a5568', marginBottom: '4px' }}>MEDIAN</div>
+                        <div style={{ fontSize: '18px', color: '#ffcc00', fontWeight: 'bold' }}>
+                          {formatSalary(filteredStats.salaryStats?.medianSalary || null)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Jobs List Table */}
+          <div className="terminal-panel span-full">
+            <div className="panel-header">
+              <Briefcase size={14} />
+              <span>RECENT JOBS (TOP 100)</span>
+            </div>
+            <div style={{ padding: '12px', overflowX: 'auto', maxHeight: '600px', overflowY: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                <thead style={{ position: 'sticky', top: 0, backgroundColor: '#0a0e1a', zIndex: 1 }}>
+                  <tr style={{ borderBottom: '2px solid #00d4ff' }}>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '35%' }}>JOB TITLE</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '15%' }}>COUNTRY</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '15%' }}>CITY</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '15%' }}>LOCATION</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '20%' }}>PUBLISHED</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getSortedJobs().map((job, index) => (
+                    <tr
+                      key={job.id}
+                      style={{
+                        borderBottom: '1px solid #1a2332',
+                        cursor: 'pointer',
+                        backgroundColor: index % 2 === 0 ? 'transparent' : '#0a0e1a80'
+                      }}
+                      onClick={() => window.open(job.url, '_blank')}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#00d4ff20'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'transparent' : '#0a0e1a80'}
+                    >
+                      <td style={{ padding: '8px', color: '#00ff88' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: 'bold' }}>{job.title}</span>
+                        </div>
+                        <div style={{ fontSize: '9px', color: '#4a5568', marginTop: '4px' }}>
+                          {job.company}
+                        </div>
+                      </td>
+                      <td style={{ padding: '8px', color: '#06ffa5' }}>{job.country || 'N/A'}</td>
+                      <td style={{ padding: '8px', color: '#06ffa5' }}>{normalizeCity(job.city) || 'N/A'}</td>
+                      <td style={{ padding: '8px', color: '#4a5568', fontSize: '10px' }}>{job.location}</td>
+                      <td style={{ padding: '8px', color: '#ffcc00', fontSize: '10px' }}>
+                        {formatPublishDate(job.postedDate)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Comprehensive Statistics Table */}
+          <div className="terminal-panel span-full">
+            <div className="panel-header">
+              <BarChart3 size={14} />
+              <span>COMPREHENSIVE STATISTICS</span>
+            </div>
+            <div style={{ padding: '12px', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #00d4ff' }}>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff' }}>METRIC</th>
+                    <th style={{ textAlign: 'right', padding: '8px', color: '#00d4ff' }}>VALUE</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff' }}>DETAILS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>Total Jobs</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{filteredStats?.totalJobs.toLocaleString()}</td>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>Filtered results</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>Industries</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{Object.keys(filteredStats?.byIndustry || {}).length}</td>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>
+                      Top: {Object.entries(filteredStats?.byIndustry || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'}
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>Companies</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{Object.keys(filteredStats?.byCompany || {}).length}</td>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>
+                      Most Active: {Object.entries(filteredStats?.byCompany || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.byCompany || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>Locations</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{Object.keys(filteredStats?.byLocation || {}).length}</td>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>
+                      Countries: {Object.keys(filteredStats?.byCountry || {}).length} | Cities: {Object.keys(filteredStats?.byCity || {}).length}
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>Certificates</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{Object.keys(filteredStats?.byCertificate || {}).length}</td>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>
+                      Most Required: {Object.entries(filteredStats?.byCertificate || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'}
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>Seniority Levels</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{Object.keys(filteredStats?.bySeniority || {}).length}</td>
+                    <td style={{ padding: '8px', color: '#4a5568' }}>
+                      Most Common: {Object.entries(filteredStats?.bySeniority || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'}
+                    </td>
+                  </tr>
+                  {hasSoftwareData && (
+                    <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                      <td style={{ padding: '8px', color: '#4a5568' }}>Software & Tools</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#9d4edd', fontWeight: 'bold' }}>
+                        {Object.keys(filteredStats?.bySoftware || {}).length}
+                      </td>
+                      <td style={{ padding: '8px', color: '#4a5568' }}>
+                        Most Required: {Object.entries(filteredStats?.bySoftware || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.bySoftware || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
+                      </td>
+                    </tr>
+                  )}
+                  {hasProgrammingData && (
+                    <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                      <td style={{ padding: '8px', color: '#4a5568' }}>Programming Languages</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#ff006e', fontWeight: 'bold' }}>
+                        {Object.keys(filteredStats?.byProgrammingSkill || {}).length}
+                      </td>
+                      <td style={{ padding: '8px', color: '#4a5568' }}>
+                        Most Used: {Object.entries(filteredStats?.byProgrammingSkill || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.byProgrammingSkill || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
+                      </td>
+                    </tr>
+                  )}
+                  {hasSalaryData && (
+                    <>
+                      <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                        <td style={{ padding: '8px', color: '#4a5568' }}>Salary Transparency</td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#ffcc00', fontWeight: 'bold' }}>
+                          {(((filteredStats.salaryStats?.totalWithSalary || 0) / filteredStats.totalJobs) * 100).toFixed(1)}%
+                        </td>
+                        <td style={{ padding: '8px', color: '#4a5568' }}>
+                          {filteredStats.salaryStats?.totalWithSalary || 0} jobs with salary data
+                        </td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid #1a2332' }}>
+                        <td style={{ padding: '8px', color: '#4a5568' }}>Average Salary</td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#ffcc00', fontWeight: 'bold' }}>
+                          {formatSalary(filteredStats.salaryStats?.averageSalary || null)}
+                        </td>
+                        <td style={{ padding: '8px', color: '#4a5568' }}>
+                          Median: {formatSalary(filteredStats.salaryStats?.medianSalary || null)}
+                        </td>
+                      </tr>
+                    </>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Software Tools Analysis */}
+          {hasSoftwareData && (
+            <div className="terminal-panel span-full">
+              <div className="panel-header">
+                <Building2 size={14} />
+                <span>SOFTWARE & TOOLS</span>
+              </div>
+              <div className="keywords-compact">
+                {getSoftwareData().map(({name, value}) => (
+                  <button
+                    key={name}
+                    className="keyword-compact"
+                    style={{
+                      background: `linear-gradient(135deg, #9d4edd 0%, #7b2cbf 100%)`,
+                      border: '1px solid #9d4edd',
+                      cursor: 'default'
+                    }}
+                  >
+                    <span className="keyword-name">{name}</span>
+                    <span className="keyword-value">{value}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Programming Languages Analysis */}
+          {hasProgrammingData && (
+            <div className="terminal-panel span-full">
+              <div className="panel-header">
+                <Activity size={14} />
+                <span>PROGRAMMING LANGUAGES</span>
+              </div>
+              <div className="keywords-compact">
+                {getProgrammingSkillsData().map(({name, value}) => (
+                  <button
+                    key={name}
+                    className="keyword-compact"
+                    style={{
+                      background: `linear-gradient(135deg, #ff006e 0%, #d90429 100%)`,
+                      border: '1px solid #ff006e',
+                      cursor: 'default'
+                    }}
+                  >
+                    <span className="keyword-name">{name}</span>
+                    <span className="keyword-value">{value}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Keyword Analysis Table */}
+          <div className="terminal-panel span-full">
+            <div className="panel-header">
+              <Zap size={14} />
+              <span>KEYWORD ANALYSIS - DETAILED BREAKDOWN</span>
+            </div>
+            <div style={{ padding: '12px', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #00d4ff' }}>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff' }}>RANK</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff' }}>KEYWORD</th>
+                    <th style={{ textAlign: 'right', padding: '8px', color: '#00d4ff' }}>COUNT</th>
+                    <th style={{ textAlign: 'right', padding: '8px', color: '#00d4ff' }}>% OF JOBS</th>
+                    <th style={{ textAlign: 'center', padding: '8px', color: '#00d4ff' }}>TREND</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getTopKeywords().map(([keyword, count], index) => {
+                    const percentage = ((count / (filteredStats?.totalJobs || 1)) * 100).toFixed(1);
+                    return (
+                      <tr
+                        key={keyword}
+                        style={{
+                          borderBottom: '1px solid #1a2332',
+                          cursor: 'pointer',
+                          backgroundColor: activeFilters.keyword.includes(keyword) ? '#00d4ff20' : 'transparent'
+                        }}
+                        onClick={() => toggleFilter('keyword', keyword)}
+                      >
+                        <td style={{ padding: '8px', color: '#4a5568', fontWeight: 'bold' }}>#{index + 1}</td>
+                        <td style={{ padding: '8px', color: '#00ff88', fontWeight: 'bold' }}>{keyword}</td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#00d4ff', fontWeight: 'bold' }}>{count}</td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#ffcc00' }}>{percentage}%</td>
+                        <td style={{ padding: '8px', textAlign: 'center', color: '#06ffa5' }}>
+                          {index < 5 ? '🔥 HOT' : index < 10 ? '↗ RISING' : '→ STABLE'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           {/* Keywords Panel */}
           <div className="terminal-panel span-full">
             <div className="panel-header">
@@ -872,7 +1433,7 @@ export default function StatsPage() {
               <span>IN-DEMAND SKILLS</span>
             </div>
             <div className="keywords-compact">
-              {getTopKeywords().map(([keyword, count], index) => (
+              {getTopKeywords().map(([keyword, count]) => (
                 <button
                   key={keyword}
                   className={`keyword-compact ${activeFilters.keyword.includes(keyword) ? 'active' : ''}`}

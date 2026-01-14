@@ -8,7 +8,7 @@ export interface JobStatistic {
   location: string;
   country: string | null;
   city: string | null;
-  region: 'Europe' | 'America' | 'Middle East' | null;
+  region: 'Europe' | 'America' | 'Middle East' | 'Asia' | 'Africa' | 'Oceania' | null;
   url: string;
   postedDate: string;
   extractedDate: string;
@@ -18,6 +18,8 @@ export interface JobStatistic {
   seniority: string;
   description: string;
   salary?: SalaryData | null;
+  software?: string[];
+  programmingSkills?: string[];
 }
 
 export interface MonthlyStatistics {
@@ -32,6 +34,8 @@ export interface MonthlyStatistics {
   byCity: Record<string, number>;
   byRegion: Record<string, number>;
   byCompany: Record<string, number>;
+  bySoftware: Record<string, number>;
+  byProgrammingSkill: Record<string, number>;
   salaryStats?: {
     totalWithSalary: number;
     averageSalary: number | null;
@@ -149,6 +153,8 @@ export class JobStatisticsCache {
       byCountry: stats.byCountry || {},
       byCity: stats.byCity || {},
       byRegion: stats.byRegion || {},
+      bySoftware: stats.bySoftware || {},
+      byProgrammingSkill: stats.byProgrammingSkill || {},
       salaryStats: stats.salaryStats ? {
         ...stats.salaryStats,
         byCountry: stats.salaryStats.byCountry || {},
@@ -173,6 +179,8 @@ export class JobStatisticsCache {
       byCity: {},
       byRegion: {},
       byCompany: {},
+      bySoftware: {},
+      byProgrammingSkill: {},
       salaryStats: {
         totalWithSalary: 0,
         averageSalary: null,
@@ -445,6 +453,20 @@ export class JobStatisticsCache {
     // By company
     if (job.company) {
       stats.byCompany[job.company] = (stats.byCompany[job.company] || 0) + 1;
+    }
+
+    // By software
+    if (job.software) {
+      job.software.forEach(soft => {
+        stats.bySoftware[soft] = (stats.bySoftware[soft] || 0) + 1;
+      });
+    }
+
+    // By programming skills
+    if (job.programmingSkills) {
+      job.programmingSkills.forEach(skill => {
+        stats.byProgrammingSkill[skill] = (stats.byProgrammingSkill[skill] || 0) + 1;
+      });
     }
 
     // Recalculate salary statistics for all jobs
@@ -889,6 +911,20 @@ export class JobStatisticsCache {
           for (const [company, count] of Object.entries(archive.statistics.byCompany)) {
             aggregated.byCompany[company] = (aggregated.byCompany[company] || 0) + count;
           }
+
+          // Merge bySoftware (if available)
+          if (archive.statistics.bySoftware) {
+            for (const [software, count] of Object.entries(archive.statistics.bySoftware)) {
+              aggregated.bySoftware[software] = (aggregated.bySoftware[software] || 0) + count;
+            }
+          }
+
+          // Merge byProgrammingSkill (if available)
+          if (archive.statistics.byProgrammingSkill) {
+            for (const [skill, count] of Object.entries(archive.statistics.byProgrammingSkill)) {
+              aggregated.byProgrammingSkill[skill] = (aggregated.byProgrammingSkill[skill] || 0) + count;
+            }
+          }
         }
       }
 
@@ -934,6 +970,18 @@ export class JobStatisticsCache {
       }
       for (const [company, count] of Object.entries(this.currentMonthData.statistics.byCompany)) {
         aggregated.byCompany[company] = (aggregated.byCompany[company] || 0) + count;
+      }
+      // Merge bySoftware (if available - for backward compatibility)
+      if (this.currentMonthData.statistics.bySoftware) {
+        for (const [software, count] of Object.entries(this.currentMonthData.statistics.bySoftware)) {
+          aggregated.bySoftware[software] = (aggregated.bySoftware[software] || 0) + count;
+        }
+      }
+      // Merge byProgrammingSkill (if available - for backward compatibility)
+      if (this.currentMonthData.statistics.byProgrammingSkill) {
+        for (const [skill, count] of Object.entries(this.currentMonthData.statistics.byProgrammingSkill)) {
+          aggregated.byProgrammingSkill[skill] = (aggregated.byProgrammingSkill[skill] || 0) + count;
+        }
       }
 
       aggregated.totalJobs = totalJobs;

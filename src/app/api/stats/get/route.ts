@@ -7,6 +7,8 @@ import { JobMetadataExtractor } from "@/lib/job-metadata-extractor";
 import { SalaryExtractor } from "@/lib/salary-extractor";
 import { LocationExtractor } from "@/lib/location-extractor";
 import { extractJobDetails } from "@/lib/job-analyzer";
+import { softwareKeywords } from "@/lib/dictionaries/software";
+import { programmingKeywords } from "@/lib/dictionaries/programming-languages";
 
 // Get RSS Stats Feed URLs from environment (separate from RSS monitor)
 const RSS_STATS_FEED_URLS = process.env.RSS_STATS_FEED_URLS
@@ -120,6 +122,23 @@ export async function GET(request: NextRequest) {
             rssJob.description || ''
           );
 
+          // Extract software
+          const software: string[] = [];
+          const description = rssJob.description || '';
+          for (const [soft, pattern] of Object.entries(softwareKeywords)) {
+            if (pattern.test(description)) {
+              software.push(soft);
+            }
+          }
+
+          // Extract programming skills
+          const programmingSkills: string[] = [];
+          for (const [skill, pattern] of Object.entries(programmingKeywords)) {
+            if (pattern.test(description)) {
+              programmingSkills.push(skill);
+            }
+          }
+
           // Create job statistic object
           const jobStat: JobStatistic = {
             id: metadata.id,
@@ -138,6 +157,8 @@ export async function GET(request: NextRequest) {
             seniority: metadata.seniority,
             description: rssJob.description || '',
             salary: salary,
+            software: software.length > 0 ? software : undefined,
+            programmingSkills: programmingSkills.length > 0 ? programmingSkills : undefined,
           };
 
           // Add to cache
