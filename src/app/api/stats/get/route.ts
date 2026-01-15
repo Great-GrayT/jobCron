@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
           let extractedLocation = jobDetails.location !== 'N/A' ? jobDetails.location : null;
 
           // Extract location
-          let locationData = { country: null as string | null, city: null as string | null, region: null as 'Europe' | 'America' | 'Middle East' | null };
+          let locationData = { country: null as string | null, city: null as string | null, region: null as 'Europe' | 'America' | 'Middle East' | 'Asia' | 'Africa' | 'Oceania' | null };
 
           if (extractedLocation) {
             locationData = LocationExtractor.extractLocation(
