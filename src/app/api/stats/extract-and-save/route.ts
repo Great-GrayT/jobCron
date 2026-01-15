@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         let extractedLocation = jobDetails.location !== 'N/A' ? jobDetails.location : null;
 
         // Step 3: Extract location properly - try job-analyzer result first, then LocationExtractor
-        let locationData = { country: null as string | null, city: null as string | null, region: null as 'Europe' | 'America' | 'Middle East' | null };
+        let locationData = { country: null as string | null, city: null as string | null, region: null as 'Europe' | 'America' | 'Middle East' | 'Asia' | 'Africa' | 'Oceania' | null };
 
         // First, try location from job-analyzer if available
         if (extractedLocation) {
