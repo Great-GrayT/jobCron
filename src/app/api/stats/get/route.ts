@@ -212,6 +212,14 @@ export async function GET(request: NextRequest) {
     logger.info('Loading and aggregating all archived months...');
     const { archives, aggregated, totalJobs } = await statsCache.getAllArchivesAggregated();
 
+    // Helper to get top N entries from an object
+    const getTopN = (obj: Record<string, number>, n: number) => {
+      return Object.entries(obj)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, n)
+        .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {});
+    };
+
     return NextResponse.json({
       success: true,
       message: `Processed ${processedCount} jobs, added ${newJobsCount} new jobs`,
@@ -221,17 +229,16 @@ export async function GET(request: NextRequest) {
         totalJobsAllTime: totalJobs,
         currentMonth: summary.currentMonth,
         currentMonthJobs: stats.currentMonthJobs,
-        availableArchives: summary.availableArchives,
-        overallStatistics: summary.overallStatistics,
-      },
-      aggregated: {
-        totalJobs: totalJobs,
-        statistics: aggregated,
         monthsIncluded: archives.length + 1,
-        archives: archives.map(a => ({
-          month: a.month,
-          jobCount: a.jobCount,
-        })),
+        availableArchives: summary.availableArchives,
+      },
+      topStats: {
+        industries: getTopN(aggregated.byIndustry, 5),
+        certificates: getTopN(aggregated.byCertificate, 5),
+        keywords: getTopN(aggregated.byKeyword, 5),
+        seniority: getTopN(aggregated.bySeniority, 5),
+        regions: getTopN(aggregated.byRegion, 5),
+        countries: getTopN(aggregated.byCountry, 5),
       },
     });
   } catch (error) {
