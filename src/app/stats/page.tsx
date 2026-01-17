@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { BarChart3, TrendingUp, RefreshCw, Loader2, ArrowLeft, X, Filter, Calendar, Briefcase, Award, Target, MapPin, Building2, Zap, Users, DollarSign, TrendingDown, AlertCircle, Sparkles, Activity, Globe } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area, Treemap } from 'recharts';
@@ -150,6 +150,10 @@ export default function StatsPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [hoveredJob, setHoveredJob] = useState<JobStatistic | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoveringJobId, setHoveringJobId] = useState<string | null>(null);
+  const [isMouseOverPopup, setIsMouseOverPopup] = useState<boolean>(false);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const popupRef = useRef<HTMLDivElement | null>(null);
 
   // Chart colors - Bloomberg terminal style
   const COLORS = ['#00d4ff', '#00ff88', '#ffcc00', '#ff6b6b', '#9d4edd', '#06ffa5', '#ff006e', '#4cc9f0'];
@@ -1314,10 +1318,12 @@ export default function StatsPage() {
                 <thead style={{ position: 'sticky', top: 0, backgroundColor: '#0a0e1a', zIndex: 1 }}>
                   <tr style={{ borderBottom: '2px solid #00d4ff' }}>
                     <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '35%' }}>JOB TITLE</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '15%' }}>COUNTRY</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '15%' }}>CITY</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '15%' }}>LOCATION</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '20%' }}>PUBLISHED</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '13%' }}>EMPLOYER</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '12%' }}>INDUSTRY</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '10%' }}>SENIORITY</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '10%' }}>COUNTRY</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '10%' }}>CITY</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '10%' }}>PUBLISHED</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1327,36 +1333,106 @@ export default function StatsPage() {
                       style={{
                         borderBottom: '1px solid #1a2332',
                         cursor: 'pointer',
-                        backgroundColor: index % 2 === 0 ? 'transparent' : '#0a0e1a80'
+                        backgroundColor: hoveringJobId === job.id
+                          ? (index % 2 === 0 ? 'transparent' : '#0a0e1a80')
+                          : (index % 2 === 0 ? 'transparent' : '#0a0e1a80')
                       }}
                       onClick={() => window.open(job.url, '_blank')}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#00d4ff20';
-                        setHoveredJob(job);
-                        // Center the popup in the viewport
-                        setPopupPosition({
-                          x: window.innerWidth / 2 - 200, // Center horizontally (400px width / 2)
-                          y: window.innerHeight / 2 - 250  // Center vertically (500px height / 2)
-                        });
+                        // Only highlight if not hovering on title cell (loading state)
+                        if (hoveringJobId !== job.id) {
+                          e.currentTarget.style.backgroundColor = '#00d4ff20';
+                        }
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'transparent' : '#0a0e1a80';
-                        setHoveredJob(null);
-                        setPopupPosition(null);
                       }}
                     >
-                      <td style={{ padding: '8px', color: '#00ff88' }}>
+                      <td
+                        style={{ padding: '8px', color: '#00ff88', position: 'relative' }}
+                        onMouseEnter={(e) => {
+                          e.stopPropagation();
+                          setHoveringJobId(job.id);
+
+                          // Reset row background when entering title cell
+                          const row = e.currentTarget.parentElement;
+                          if (row) {
+                            row.style.backgroundColor = index % 2 === 0 ? 'transparent' : '#0a0e1a80';
+                          }
+
+                          // Show popup after 3 seconds
+                          hoverTimerRef.current = setTimeout(() => {
+                            setHoveredJob(job);
+                            setPopupPosition({
+                              x: window.innerWidth / 2 - 200,
+                              y: window.innerHeight / 2 - 250
+                            });
+                          }, 3000);
+                        }}
+                        onMouseLeave={(e) => {
+                          e.stopPropagation();
+                          // Clear loading timer
+                          if (hoverTimerRef.current) {
+                            clearTimeout(hoverTimerRef.current);
+                            hoverTimerRef.current = null;
+                          }
+                          setHoveringJobId(null);
+
+                          // Only close popup if mouse is not moving to the popup
+                          // Use a small delay to allow mouse to reach the popup
+                          setTimeout(() => {
+                            if (!isMouseOverPopup) {
+                              setHoveredJob(null);
+                              setPopupPosition(null);
+                            }
+                          }, 100);
+                        }}
+                      >
+                        {/* Loading circle indicator - top right of title cell */}
+                        {hoveringJobId === job.id && !hoveredJob && (
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            style={{
+                              position: 'absolute',
+                              right: '8px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                            }}
+                          >
+                            <circle
+                              cx="10"
+                              cy="10"
+                              r="8"
+                              fill="none"
+                              stroke="#1a2332"
+                              strokeWidth="2"
+                            />
+                            <circle
+                              cx="10"
+                              cy="10"
+                              r="8"
+                              fill="none"
+                              stroke="#00d4ff"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeDasharray="50.27"
+                              strokeDashoffset="50.27"
+                              className="loading-circle-progress"
+                            />
+                          </svg>
+                        )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontWeight: 'bold' }}>{job.title}</span>
                         </div>
-                        <div style={{ fontSize: '9px', color: '#4a5568', marginTop: '4px' }}>
-                          {job.company}
-                        </div>
                       </td>
-                      <td style={{ padding: '8px', color: '#06ffa5' }}>{job.country || 'N/A'}</td>
-                      <td style={{ padding: '8px', color: '#06ffa5' }}>{normalizeCity(job.city) || 'N/A'}</td>
-                      <td style={{ padding: '8px', color: '#4a5568', fontSize: '10px' }}>{job.location}</td>
-                      <td style={{ padding: '8px', color: '#ffcc00', fontSize: '10px' }}>
+                      <td style={{ padding: '8px', color: '#9d4edd', fontSize: '10px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.company || 'N/A'}</td>
+                      <td style={{ padding: '8px', color: '#ff6b6b', fontSize: '10px', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.industry || 'N/A'}</td>
+                      <td style={{ padding: '8px', color: '#ffcc00', fontSize: '10px', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.seniority || 'N/A'}</td>
+                      <td style={{ padding: '8px', color: '#06ffa5', fontSize: '10px', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.country || 'N/A'}</td>
+                      <td style={{ padding: '8px', color: '#06ffa5', fontSize: '10px', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{normalizeCity(job.city) || 'N/A'}</td>
+                      <td style={{ padding: '8px', color: '#4a5568', fontSize: '10px' }}>
                         {formatPublishDate(job.postedDate)}
                       </td>
                     </tr>
@@ -1694,32 +1770,89 @@ export default function StatsPage() {
       {/* Job Description Popup */}
       {hoveredJob && popupPosition && (
         <div
+          ref={popupRef}
           style={{
             position: 'fixed',
             left: `${popupPosition.x}px`,
             top: `${popupPosition.y}px`,
             width: '400px',
             maxHeight: '500px',
-            overflowY: 'auto',
-            overflowX: 'hidden',
             backgroundColor: '#0a0e1a',
             border: '2px solid #00d4ff',
             borderRadius: '8px',
-            padding: '16px',
             zIndex: 9999,
             boxShadow: '0 8px 32px rgba(0, 212, 255, 0.5)',
-            pointerEvents: 'none',
+            pointerEvents: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
           }}
           className="job-description-popup"
+          onMouseEnter={() => {
+            setIsMouseOverPopup(true);
+          }}
+          onMouseLeave={() => {
+            setIsMouseOverPopup(false);
+            setHoveredJob(null);
+            setPopupPosition(null);
+          }}
         >
+          {/* Header with close button - fixed */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: '8px 16px',
+            borderBottom: '1px solid #1a2332',
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={() => {
+                setIsMouseOverPopup(false);
+                setHoveredJob(null);
+                setPopupPosition(null);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#4a5568',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#00d4ff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#4a5568';
+              }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+          {/* Scrollable content area */}
           <div
             style={{
-              color: '#e2e8f0',
-              fontSize: '11px',
-              lineHeight: '1.5',
+              padding: '16px',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              flex: 1,
+              maxHeight: '450px',
             }}
-            dangerouslySetInnerHTML={{ __html: hoveredJob.description }}
-          />
+            onWheel={(e) => {
+              // Stop propagation to prevent main page from scrolling
+              e.stopPropagation();
+            }}
+          >
+            <div
+              style={{
+                color: '#e2e8f0',
+                fontSize: '11px',
+                lineHeight: '1.5',
+              }}
+              dangerouslySetInnerHTML={{ __html: hoveredJob.description }}
+            />
+          </div>
         </div>
       )}
     </div>
