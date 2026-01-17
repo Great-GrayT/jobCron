@@ -120,6 +120,10 @@ interface ActiveFilters {
   keyword: string[];
   country: string[];
   city: string[];
+  software: string[];
+  programmingSkill: string[];
+  yearsExperience: string[];
+  academicDegree: string[];
 }
 
 export default function StatsPage() {
@@ -138,6 +142,10 @@ export default function StatsPage() {
     keyword: [],
     country: [],
     city: [],
+    software: [],
+    programmingSkill: [],
+    yearsExperience: [],
+    academicDegree: [],
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [hoveredJob, setHoveredJob] = useState<JobStatistic | null>(null);
@@ -206,6 +214,10 @@ export default function StatsPage() {
       keyword: [],
       country: [],
       city: [],
+      software: [],
+      programmingSkill: [],
+      yearsExperience: [],
+      academicDegree: [],
     });
     setSelectedDate(null);
   };
@@ -269,6 +281,26 @@ export default function StatsPage() {
       if (activeFilters.city.length > 0) {
         const normalizedJobCity = normalizeCity(job.city);
         if (!normalizedJobCity || !activeFilters.city.includes(normalizedJobCity)) return false;
+      }
+
+      // Software filter
+      if (activeFilters.software.length > 0) {
+        if (!job.software || !job.software.some(s => activeFilters.software.includes(s))) return false;
+      }
+
+      // Programming skill filter
+      if (activeFilters.programmingSkill.length > 0) {
+        if (!job.programmingSkills || !job.programmingSkills.some(s => activeFilters.programmingSkill.includes(s))) return false;
+      }
+
+      // Years of experience filter
+      if (activeFilters.yearsExperience.length > 0) {
+        if (!job.yearsExperience || !activeFilters.yearsExperience.includes(job.yearsExperience)) return false;
+      }
+
+      // Academic degree filter
+      if (activeFilters.academicDegree.length > 0) {
+        if (!job.academicDegrees || !job.academicDegrees.some(d => activeFilters.academicDegree.includes(d))) return false;
       }
 
       if (selectedDate) {
@@ -1472,11 +1504,14 @@ export default function StatsPage() {
                 {getSoftwareData().map(({name, value}) => (
                   <button
                     key={name}
-                    className="keyword-compact"
+                    className={`keyword-compact ${activeFilters.software.includes(name) ? 'active' : ''}`}
+                    onClick={() => toggleFilter('software', name)}
                     style={{
-                      background: `linear-gradient(135deg, #9d4edd 0%, #7b2cbf 100%)`,
+                      background: activeFilters.software.includes(name)
+                        ? `linear-gradient(135deg, #7b2cbf 0%, #5a189a 100%)`
+                        : `linear-gradient(135deg, #9d4edd 0%, #7b2cbf 100%)`,
                       border: '1px solid #9d4edd',
-                      cursor: 'default'
+                      cursor: 'pointer'
                     }}
                   >
                     <span className="keyword-name">{name}</span>
@@ -1498,11 +1533,14 @@ export default function StatsPage() {
                 {getProgrammingSkillsData().map(({name, value}) => (
                   <button
                     key={name}
-                    className="keyword-compact"
+                    className={`keyword-compact ${activeFilters.programmingSkill.includes(name) ? 'active' : ''}`}
+                    onClick={() => toggleFilter('programmingSkill', name)}
                     style={{
-                      background: `linear-gradient(135deg, #ff006e 0%, #d90429 100%)`,
+                      background: activeFilters.programmingSkill.includes(name)
+                        ? `linear-gradient(135deg, #d90429 0%, #a4031f 100%)`
+                        : `linear-gradient(135deg, #ff006e 0%, #d90429 100%)`,
                       border: '1px solid #ff006e',
-                      cursor: 'default'
+                      cursor: 'pointer'
                     }}
                   >
                     <span className="keyword-name">{name}</span>
@@ -1537,7 +1575,13 @@ export default function StatsPage() {
                       contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #4cc9f0', fontSize: 11 }}
                       labelStyle={{ color: '#4cc9f0' }}
                     />
-                    <Bar dataKey="value" fill="#4cc9f0" radius={[4, 4, 0, 0]} />
+                    <Bar
+                      dataKey="value"
+                      fill="#4cc9f0"
+                      radius={[4, 4, 0, 0]}
+                      onClick={(data) => data.name && toggleFilter('yearsExperience', data.name)}
+                      cursor="pointer"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1563,6 +1607,8 @@ export default function StatsPage() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
+                      onClick={(data) => toggleFilter('academicDegree', data.name)}
+                      style={{ cursor: 'pointer' }}
                     >
                       {getAcademicDegreesData().map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
