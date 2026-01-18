@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { BarChart3, TrendingUp, RefreshCw, Loader2, ArrowLeft, X, Filter, Calendar, Briefcase, Award, Target, MapPin, Building2, Zap, Users, DollarSign, TrendingDown, AlertCircle, Sparkles, Activity, Globe } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area, Treemap } from 'recharts';
+import WorldMap from '@/components/WorldMap';
 import "./stats.css";
 
 interface SalaryData {
@@ -479,14 +480,14 @@ export default function StatsPage() {
       .map(([name, value]) => ({ name, value }));
   };
 
-  const getCountryData = () => {
+  const getCountryData = (limit?: number) => {
     const stats = getFilteredStatistics();
     if (!stats || !stats.byCountry) return [];
-    return Object.entries(stats.byCountry)
+    const sorted = Object.entries(stats.byCountry)
       .filter(([name]) => !shouldFilterOut(name))
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 10)
       .map(([name, value]) => ({ name, value }));
+    return limit ? sorted.slice(0, limit) : sorted;
   };
 
   const getCityData = () => {
@@ -658,6 +659,10 @@ export default function StatsPage() {
     if (data && data.name) {
       toggleFilter('country', data.name);
     }
+  };
+
+  const handleMapCountryClick = (countryName: string) => {
+    toggleFilter('country', countryName);
   };
 
   const handleCityClick = (data: any) => {
@@ -1119,32 +1124,18 @@ export default function StatsPage() {
             </div>
           </div>
 
-          {/* Top Countries */}
+          {/* Top Countries - World Map */}
           <div className="terminal-panel">
             <div className="panel-header">
               <Globe size={14} />
-              <span>TOP COUNTRIES</span>
+              <span>GLOBAL JOB DISTRIBUTION</span>
             </div>
             <div className="chart-container compact">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={getCountryData()} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                  <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
-                  <YAxis dataKey="name" type="category" stroke="#4a5568" width={120} tick={{ fontSize: 9 }} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #06ffa5', fontSize: 11 }}
-                    labelStyle={{ color: '#06ffa5' }}
-                    formatter={(value: number | undefined) => value ? [`${value} jobs`, 'Count'] : ['0 jobs', 'Count']}
-                  />
-                  <Bar
-                    dataKey="value"
-                    fill="#06ffa5"
-                    onClick={handleCountryClick}
-                    cursor="pointer"
-                    radius={[0, 4, 4, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <WorldMap
+                data={getCountryData()}
+                onCountryClick={handleMapCountryClick}
+                selectedCountry={activeFilters.country.length > 0 ? activeFilters.country[0] : null}
+              />
             </div>
           </div>
 
