@@ -2,7 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Briefcase, Radio, Search, Database, Clock, Rocket, Settings, Smartphone, Zap, ArrowRight, ArrowUpRight, Github, BarChart3 } from "lucide-react";
+import {
+  Briefcase,
+  Radio,
+  Search,
+  Database,
+  Clock,
+  Rocket,
+  Settings,
+  Smartphone,
+  Zap,
+  ArrowRight,
+  ArrowUpRight,
+  Github,
+  BarChart3,
+} from "lucide-react";
 import "./home.css";
 
 export default function Home() {
@@ -31,7 +45,7 @@ export default function Home() {
         {/* Hero Section */}
         <section className="hero">
           <div
-            className={`logo ${glitchMode ? 'glitch-active' : ''}`}
+            className={`logo ${glitchMode ? "glitch-active" : ""}`}
             onClick={handleLogoClick}
           >
             <Briefcase size={80} strokeWidth={1.5} />
@@ -56,7 +70,10 @@ export default function Home() {
               <Radio size={48} strokeWidth={1.5} />
             </div>
             <h3>RSS Monitoring</h3>
-            <p>Automatically checks RSS feeds every 5 minutes for new job postings</p>
+            <p>
+              Automatically checks RSS feeds every 5 minutes for new job
+              postings
+            </p>
             <ul className="feature-list">
               <li>Smart deduplication</li>
               <li>Telegram notifications</li>
@@ -114,7 +131,7 @@ export default function Home() {
               </div>
               <div className="action-content">
                 <h3>LinkedIn Scraper</h3>
-                <p>Search LinkedIn jobs with custom keywords and countries</p>
+                <p>Search LinkedIn jobs with custom keywords and countries.</p>
               </div>
               <div className="action-arrow">
                 <ArrowRight size={32} strokeWidth={2} />
@@ -134,7 +151,12 @@ export default function Home() {
               </div>
             </Link>
 
-            <a href="/api/cron/check-jobs" className="action-card card" target="_blank" rel="noopener noreferrer">
+            <a
+              href="/api/cron/check-jobs"
+              className="action-card card"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <div className="action-icon">
                 <Zap size={40} strokeWidth={1.5} />
               </div>
@@ -208,13 +230,17 @@ export default function Home() {
             <div className="endpoint-item card">
               <div className="endpoint-badge endpoint-badge-post">GET/POST</div>
               <code className="endpoint-path">/api/scrape-jobs</code>
-              <p className="endpoint-desc">LinkedIn job scraper (non-streaming)</p>
+              <p className="endpoint-desc">
+                LinkedIn job scraper (non-streaming)
+              </p>
             </div>
 
             <div className="endpoint-item card">
               <div className="endpoint-badge">GET</div>
               <code className="endpoint-path">/api/scrape-jobs-stream</code>
-              <p className="endpoint-desc">LinkedIn job scraper with SSE streaming</p>
+              <p className="endpoint-desc">
+                LinkedIn job scraper with SSE streaming
+              </p>
             </div>
           </div>
         </section>
@@ -224,7 +250,12 @@ export default function Home() {
           <div className="footer-content">
             <p>Built with Next.js • Deployed on Vercel • Monitored 24/7</p>
             <div className="footer-links">
-              <a href="https://github.com/Great-GrayT/jobCron" target="_blank" rel="noopener noreferrer" className="footer-link-with-icon">
+              <a
+                href="https://github.com/Great-GrayT/jobCron"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-link-with-icon"
+              >
                 <Github size={16} />
                 <span>GitHub</span>
               </a>
