@@ -27,7 +27,12 @@ export function CertsBump({ data, onCertClick, activeFilters }: CertsBumpProps) 
   const topData = data.slice(0, 10);
 
   return (
-    <div style={{ height: '100%', padding: '8px' }}>
+    <div style={{
+      height: '100%',
+      padding: '8px',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+    }}>
       {topData.map((item, i) => {
         const isActive = activeFilters.includes(item.name);
         const percentage = (item.value / maxValue) * 100;

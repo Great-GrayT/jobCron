@@ -163,6 +163,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
   padding: 0.5rem;
+  grid-auto-flow: dense;
 }
 
 /* Panels */
@@ -170,6 +171,7 @@
   background: #0f1419;
   border: 1px solid #1a2332;
   transition: border-color 0.2s;
+  min-height: 0;
 }
 
 .terminal-panel:hover {

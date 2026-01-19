@@ -50,20 +50,23 @@ export function SeniorityWaffle({ data, onSeniorityClick, activeFilters }: Senio
           onSeniorityClick(String(datum.id));
         }
       }}
-      tooltip={({ id, value, color }) => (
-        <div style={tooltipStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: 12, height: 12, backgroundColor: color, borderRadius: 2 }} />
-            <strong style={{ color: '#00d4ff' }}>{id}</strong>
+      tooltip={(props) => {
+        const p = props as unknown as { id: string; value: number; color: string };
+        return (
+          <div style={tooltipStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: 12, height: 12, backgroundColor: p.color, borderRadius: 2 }} />
+              <strong style={{ color: '#00d4ff' }}>{p.id}</strong>
+            </div>
+            <div style={{ marginTop: '4px' }}>
+              <span style={{ color: '#00ff88' }}>{p.value} jobs</span>
+              <span style={{ color: '#6b7280', marginLeft: '8px' }}>
+                ({((p.value / total) * 100).toFixed(1)}%)
+              </span>
+            </div>
           </div>
-          <div style={{ marginTop: '4px' }}>
-            <span style={{ color: '#00ff88' }}>{value} jobs</span>
-            <span style={{ color: '#6b7280', marginLeft: '8px' }}>
-              ({((value / total) * 100).toFixed(1)}%)
-            </span>
-          </div>
-        </div>
-      )}
+        );
+      }}
       legends={[
         {
           anchor: 'bottom',

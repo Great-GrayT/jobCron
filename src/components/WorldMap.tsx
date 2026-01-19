@@ -134,12 +134,12 @@ function WorldMap({ data, onCountryClick, selectedCountry }: WorldMapProps) {
   };
 
   return (
-    <div className="world-map-container" style={{ position: 'relative', width: '100%', height: '280px', background: '#0a0e1a' }}>
+    <div className="world-map-container" style={{ position: 'relative', width: '100%', height: '100%', background: '#0a0e1a', overflow: 'hidden' }}>
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{
-          scale: 120,
-          center: [10, 30],
+          scale: 100,
+          center: [10, 35],
         }}
         style={{ width: '100%', height: '100%' }}
       >
@@ -222,22 +222,22 @@ function WorldMap({ data, onCountryClick, selectedCountry }: WorldMapProps) {
       <div
         style={{
           position: 'absolute',
-          bottom: '10px',
-          left: '10px',
+          bottom: '6px',
+          left: '6px',
           background: 'rgba(10, 14, 26, 0.95)',
           border: '1px solid #2a3a4a',
-          padding: '8px 10px',
-          borderRadius: '4px',
-          fontSize: '10px',
+          padding: '5px 8px',
+          borderRadius: '3px',
+          fontSize: '9px',
         }}
       >
-        <div style={{ color: '#06ffa5', marginBottom: '5px', fontWeight: 'bold' }}>
-          Job Distribution
+        <div style={{ color: '#06ffa5', marginBottom: '3px', fontWeight: 'bold' }}>
+          Jobs
         </div>
         <div
           style={{
-            width: '100px',
-            height: '8px',
+            width: '80px',
+            height: '6px',
             background: 'linear-gradient(to right, #024530, #026745, #038d5d, #04b375, #05d98d, #06ffa5)',
             borderRadius: '2px',
           }}
@@ -247,12 +247,11 @@ function WorldMap({ data, onCountryClick, selectedCountry }: WorldMapProps) {
             display: 'flex',
             justifyContent: 'space-between',
             color: '#6b7280',
-            marginTop: '3px',
-            fontSize: '9px',
+            marginTop: '2px',
+            fontSize: '8px',
           }}
         >
           <span>0</span>
-          <span>{Math.round(maxValue / 2).toLocaleString()}</span>
           <span>{maxValue.toLocaleString()}</span>
         </div>
       </div>

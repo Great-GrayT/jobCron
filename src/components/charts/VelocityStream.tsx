@@ -15,7 +15,7 @@ interface VelocityStreamProps {
   selectedDate?: string | null;
 }
 
-export function VelocityStream({ data, onDateClick, selectedDate }: VelocityStreamProps) {
+export function VelocityStream({ data, selectedDate }: VelocityStreamProps) {
   if (data.length === 0) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#4a5568' }}>
@@ -24,19 +24,18 @@ export function VelocityStream({ data, onDateClick, selectedDate }: VelocityStre
     );
   }
 
-  // Transform data for stream chart
-  // Stream needs array of objects with keys for each "layer"
+  // Transform data for stream chart - each record needs keys for layers
   const streamData = data.map(d => ({
-    date: d.date,
-    rawDate: d.rawDate,
     jobs: d.jobs,
   }));
+
+  // Create labels from dates
+  const labels = data.map(d => d.date);
 
   return (
     <ResponsiveStream
       data={streamData}
       keys={['jobs']}
-      indexBy="date"
       theme={bloombergTheme}
       margin={{ top: 20, right: 20, bottom: 40, left: 40 }}
       axisTop={null}
@@ -45,17 +44,12 @@ export function VelocityStream({ data, onDateClick, selectedDate }: VelocityStre
         tickSize: 5,
         tickPadding: 5,
         tickRotation: -45,
-        legend: '',
-        legendOffset: 36,
-        truncateTickAt: 0,
+        format: (i) => labels[i as number] || '',
       }}
       axisLeft={{
         tickSize: 5,
         tickPadding: 5,
         tickRotation: 0,
-        legend: '',
-        legendOffset: -40,
-        truncateTickAt: 0,
       }}
       curve="basis"
       offsetType="silhouette"
@@ -71,9 +65,10 @@ export function VelocityStream({ data, onDateClick, selectedDate }: VelocityStre
       dotColor={{ from: 'color' }}
       dotBorderWidth={2}
       dotBorderColor={{ from: 'color', modifiers: [['darker', 0.7]] }}
-      tooltip={({ layer }) => {
-        const index = layer.index;
-        const item = streamData[index];
+      tooltip={(props) => {
+        const layerProps = props as unknown as { layer: { index: number } };
+        const index = layerProps.layer?.index ?? 0;
+        const item = data[index];
         if (!item) return null;
 
         return (

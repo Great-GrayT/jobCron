@@ -1,4 +1,21 @@
-import { Theme } from '@nivo/core';
+// Theme type for Nivo charts
+interface NivoTheme {
+  background?: string;
+  text?: {
+    fontSize?: number;
+    fill?: string;
+    fontFamily?: string;
+  };
+  axis?: {
+    domain?: { line?: { stroke?: string; strokeWidth?: number } };
+    ticks?: { line?: { stroke?: string; strokeWidth?: number }; text?: { fill?: string; fontSize?: number } };
+    legend?: { text?: { fill?: string; fontSize?: number; fontWeight?: number } };
+  };
+  grid?: { line?: { stroke?: string; strokeWidth?: number } };
+  legends?: { text?: { fill?: string; fontSize?: number } };
+  tooltip?: { container?: Record<string, unknown> };
+  labels?: { text?: { fill?: string; fontSize?: number } };
+}
 
 // Bloomberg terminal color palette
 export const CHART_COLORS = [
@@ -13,7 +30,7 @@ export const CHART_COLORS = [
 ];
 
 // Shared Nivo theme matching Bloomberg terminal aesthetic
-export const bloombergTheme: Theme = {
+export const bloombergTheme: NivoTheme = {
   background: 'transparent',
   text: {
     fontSize: 11,

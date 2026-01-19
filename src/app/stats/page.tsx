@@ -3,8 +3,17 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { BarChart3, TrendingUp, RefreshCw, Loader2, ArrowLeft, X, Filter, Calendar, Briefcase, Award, Target, MapPin, Building2, Zap, Users, DollarSign, TrendingDown, AlertCircle, Sparkles, Activity, Globe } from "lucide-react";
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area, Treemap } from 'recharts';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area } from 'recharts';
 import WorldMap from '@/components/WorldMap';
+import {
+  AnimatedNumber,
+  IndustryTreemap,
+  SkillsTagCloud,
+  SalaryGauges,
+  PostingHeatmap,
+  CertsBump,
+  CHART_COLORS,
+} from '@/components/charts';
 import "./stats.css";
 
 interface SalaryData {
@@ -155,9 +164,6 @@ export default function StatsPage() {
   const [isMouseOverPopup, setIsMouseOverPopup] = useState<boolean>(false);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
-
-  // Chart colors - Bloomberg terminal style
-  const COLORS = ['#00d4ff', '#00ff88', '#ffcc00', '#ff6b6b', '#9d4edd', '#06ffa5', '#ff006e', '#4cc9f0'];
 
   useEffect(() => {
     loadStatistics();
@@ -880,23 +886,33 @@ export default function StatsPage() {
             <div className="metrics-compact">
               <div className="metric-compact">
                 <div className="metric-compact-label">TOTAL</div>
-                <div className="metric-compact-value">{statsData.summary.totalJobsAllTime.toLocaleString()}</div>
+                <div className="metric-compact-value">
+                  <AnimatedNumber value={statsData.summary.totalJobsAllTime} />
+                </div>
               </div>
               <div className="metric-compact">
                 <div className="metric-compact-label">THIS MONTH</div>
-                <div className="metric-compact-value">{statsData.currentMonth.jobCount.toLocaleString()}</div>
+                <div className="metric-compact-value">
+                  <AnimatedNumber value={statsData.currentMonth.jobCount} />
+                </div>
               </div>
               <div className="metric-compact">
                 <div className="metric-compact-label">AVG/MONTH</div>
-                <div className="metric-compact-value">{Math.round(statsData.summary.overallStatistics.averageJobsPerMonth).toLocaleString()}</div>
+                <div className="metric-compact-value">
+                  <AnimatedNumber value={Math.round(statsData.summary.overallStatistics.averageJobsPerMonth)} />
+                </div>
               </div>
               <div className="metric-compact">
                 <div className="metric-compact-label">FILTERED</div>
-                <div className="metric-compact-value highlight">{filteredStats?.totalJobs.toLocaleString() || 0}</div>
+                <div className="metric-compact-value highlight">
+                  <AnimatedNumber value={filteredStats?.totalJobs || 0} />
+                </div>
               </div>
               <div className="metric-compact">
                 <div className="metric-compact-label">ARCHIVES</div>
-                <div className="metric-compact-value">{statsData.summary.availableArchives.length}</div>
+                <div className="metric-compact-value">
+                  <AnimatedNumber value={statsData.summary.availableArchives.length} />
+                </div>
               </div>
               <div className="metric-compact">
                 <div className="metric-compact-label">VIEW</div>
@@ -953,8 +969,8 @@ export default function StatsPage() {
             </div>
           )}
 
-          {/* Time Series Chart */}
-          <div className="terminal-panel">
+          {/* Row 1: Time Charts - spans full width */}
+          <div className="terminal-panel span-2">
             <div className="panel-header">
               <TrendingUp size={14} />
               <span>POSTING VELOCITY</span>
@@ -988,20 +1004,20 @@ export default function StatsPage() {
           <div className="terminal-panel">
             <div className="panel-header">
               <Calendar size={14} />
-              <span>PUBLICATION TIME ANALYSIS</span>
+              <span>PUBLICATION TIMES</span>
             </div>
             <div className="chart-container compact">
               <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={getPublicationTimeData()} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+                <BarChart data={getPublicationTimeData()} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
                   <XAxis
                     dataKey="time"
                     stroke="#4a5568"
-                    tick={{ fontSize: 8 }}
+                    tick={{ fontSize: 7 }}
                     interval="preserveStartEnd"
                     angle={-45}
                     textAnchor="end"
-                    height={60}
+                    height={50}
                   />
                   <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
                   <Tooltip
@@ -1014,36 +1030,28 @@ export default function StatsPage() {
             </div>
           </div>
 
-          {/* Industry Distribution */}
+          {/* Row 2: Industry, Seniority, Heatmap */}
           <div className="terminal-panel">
             <div className="panel-header">
               <Building2 size={14} />
-              <span>INDUSTRY</span>
+              <span>INDUSTRY DISTRIBUTION</span>
             </div>
-            <div className="chart-container compact">
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={getIndustryChartData()} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                  <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
-                  <YAxis dataKey="name" type="category" stroke="#4a5568" width={100} tick={{ fontSize: 9 }} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #00ff88', fontSize: 11 }}
-                    labelStyle={{ color: '#00ff88' }}
-                  />
-                  <Bar dataKey="value" fill="#00ff88" onClick={(data) => data.name && toggleFilter('industry', data.name)} cursor="pointer" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="chart-container compact" style={{ height: 240 }}>
+              <IndustryTreemap
+                data={getIndustryChartData()}
+                onIndustryClick={(industry) => toggleFilter('industry', industry)}
+                activeFilters={activeFilters.industry}
+              />
             </div>
           </div>
 
-          {/* Seniority Distribution */}
           <div className="terminal-panel">
             <div className="panel-header">
               <Users size={14} />
               <span>SENIORITY</span>
             </div>
-            <div className="chart-container compact">
-              <ResponsiveContainer width="100%" height={180}>
+            <div className="chart-container compact" style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
                     data={getSeniorityChartData()}
@@ -1051,14 +1059,14 @@ export default function StatsPage() {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                    outerRadius={60}
+                    outerRadius={70}
                     fill="#8884d8"
                     dataKey="value"
                     onClick={(data) => toggleFilter('seniority', data.name)}
                     style={{ cursor: 'pointer' }}
                   >
-                    {getSeniorityChartData().map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {getSeniorityChartData().map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -1070,49 +1078,51 @@ export default function StatsPage() {
             </div>
           </div>
 
-          {/* Certifications */}
+          <div className="terminal-panel">
+            <div className="panel-header">
+              <Calendar size={14} />
+              <span>POSTING HEATMAP</span>
+            </div>
+            <div className="chart-container compact" style={{ height: 240 }}>
+              <PostingHeatmap jobs={filteredJobs} />
+            </div>
+          </div>
+
+          {/* Row 3: Certificates, Regional, Top Employers */}
           <div className="terminal-panel">
             <div className="panel-header">
               <Award size={14} />
               <span>TOP CERTIFICATES</span>
             </div>
-            <div className="chart-container compact">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={getCertificateChartData()} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                  <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
-                  <YAxis dataKey="name" type="category" stroke="#4a5568" width={80} tick={{ fontSize: 9 }} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #ff6b6b', fontSize: 11 }}
-                    labelStyle={{ color: '#ff6b6b' }}
-                  />
-                  <Bar dataKey="value" fill="#ff6b6b" onClick={(data) => data.name && toggleFilter('certificate', data.name)} cursor="pointer" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="chart-container compact" style={{ height: 240, overflow: 'hidden' }}>
+              <CertsBump
+                data={getCertificateChartData()}
+                onCertClick={(cert) => toggleFilter('certificate', cert)}
+                activeFilters={activeFilters.certificate}
+              />
             </div>
           </div>
 
-          {/* Regional Distribution */}
           <div className="terminal-panel">
             <div className="panel-header">
               <Globe size={14} />
               <span>REGIONAL DISTRIBUTION</span>
             </div>
-            <div className="chart-container compact">
-              <ResponsiveContainer width="100%" height={240}>
+            <div className="chart-container compact" style={{ height: 240 }}>
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
                     data={getRegionData()}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, value, percent }) => `${name}: ${value} (${((percent || 0) * 100).toFixed(0)}%)`}
-                    outerRadius={80}
+                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                    outerRadius={70}
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {getRegionData().map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={getRegionColor(entry.name)} />
+                    {getRegionData().map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -1124,13 +1134,34 @@ export default function StatsPage() {
             </div>
           </div>
 
-          {/* Top Countries - World Map */}
           <div className="terminal-panel">
+            <div className="panel-header">
+              <Building2 size={14} />
+              <span>TOP EMPLOYERS</span>
+            </div>
+            <div className="chart-container compact" style={{ height: 240 }}>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={getCompanyChartData()} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                  <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
+                  <YAxis dataKey="name" type="category" stroke="#4a5568" width={80} tick={{ fontSize: 8 }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #06ffa5', fontSize: 11 }}
+                    labelStyle={{ color: '#06ffa5' }}
+                  />
+                  <Bar dataKey="value" fill="#06ffa5" onClick={(data) => data.name && toggleFilter('company', data.name)} cursor="pointer" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Row 4: World Map (large) + Top Cities */}
+          <div className="terminal-panel span-2">
             <div className="panel-header">
               <Globe size={14} />
               <span>GLOBAL JOB DISTRIBUTION</span>
             </div>
-            <div className="chart-container compact">
+            <div className="chart-container compact" style={{ height: 360 }}>
               <WorldMap
                 data={getCountryData()}
                 onCountryClick={handleMapCountryClick}
@@ -1139,18 +1170,17 @@ export default function StatsPage() {
             </div>
           </div>
 
-          {/* Top Cities */}
           <div className="terminal-panel">
             <div className="panel-header">
               <MapPin size={14} />
               <span>TOP CITIES</span>
             </div>
-            <div className="chart-container compact">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={getCityData()} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+            <div className="chart-container compact" style={{ height: 360 }}>
+              <ResponsiveContainer width="100%" height={340}>
+                <BarChart data={getCityData()} layout="vertical" margin={{ top: 5, right: 15, left: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                  <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
-                  <YAxis dataKey="name" type="category" stroke="#4a5568" width={100} tick={{ fontSize: 9 }} />
+                  <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 9 }} allowDecimals={false} />
+                  <YAxis dataKey="name" type="category" stroke="#4a5568" width={80} tick={{ fontSize: 9 }} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #4cc9f0', fontSize: 11 }}
                     labelStyle={{ color: '#4cc9f0' }}
@@ -1168,42 +1198,110 @@ export default function StatsPage() {
             </div>
           </div>
 
-          {/* Top Companies */}
-          <div className="terminal-panel">
-            <div className="panel-header">
-              <Building2 size={14} />
-              <span>TOP EMPLOYERS</span>
+          {/* Row 5: Experience/Degrees (if available) + Salary */}
+          {/* Years of Experience */}
+          {hasYearsExperienceData && (
+            <div className="terminal-panel">
+              <div className="panel-header">
+                <Target size={14} />
+                <span>EXPERIENCE REQUIRED</span>
+              </div>
+              <div className="chart-container compact" style={{ height: 240 }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={getYearsExperienceData()} margin={{ top: 5, right: 15, left: 5, bottom: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                    <XAxis
+                      dataKey="name"
+                      stroke="#4a5568"
+                      tick={{ fontSize: 8 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #4cc9f0', fontSize: 11 }}
+                      labelStyle={{ color: '#4cc9f0' }}
+                    />
+                    <Bar
+                      dataKey="value"
+                      fill="#4cc9f0"
+                      radius={[4, 4, 0, 0]}
+                      onClick={(data) => data.name && toggleFilter('yearsExperience', data.name)}
+                      cursor="pointer"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div className="chart-container compact">
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={getCompanyChartData()} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                  <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
-                  <YAxis dataKey="name" type="category" stroke="#4a5568" width={100} tick={{ fontSize: 9 }} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #06ffa5', fontSize: 11 }}
-                    labelStyle={{ color: '#06ffa5' }}
-                  />
-                  <Bar dataKey="value" fill="#06ffa5" onClick={(data) => data.name && toggleFilter('company', data.name)} cursor="pointer" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          )}
 
-          {/* Salary Analysis Section */}
+          {/* Academic Degrees */}
+          {hasAcademicDegreesData && (
+            <div className="terminal-panel">
+              <div className="panel-header">
+                <Award size={14} />
+                <span>DEGREES REQUIRED</span>
+              </div>
+              <div className="chart-container compact" style={{ height: 240 }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={getAcademicDegreesData()}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                      outerRadius={70}
+                      fill="#8884d8"
+                      dataKey="value"
+                      onClick={(data) => toggleFilter('academicDegree', data.name)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {getAcademicDegreesData().map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #ffcc00', fontSize: 11 }}
+                      labelStyle={{ color: '#ffcc00' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Salary Section - organized in a row */}
           {hasSalaryData && (
             <>
-              {/* Salary Distribution by Range */}
+              <div className="terminal-panel">
+                <div className="panel-header">
+                  <DollarSign size={14} />
+                  <span>SALARY OVERVIEW</span>
+                </div>
+                <div className="chart-container compact" style={{ height: 240 }}>
+                  <SalaryGauges
+                    stats={{
+                      totalWithSalary: filteredStats.salaryStats?.totalWithSalary || 0,
+                      averageSalary: filteredStats.salaryStats?.averageSalary || null,
+                      medianSalary: filteredStats.salaryStats?.medianSalary || null,
+                    }}
+                    totalJobs={filteredStats.totalJobs}
+                  />
+                </div>
+              </div>
+
               <div className="terminal-panel">
                 <div className="panel-header">
                   <DollarSign size={14} />
                   <span>SALARY DISTRIBUTION</span>
                 </div>
-                <div className="chart-container compact">
+                <div className="chart-container compact" style={{ height: 240 }}>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={getSalaryRangeChartData()} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+                    <BarChart data={getSalaryRangeChartData()} margin={{ top: 5, right: 15, left: 5, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                      <XAxis dataKey="range" stroke="#4a5568" tick={{ fontSize: 9 }} />
+                      <XAxis dataKey="range" stroke="#4a5568" tick={{ fontSize: 8 }} />
                       <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #ffcc00', fontSize: 11 }}
@@ -1215,40 +1313,16 @@ export default function StatsPage() {
                 </div>
               </div>
 
-              {/* Salary by Industry */}
-              <div className="terminal-panel">
-                <div className="panel-header">
-                  <Building2 size={14} />
-                  <span>SALARY BY INDUSTRY</span>
-                </div>
-                <div className="chart-container compact">
-                  <ResponsiveContainer width="100%" height={240}>
-                    <BarChart data={getSalaryByIndustryData()} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                      <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} />
-                      <YAxis dataKey="name" type="category" stroke="#4a5568" width={100} tick={{ fontSize: 9 }} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #00ff88', fontSize: 11 }}
-                        labelStyle={{ color: '#00ff88' }}
-                        formatter={(value: number | undefined) => value ? [`$${(value / 1000).toFixed(0)}k`, 'Avg Salary'] : ['N/A', 'Avg Salary']}
-                      />
-                      <Bar dataKey="avg" fill="#00ff88" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Salary by Seniority */}
               <div className="terminal-panel">
                 <div className="panel-header">
                   <Users size={14} />
                   <span>SALARY BY SENIORITY</span>
                 </div>
-                <div className="chart-container compact">
+                <div className="chart-container compact" style={{ height: 240 }}>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={getSalaryBySeniorityData()} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                    <BarChart data={getSalaryBySeniorityData()} margin={{ top: 5, right: 15, left: 15, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                      <XAxis dataKey="name" stroke="#4a5568" tick={{ fontSize: 9 }} />
+                      <XAxis dataKey="name" stroke="#4a5568" tick={{ fontSize: 8 }} />
                       <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #9d4edd', fontSize: 11 }}
@@ -1261,38 +1335,26 @@ export default function StatsPage() {
                 </div>
               </div>
 
-              {/* Salary Overview Stats */}
-              <div className="terminal-panel">
+              {/* Salary by Industry - full width for better readability */}
+              <div className="terminal-panel span-full">
                 <div className="panel-header">
-                  <DollarSign size={14} />
-                  <span>SALARY OVERVIEW</span>
+                  <Building2 size={14} />
+                  <span>SALARY BY INDUSTRY</span>
                 </div>
-                <div style={{ padding: '12px' }}>
-                  <div style={{ display: 'grid', gap: '12px' }}>
-                    <div style={{ borderBottom: '1px solid #1a2332', paddingBottom: '8px' }}>
-                      <div style={{ fontSize: '10px', color: '#4a5568', marginBottom: '4px' }}>JOBS WITH SALARY INFO</div>
-                      <div style={{ fontSize: '20px', color: '#00d4ff', fontWeight: 'bold' }}>
-                        {filteredStats.salaryStats?.totalWithSalary || 0} / {filteredStats.totalJobs}
-                        <span style={{ fontSize: '12px', color: '#4a5568', marginLeft: '8px' }}>
-                          ({(((filteredStats.salaryStats?.totalWithSalary || 0) / filteredStats.totalJobs) * 100).toFixed(1)}%)
-                        </span>
-                      </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      <div>
-                        <div style={{ fontSize: '10px', color: '#4a5568', marginBottom: '4px' }}>AVERAGE</div>
-                        <div style={{ fontSize: '18px', color: '#00ff88', fontWeight: 'bold' }}>
-                          {formatSalary(filteredStats.salaryStats?.averageSalary || null)}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '10px', color: '#4a5568', marginBottom: '4px' }}>MEDIAN</div>
-                        <div style={{ fontSize: '18px', color: '#ffcc00', fontWeight: 'bold' }}>
-                          {formatSalary(filteredStats.salaryStats?.medianSalary || null)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                <div className="chart-container compact" style={{ height: 200 }}>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={getSalaryByIndustryData()} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                      <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} />
+                      <YAxis dataKey="name" type="category" stroke="#4a5568" width={120} tick={{ fontSize: 10 }} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #00ff88', fontSize: 11 }}
+                        labelStyle={{ color: '#00ff88' }}
+                        formatter={(value: number | undefined) => value ? [`$${(value / 1000).toFixed(0)}k`, 'Avg Salary'] : ['N/A', 'Avg Salary']}
+                      />
+                      <Bar dataKey="avg" fill="#00ff88" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </>
@@ -1618,79 +1680,6 @@ export default function StatsPage() {
             </div>
           )}
 
-          {/* Years of Experience Analysis */}
-          {hasYearsExperienceData && (
-            <div className="terminal-panel">
-              <div className="panel-header">
-                <Target size={14} />
-                <span>YEARS OF EXPERIENCE REQUIRED</span>
-              </div>
-              <div className="chart-container compact">
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={getYearsExperienceData()} margin={{ top: 5, right: 20, left: 5, bottom: 50 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                    <XAxis
-                      dataKey="name"
-                      stroke="#4a5568"
-                      tick={{ fontSize: 9 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={70}
-                    />
-                    <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #4cc9f0', fontSize: 11 }}
-                      labelStyle={{ color: '#4cc9f0' }}
-                    />
-                    <Bar
-                      dataKey="value"
-                      fill="#4cc9f0"
-                      radius={[4, 4, 0, 0]}
-                      onClick={(data) => data.name && toggleFilter('yearsExperience', data.name)}
-                      cursor="pointer"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {/* Academic Degrees Analysis */}
-          {hasAcademicDegreesData && (
-            <div className="terminal-panel">
-              <div className="panel-header">
-                <Award size={14} />
-                <span>ACADEMIC DEGREES REQUIRED</span>
-              </div>
-              <div className="chart-container compact">
-                <ResponsiveContainer width="100%" height={240}>
-                  <PieChart>
-                    <Pie
-                      data={getAcademicDegreesData()}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value, percent }) => `${name}: ${value} (${((percent || 0) * 100).toFixed(0)}%)`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      onClick={(data) => toggleFilter('academicDegree', data.name)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {getAcademicDegreesData().map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #ffcc00', fontSize: 11 }}
-                      labelStyle={{ color: '#ffcc00' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
           {/* Keyword Analysis Table */}
           <div className="terminal-panel span-full">
             <div className="panel-header">
@@ -1736,23 +1725,19 @@ export default function StatsPage() {
             </div>
           </div>
 
-          {/* Keywords Panel */}
+          {/* Keywords Panel - Tag Cloud */}
           <div className="terminal-panel span-full">
             <div className="panel-header">
               <Zap size={14} />
               <span>IN-DEMAND SKILLS</span>
             </div>
-            <div className="keywords-compact">
-              {getTopKeywords().map(([keyword, count]) => (
-                <button
-                  key={keyword}
-                  className={`keyword-compact ${activeFilters.keyword.includes(keyword) ? 'active' : ''}`}
-                  onClick={() => toggleFilter('keyword', keyword)}
-                >
-                  <span className="keyword-name">{keyword}</span>
-                  <span className="keyword-value">{count}</span>
-                </button>
-              ))}
+            <div className="chart-container compact" style={{ height: 'auto', minHeight: 100 }}>
+              <SkillsTagCloud
+                data={getTopKeywords()}
+                onWordClick={(word) => toggleFilter('keyword', word)}
+                activeFilters={activeFilters.keyword}
+                maxWords={20}
+              />
             </div>
           </div>
         </div>
