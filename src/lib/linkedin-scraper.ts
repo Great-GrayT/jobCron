@@ -349,7 +349,7 @@ async function scrapeKeywordCountry(
 
     // Small delay between pages for the same combo
     if (page < maxPages - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
   }
 
@@ -361,7 +361,7 @@ export async function scrapeLinkedInJobs(
   progressEmitter?: ProgressEmitter
 ): Promise<LinkedInJob[]> {
   const MAX_PAGES = 10;
-  const CONCURRENCY = 10; // Number of concurrent keyword/country combinations
+  const CONCURRENCY = 20; // Number of concurrent keyword/country combinations
   let allJobs: LinkedInJob[] = [];
 
   // Parse search keywords (comma-separated)
