@@ -1001,7 +1001,53 @@ export default function StatsPage() {
                     dataKey="jobs"
                     stroke="#00d4ff"
                     strokeWidth={2}
-                    dot={{ fill: '#00d4ff', r: 4, cursor: 'pointer' }}
+                    dot={(props: any) => {
+                      const rawDate = props.payload?.rawDate;
+                      const isActive = selectedDate === rawDate;
+                      const handleDotClick = (e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        if (rawDate) {
+                          setSelectedDate(selectedDate === rawDate ? null : rawDate);
+                        }
+                      };
+                      return (
+                        <circle
+                          key={`dot-${props.index}`}
+                          cx={props.cx}
+                          cy={props.cy}
+                          r={isActive ? 6 : 4}
+                          fill={isActive ? '#00ff88' : '#00d4ff'}
+                          stroke={isActive ? '#00ff88' : 'none'}
+                          strokeWidth={isActive ? 2 : 0}
+                          style={{ cursor: 'pointer' }}
+                          onClick={handleDotClick}
+                          onMouseDown={handleDotClick}
+                        />
+                      );
+                    }}
+                    activeDot={(props: any) => {
+                      const rawDate = props.payload?.rawDate;
+                      const isActive = selectedDate === rawDate;
+                      const handleActiveDotClick = (e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        if (rawDate) {
+                          setSelectedDate(selectedDate === rawDate ? null : rawDate);
+                        }
+                      };
+                      return (
+                        <circle
+                          cx={props.cx}
+                          cy={props.cy}
+                          r={isActive ? 8 : 6}
+                          fill={isActive ? '#00ff88' : '#00d4ff'}
+                          stroke="#fff"
+                          strokeWidth={2}
+                          style={{ cursor: 'pointer' }}
+                          onClick={handleActiveDotClick}
+                          onMouseDown={handleActiveDotClick}
+                        />
+                      );
+                    }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
