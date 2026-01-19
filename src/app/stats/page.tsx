@@ -134,6 +134,7 @@ interface ActiveFilters {
   programmingSkill: string[];
   yearsExperience: string[];
   academicDegree: string[];
+  region: string[];
 }
 
 export default function StatsPage() {
@@ -156,6 +157,7 @@ export default function StatsPage() {
     programmingSkill: [],
     yearsExperience: [],
     academicDegree: [],
+    region: [],
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [hoveredJob, setHoveredJob] = useState<JobStatistic | null>(null);
@@ -229,6 +231,7 @@ export default function StatsPage() {
       programmingSkill: [],
       yearsExperience: [],
       academicDegree: [],
+      region: [],
     });
     setSelectedDate(null);
   };
@@ -312,6 +315,11 @@ export default function StatsPage() {
       // Academic degree filter
       if (activeFilters.academicDegree.length > 0) {
         if (!job.academicDegrees || !job.academicDegrees.some(d => activeFilters.academicDegree.includes(d))) return false;
+      }
+
+      // Region filter
+      if (activeFilters.region.length > 0) {
+        if (!job.region || !activeFilters.region.includes(job.region)) return false;
       }
 
       if (selectedDate) {
@@ -1120,9 +1128,17 @@ export default function StatsPage() {
                     outerRadius={70}
                     fill="#8884d8"
                     dataKey="value"
+                    onClick={(data) => data && data.name && toggleFilter('region', data.name)}
+                    style={{ cursor: 'pointer' }}
                   >
-                    {getRegionData().map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    {getRegionData().map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={activeFilters.region.includes(entry.name) ? '#00ff88' : CHART_COLORS[index % CHART_COLORS.length]}
+                        stroke={activeFilters.region.includes(entry.name) ? '#00ff88' : 'transparent'}
+                        strokeWidth={activeFilters.region.includes(entry.name) ? 2 : 0}
+                        style={{ cursor: 'pointer' }}
+                      />
                     ))}
                   </Pie>
                   <Tooltip
