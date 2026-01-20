@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.971.0",
     "@nivo/bump": "^0.99.0",
     "@nivo/calendar": "^0.99.0",
     "@nivo/pie": "^0.99.0",

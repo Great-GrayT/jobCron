@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseRSSFeeds } from "@/lib/rss-parser";
-import { JobStatisticsCache, JobStatistic } from "@/lib/job-statistics-cache";
+import { getStatsCache, getStorageInfo } from "@/lib/stats-storage";
+import { JobStatistic } from "@/lib/job-statistics-cache";
 import { JobMetadataExtractor } from "@/lib/job-metadata-extractor";
 import { SalaryExtractor } from "@/lib/salary-extractor";
 import { LocationExtractor } from "@/lib/location-extractor";
@@ -29,9 +30,11 @@ export async function GET(request: NextRequest) {
     // Validate environment variables
     validateEnvironmentVariables();
 
-    // Initialize statistics cache
-    const statsCache = new JobStatisticsCache();
+    // Initialize statistics cache (auto-selects R2 or Gist based on config)
+    const statsCache = await getStatsCache();
     await statsCache.load();
+
+    const storageInfo = getStorageInfo();
 
     logger.info(`Loaded statistics cache: ${statsCache.getStats().currentMonthJobs} jobs in current month`);
 
@@ -146,11 +149,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Save to GitHub Gist
+    // Save to storage (R2 or Gist)
     if (newJobsCount > 0) {
-      logger.info(`Saving ${newJobsCount} new jobs to GitHub Gist...`);
+      logger.info(`Saving ${newJobsCount} new jobs to ${storageInfo.backend.toUpperCase()}...`);
       await statsCache.save();
-      logger.info(`✓ Successfully saved statistics to GitHub Gist`);
+      logger.info(`✓ Successfully saved statistics to ${storageInfo.backend.toUpperCase()}`);
     } else {
       logger.info(`No new jobs to save (all ${processedCount} jobs already exist in current month)`);
     }
@@ -169,15 +172,16 @@ export async function GET(request: NextRequest) {
       currentMonth: finalStats.currentMonth,
       currentMonthTotal: finalStats.currentMonthJobs,
       totalAllTime: finalStats.totalJobsAllTime,
+      storageBackend: storageInfo.backend,
       statistics: {
         byIndustry: currentStats.byIndustry,
         byCertificate: currentStats.byCertificate,
         bySeniority: currentStats.bySeniority,
         topKeywords: Object.entries(currentStats.byKeyword)
-          .sort(([, a], [, b]) => b - a)
+          .sort(([, a], [, b]) => (b as number) - (a as number))
           .slice(0, 10)
           .reduce((acc, [key, value]) => {
-            acc[key] = value;
+            acc[key] = value as number;
             return acc;
           }, {} as Record<string, number>),
       },
