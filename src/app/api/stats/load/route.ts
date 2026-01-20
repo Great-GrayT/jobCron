@@ -50,13 +50,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Return current month data, summary, AND aggregated historical data
-    const currentMonthData = statsCache.getCurrentMonthData();
+    // Note: getCurrentMonthData may be async (R2) or sync (Gist), so we await it
+    const currentMonthData = await Promise.resolve(statsCache.getCurrentMonthData());
     const summary = statsCache.getSummary();
     const stats = statsCache.getStats();
 
     // Get aggregated data from ALL archived months + current month
     logger.info('Loading and aggregating all archived months...');
-    const { archives, aggregated, totalJobs } = await statsCache.getAllArchivesAggregated();
+    const aggregatedResult = await statsCache.getAllArchivesAggregated();
+    const archives = aggregatedResult?.archives || [];
+    const aggregated = aggregatedResult?.aggregated || {};
+    const totalJobs = aggregatedResult?.totalJobs || 0;
 
     return NextResponse.json({
       success: true,
@@ -64,9 +68,9 @@ export async function GET(request: NextRequest) {
       currentMonth: {
         month: currentMonthData.month,
         lastUpdated: currentMonthData.lastUpdated,
-        jobCount: currentMonthData.jobs.length,
+        jobCount: currentMonthData.jobs?.length || 0,
         statistics: currentMonthData.statistics,
-        jobs: currentMonthData.jobs, // Include full job data for current month
+        jobs: currentMonthData.jobs || [], // Include full job data for current month
       },
       summary: {
         totalJobsAllTime: totalJobs, // Use aggregated total
