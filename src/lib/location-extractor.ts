@@ -16,6 +16,30 @@ export interface LocationData {
   region: Region | null;
 }
 
+/**
+ * Normalize city names for consistent statistics
+ * Removes common prefixes/suffixes and filters invalid city values
+ */
+export function normalizeCity(cityName: string | null): string | null {
+  if (!cityName) return null;
+
+  const normalized = cityName
+    .replace(/\s+Area$/i, '')
+    .replace(/^City of\s+/i, '')
+    .replace(/^Greater\s+/i, '')
+    .trim();
+
+  // Filter out values that are actually countries/regions, not cities
+  if (/^England$/i.test(normalized) ||
+      /^Scotland$/i.test(normalized) ||
+      /^Wales$/i.test(normalized) ||
+      /^United Kingdom$/i.test(normalized)) {
+    return null;
+  }
+
+  return normalized;
+}
+
 // Invalid location indicators
 const INVALID_LOCATION_PATTERNS = [
   /^null$/i, /^unknown$/i, /^n\/a$/i, /^na$/i, /^not specified$/i,
@@ -98,11 +122,15 @@ export class LocationExtractor {
     const cleanLocation = locationStr.trim();
     if (!cleanLocation) return result;
 
+    let parsed: LocationData;
+
     // Check if location contains comma (English or Arabic) - indicates structured format
     // Do this BEFORE direct match to preserve city,country structure
     if (cleanLocation.includes(',') || cleanLocation.includes('،')) {
-      const parsed = this.parseLocationWithComma(cleanLocation);
+      parsed = this.parseLocationWithComma(cleanLocation);
       if (parsed.country || parsed.city) {
+        // Normalize city before returning
+        parsed.city = normalizeCity(parsed.city);
         return parsed;
       }
     }
@@ -110,6 +138,7 @@ export class LocationExtractor {
     // Try direct matching
     const directMatch = this.tryDirectMatch(cleanLocation);
     if (directMatch.country || directMatch.city) {
+      directMatch.city = normalizeCity(directMatch.city);
       return directMatch;
     }
 
@@ -118,12 +147,15 @@ export class LocationExtractor {
     for (const potential of afterPrepositions) {
       const extracted = this.tryDirectMatch(potential);
       if (extracted.country || extracted.city) {
+        extracted.city = normalizeCity(extracted.city);
         return extracted;
       }
     }
 
     // Try parsing without comma
-    return this.parseLocationWithoutComma(cleanLocation);
+    parsed = this.parseLocationWithoutComma(cleanLocation);
+    parsed.city = normalizeCity(parsed.city);
+    return parsed;
   }
 
   /**

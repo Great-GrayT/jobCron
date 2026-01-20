@@ -1,28 +1,7 @@
 import { logger } from './logger';
 import { SalaryData } from './salary-extractor';
 import { getR2Storage, Manifest, ManifestMonth, ManifestDay } from './r2-storage';
-
-/**
- * Normalize city names for consistent statistics
- */
-function normalizeCity(cityName: string | null): string | null {
-  if (!cityName) return null;
-
-  const normalized = cityName
-    .replace(/\s+Area$/i, '')
-    .replace(/^City of\s+/i, '')
-    .replace(/^Greater\s+/i, '')
-    .trim();
-
-  if (/^England$/i.test(normalized) ||
-      /^Scotland$/i.test(normalized) ||
-      /^Wales$/i.test(normalized) ||
-      /^United Kingdom$/i.test(normalized)) {
-    return null;
-  }
-
-  return normalized;
-}
+import { normalizeCity } from './location-extractor';
 
 // Re-export existing interfaces for compatibility
 export interface JobStatistic {
