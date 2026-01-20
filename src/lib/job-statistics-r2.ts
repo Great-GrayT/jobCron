@@ -153,6 +153,7 @@ export interface SummaryData {
  *
  * File structure in R2:
  * - manifest.json                          (index of all data)
+ * - url-index.json                         (set of all job URLs for deduplication)
  * - stats/YYYY-MM.json                     (pre-computed statistics per month)
  * - metadata/YYYY/MM/day-DD.ndjson.gz      (job metadata, ~150KB/day)
  * - descriptions/YYYY/MM/day-DD.ndjson.gz  (job descriptions, ~1.5MB/day)
@@ -162,6 +163,7 @@ export class JobStatisticsCacheR2 {
   private manifest: Manifest | null = null;
   private pendingJobs: Map<string, JobStatistic[]> = new Map(); // date -> jobs
   private currentMonthStats: MonthlyStatistics | null = null;
+  private urlIndex: Set<string> = new Set(); // All known job URLs for deduplication
   private loaded = false;
 
   constructor() {
@@ -220,7 +222,7 @@ export class JobStatisticsCacheR2 {
   }
 
   /**
-   * Load manifest and current month stats from R2
+   * Load manifest, URL index, and current month stats from R2
    */
   async load(): Promise<void> {
     try {
@@ -228,13 +230,28 @@ export class JobStatisticsCacheR2 {
         logger.warn('R2 not configured, using empty state');
         this.manifest = await this.createEmptyManifest();
         this.currentMonthStats = this.createEmptyStatistics();
+        this.urlIndex = new Set();
         this.loaded = true;
         return;
       }
 
-      // Load manifest
-      this.manifest = await this.r2.getManifest();
+      // Load manifest and URL index in parallel
+      const [manifest, urlIndexData] = await Promise.all([
+        this.r2.getManifest(),
+        this.r2.getJSON<{ urls: string[] }>('url-index.json'),
+      ]);
+
+      this.manifest = manifest;
       logger.info(`✓ Loaded manifest: ${this.manifest.totalJobsAllTime} total jobs`);
+
+      // Load URL index for deduplication
+      if (urlIndexData?.urls) {
+        this.urlIndex = new Set(urlIndexData.urls);
+        logger.info(`✓ Loaded URL index: ${this.urlIndex.size} known URLs`);
+      } else {
+        this.urlIndex = new Set();
+        logger.info('No URL index found, starting fresh');
+      }
 
       // Check for month change
       const currentMonth = this.getCurrentMonthString();
@@ -267,6 +284,7 @@ export class JobStatisticsCacheR2 {
       logger.error('Error loading from R2:', error);
       this.manifest = await this.createEmptyManifest();
       this.currentMonthStats = this.createEmptyStatistics();
+      this.urlIndex = new Set();
       this.loaded = true;
     }
   }
@@ -314,13 +332,21 @@ export class JobStatisticsCacheR2 {
       return false;
     }
 
-    // Check for duplicates across all pending jobs
+    // Check if job already exists in R2 (using URL index)
+    if (this.urlIndex.has(job.url)) {
+      // Don't log every duplicate - too noisy
+      return false;
+    }
+
+    // Check for duplicates in pending jobs (same session)
     for (const jobs of this.pendingJobs.values()) {
       if (jobs.some(j => j.url === job.url)) {
-        logger.info(`Job already pending: ${job.url}`);
         return false;
       }
     }
+
+    // Add to URL index immediately to prevent duplicates in same batch
+    this.urlIndex.add(job.url);
 
     // Group by extraction date
     const dateKey = this.getDateString(job.extractedDate);
@@ -576,6 +602,14 @@ export class JobStatisticsCacheR2 {
 
     // Save manifest
     await this.r2.saveManifest(this.manifest!);
+
+    // Save URL index for deduplication (critical for preventing duplicates)
+    await this.r2.putJSON('url-index.json', {
+      urls: Array.from(this.urlIndex),
+      updatedAt: new Date().toISOString(),
+      count: this.urlIndex.size,
+    }, 'public, max-age=60');
+    logger.info(`✓ Saved URL index: ${this.urlIndex.size} URLs`);
 
     // Clear pending jobs
     this.pendingJobs.clear();
