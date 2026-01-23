@@ -1151,4 +1151,11 @@ export class JobStatisticsCache {
       storageType: this.useGitHubGist ? 'GitHub Gist' : 'Local File',
     };
   }
+
+  /**
+   * Get URL index size (for debugging) - for Gist, this is the current month jobs count
+   */
+  getUrlIndexSize(): number {
+    return this.currentMonthData.jobs.length;
+  }
 }

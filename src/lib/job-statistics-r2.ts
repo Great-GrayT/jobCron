@@ -3,6 +3,14 @@ import { SalaryData } from './salary-extractor';
 import { getR2Storage, Manifest, ManifestMonth, ManifestDay } from './r2-storage';
 import { normalizeCity } from './location-extractor';
 
+/**
+ * Normalize URL for consistent deduplication
+ * Matches the normalization used in url-cache.ts
+ */
+function normalizeUrl(url: string): string {
+  return url.toLowerCase().trim();
+}
+
 // Re-export existing interfaces for compatibility
 export interface JobStatistic {
   id: string;
@@ -144,6 +152,7 @@ export class JobStatisticsCacheR2 {
   private currentMonthStats: MonthlyStatistics | null = null;
   private urlIndex: Set<string> = new Set(); // All known job URLs for deduplication
   private loaded = false;
+  private duplicateCount = 0; // Track duplicates per session for debugging
 
   constructor() {
     logger.info('Job Statistics Cache (R2): Initialized');
@@ -159,6 +168,40 @@ export class JobStatisticsCacheR2 {
   private getDateString(date: Date | string): string {
     const d = typeof date === 'string' ? new Date(date) : date;
     return d.toISOString().split('T')[0]; // YYYY-MM-DD
+  }
+
+  /**
+   * Rebuild URL index from all stored metadata in R2
+   * Called when URL index is out of sync with manifest
+   */
+  private async rebuildUrlIndexFromMetadata(): Promise<void> {
+    this.urlIndex = new Set();
+
+    if (!this.manifest) return;
+
+    for (const month of this.manifest.availableMonths) {
+      const monthData = this.manifest.months[month];
+      if (!monthData?.days) continue;
+
+      for (const day of monthData.days) {
+        try {
+          const metadata = await this.r2.getNDJSONGzipped<JobMetadata>(day.metadata);
+          for (const job of metadata) {
+            this.urlIndex.add(normalizeUrl(job.url));
+          }
+        } catch (error) {
+          logger.warn(`Failed to load metadata for ${day.date}:`, error);
+        }
+      }
+    }
+
+    // Save the rebuilt index
+    await this.r2.putJSON('url-index.json', {
+      urls: Array.from(this.urlIndex),
+      updatedAt: new Date().toISOString(),
+      count: this.urlIndex.size,
+      rebuiltAt: new Date().toISOString(),
+    }, 'public, max-age=60');
   }
 
   private createEmptyStatistics(): MonthlyStatistics {
@@ -223,14 +266,26 @@ export class JobStatisticsCacheR2 {
       this.manifest = manifest;
       logger.info(`✓ Loaded manifest: ${this.manifest.totalJobsAllTime} total jobs`);
 
-      // Load URL index for deduplication
+      // Load URL index for deduplication (normalize URLs for consistent comparison)
       if (urlIndexData?.urls) {
-        this.urlIndex = new Set(urlIndexData.urls);
+        this.urlIndex = new Set(urlIndexData.urls.map(url => normalizeUrl(url)));
         logger.info(`✓ Loaded URL index: ${this.urlIndex.size} known URLs`);
       } else {
         this.urlIndex = new Set();
-        logger.info('No URL index found, starting fresh');
+        logger.info('No URL index found, will rebuild from metadata');
       }
+
+      // Check if URL index is out of sync with manifest (missing URLs)
+      const expectedMinUrls = this.manifest.totalJobsAllTime;
+      if (this.urlIndex.size < expectedMinUrls * 0.9) { // Allow 10% tolerance
+        logger.warn(`⚠ URL index out of sync! Index has ${this.urlIndex.size} URLs but manifest shows ${expectedMinUrls} jobs`);
+        logger.info('Rebuilding URL index from stored metadata...');
+        await this.rebuildUrlIndexFromMetadata();
+        logger.info(`✓ Rebuilt URL index: ${this.urlIndex.size} URLs`);
+      }
+
+      // Reset duplicate counter for this session
+      this.duplicateCount = 0;
 
       // Check for month change
       const currentMonth = this.getCurrentMonthString();
@@ -311,21 +366,42 @@ export class JobStatisticsCacheR2 {
       return false;
     }
 
+    // Normalize URL for consistent deduplication
+    const normalizedJobUrl = normalizeUrl(job.url);
+
     // Check if job already exists in R2 (using URL index)
-    if (this.urlIndex.has(job.url)) {
-      // Don't log every duplicate - too noisy
+    if (this.urlIndex.has(normalizedJobUrl)) {
+      this.duplicateCount++;
+      // Log first 10 duplicates with full details to help debug
+      if (this.duplicateCount <= 10) {
+        logger.info(`  [REJECTED ${this.duplicateCount}] Job: "${job.title?.substring(0, 40)}..."`);
+        logger.info(`    → Original URL: ${job.url}`);
+        logger.info(`    → Normalized:   ${normalizedJobUrl}`);
+        logger.info(`    → Found in index: YES (index has ${this.urlIndex.size} URLs)`);
+      }
       return false;
     }
 
     // Check for duplicates in pending jobs (same session)
     for (const jobs of this.pendingJobs.values()) {
-      if (jobs.some(j => j.url === job.url)) {
+      if (jobs.some(j => normalizeUrl(j.url) === normalizedJobUrl)) {
+        this.duplicateCount++;
+        if (this.duplicateCount <= 10) {
+          logger.info(`  [REJECTED ${this.duplicateCount}] Job: "${job.title?.substring(0, 40)}..." - already in pending batch`);
+        }
         return false;
       }
     }
 
     // Add to URL index immediately to prevent duplicates in same batch
-    this.urlIndex.add(job.url);
+    this.urlIndex.add(normalizedJobUrl);
+
+    // Log first few accepted jobs for comparison
+    if (this.urlIndex.size <= 5) {
+      logger.info(`  [ACCEPTED] Job: "${job.title?.substring(0, 40)}..."`);
+      logger.info(`    → URL added to index: ${normalizedJobUrl}`);
+      logger.info(`    → Index now has ${this.urlIndex.size} URLs`);
+    }
 
     // Group by extraction date
     const dateKey = this.getDateString(job.extractedDate);
@@ -513,9 +589,9 @@ export class JobStatisticsCacheR2 {
       const existingMetadata = await this.r2.getNDJSONGzipped<JobMetadata>(metadataKey);
       const existingDescriptions = await this.r2.getNDJSONGzipped<JobDescription>(descriptionsKey);
 
-      // Merge with new jobs (avoiding duplicates)
-      const existingUrls = new Set(existingMetadata.map(m => m.url));
-      const newJobs = jobs.filter(j => !existingUrls.has(j.url));
+      // Merge with new jobs (avoiding duplicates) - normalize URLs for comparison
+      const existingUrls = new Set(existingMetadata.map(m => normalizeUrl(m.url)));
+      const newJobs = jobs.filter(j => !existingUrls.has(normalizeUrl(j.url)));
 
       if (newJobs.length === 0) {
         logger.info(`No new jobs to save for ${dateKey}`);
@@ -876,6 +952,13 @@ export class JobStatisticsCacheR2 {
       storageType: 'Cloudflare R2',
       pendingJobs: Array.from(this.pendingJobs.values()).reduce((sum, jobs) => sum + jobs.length, 0),
     };
+  }
+
+  /**
+   * Get URL index size (for debugging)
+   */
+  getUrlIndexSize(): number {
+    return this.urlIndex.size;
   }
 
   /**

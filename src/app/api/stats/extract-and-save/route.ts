@@ -155,7 +155,11 @@ export async function GET(request: NextRequest) {
       await statsCache.save();
       logger.info(`✓ Successfully saved statistics to ${storageInfo.backend.toUpperCase()}`);
     } else {
-      logger.info(`No new jobs to save (all ${processedCount} jobs already exist in current month)`);
+      // Log diagnostic info about why all jobs are duplicates
+      const urlIndexSize = statsCache.getUrlIndexSize?.() || 'unknown';
+      logger.info(`No new jobs to save (all ${processedCount} jobs already exist)`);
+      logger.info(`  → URL index contains ${urlIndexSize} URLs. All ${processedCount} incoming RSS URLs matched.`);
+      logger.info(`  → This means RSS feed has no NEW postings. Run POST /api/stats/rebuild to reset.`);
     }
 
     // Get final statistics

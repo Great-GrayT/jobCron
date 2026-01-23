@@ -169,18 +169,11 @@ export class JobMetadataExtractor {
     description: string;
     url: string;
   }) {
-    logger.info(`Extracting metadata for: ${job.title}`);
-
     const certificates = this.extractCertificates(job.title, job.description);
     const industry = this.extractIndustry(job.title, job.company, job.description);
     const seniority = this.extractSeniority(job.title);
     const keywords = this.extractKeywords(job.title, job.description);
     const id = this.generateJobId(job.url);
-
-    logger.info(`  - Certificates: ${certificates.join(', ') || 'None'}`);
-    logger.info(`  - Industry: ${industry}`);
-    logger.info(`  - Seniority: ${seniority}`);
-    logger.info(`  - Keywords: ${keywords.slice(0, 5).join(', ')}...`);
 
     return {
       id,

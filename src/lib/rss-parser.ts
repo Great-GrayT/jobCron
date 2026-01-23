@@ -12,10 +12,13 @@ export class RSSParseError extends Error {
  */
 async function parseSingleFeed(url: string): Promise<JobItem[]> {
   try {
+    console.log(`[RSS] Fetching feed: ${url.substring(0, 60)}...`);
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; JobMonitor/1.0)',
       },
+      cache: 'no-store', // Disable caching to always get fresh RSS data
+      next: { revalidate: 0 }, // Next.js specific: disable caching
     });
 
     if (!response.ok) {
@@ -26,7 +29,10 @@ async function parseSingleFeed(url: string): Promise<JobItem[]> {
     }
 
     const xmlText = await response.text();
-    return extractJobsFromXML(xmlText);
+    console.log(`[RSS] Received ${xmlText.length} bytes from feed`);
+    const jobs = extractJobsFromXML(xmlText);
+    console.log(`[RSS] Parsed ${jobs.length} jobs from feed`);
+    return jobs;
   } catch (error) {
     if (error instanceof RSSParseError) {
       throw error;

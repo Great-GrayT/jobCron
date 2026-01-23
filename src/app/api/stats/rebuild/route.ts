@@ -3,6 +3,13 @@ import { getR2Storage } from "@/lib/r2-storage";
 import { JobMetadata } from "@/lib/job-statistics-r2";
 import { logger } from "@/lib/logger";
 
+/**
+ * Normalize URL for consistent deduplication
+ */
+function normalizeUrl(url: string): string {
+  return url.toLowerCase().trim();
+}
+
 export const maxDuration = 300; // 5 minutes timeout
 export const dynamic = "force-dynamic";
 
@@ -49,10 +56,11 @@ export async function POST(request: NextRequest) {
           totalLoaded += metadata.length;
 
           for (const job of metadata) {
-            if (allJobsByUrl.has(job.url)) {
+            const normalizedUrl = normalizeUrl(job.url);
+            if (allJobsByUrl.has(normalizedUrl)) {
               duplicatesFound++;
             } else {
-              allJobsByUrl.set(job.url, {
+              allJobsByUrl.set(normalizedUrl, {
                 metadata: job,
                 month,
                 day: day.date,

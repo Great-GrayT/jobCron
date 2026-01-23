@@ -65,8 +65,19 @@ export async function GET(request: NextRequest) {
 
     // Extract and save new job data from RSS feeds
     logger.info(`Parsing ${RSS_STATS_FEED_URLS.length} RSS feeds...`);
+    logger.info(`  RSS Feed URLs: ${RSS_STATS_FEED_URLS.map(u => u.substring(0, 50) + '...').join(', ')}`);
     const allJobs = await parseRSSFeeds(RSS_STATS_FEED_URLS);
     logger.info(`Fetched ${allJobs.length} total jobs from RSS feeds`);
+
+    // Log first 3 RSS job URLs for debugging
+    if (allJobs.length > 0) {
+      logger.info(`  Sample RSS job URLs:`);
+      allJobs.slice(0, 3).forEach((job, i) => {
+        logger.info(`    [${i + 1}] ${job.link}`);
+        logger.info(`        Title: ${job.title?.substring(0, 50)}...`);
+        logger.info(`        PubDate: ${job.pubDate}`);
+      });
+    }
 
     let newJobsCount = 0;
     let processedCount = 0;
@@ -203,7 +214,12 @@ export async function GET(request: NextRequest) {
         await statsCache.save();
         logger.info(`✓ Successfully saved statistics to ${storageInfo.backend.toUpperCase()}`);
       } else {
+        // Log diagnostic info about why all jobs are duplicates
+        const urlIndexSize = statsCache.getUrlIndexSize?.() || 'unknown';
         logger.info(`No new jobs to save (all ${processedCount} jobs already exist)`);
+        logger.info(`  → URL index contains ${urlIndexSize} URLs. All ${processedCount} incoming RSS URLs matched the index.`);
+        logger.info(`  → This means the RSS feed has no NEW job postings since last extraction.`);
+        logger.info(`  → If this seems wrong, run POST /api/stats/rebuild to regenerate the URL index.`);
       }
     }
 
