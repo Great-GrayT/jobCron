@@ -16,6 +16,7 @@ import {
   ArrowUpRight,
   Github,
   BarChart3,
+  CheckSquare,
 } from "lucide-react";
 import "./home.css";
 
@@ -145,6 +146,19 @@ export default function Home() {
               <div className="action-content">
                 <h3>Job Statistics</h3>
                 <p>View comprehensive analytics and insights from RSS feeds</p>
+              </div>
+              <div className="action-arrow">
+                <ArrowRight size={32} strokeWidth={2} />
+              </div>
+            </Link>
+
+            <Link href="/applied" className="action-card card">
+              <div className="action-icon">
+                <CheckSquare size={40} strokeWidth={1.5} />
+              </div>
+              <div className="action-content">
+                <h3>Applied Jobs</h3>
+                <p>Track jobs you've applied to from Telegram links</p>
               </div>
               <div className="action-arrow">
                 <ArrowRight size={32} strokeWidth={2} />

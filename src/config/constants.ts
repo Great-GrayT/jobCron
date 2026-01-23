@@ -17,3 +17,7 @@ export const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 export const CRON_SECRET = process.env.CRON_SECRET;
 
 export const RATE_LIMIT_DELAY_MS = 2000; // Delay between Telegram messages
+
+// Tracking configuration
+export const APP_BASE_URL = process.env.APP_BASE_URL || 'http://localhost:3000';
+export const TRACKING_SECRET = process.env.TRACKING_SECRET || 'default-dev-secret-change-in-production';

@@ -1,5 +1,6 @@
 import { JobItem } from "@/types/job";
 import { extractJobDetails, analyzeJobDescription } from "./job-analyzer";
+import { createTrackingUrl } from "./tracking-url";
 
 /**
  * Calculates time elapsed since job posting
@@ -97,13 +98,24 @@ export function formatJobMessage(job: JobItem): string {
     sections.push(`🖥️ Software: ${analysis.software.slice(0, 5).join(', ')}`);
   }
 
+  // Generate tracking URL with job metadata
+  const trackingUrl = createTrackingUrl({
+    jobUrl: job.link,
+    title: details.position,
+    company: details.company,
+    location: details.location,
+    postedDate: job.pubDate,
+    roleType: analysis.jobType !== "General Finance" ? analysis.jobType : undefined,
+    industry: analysis.companyType !== "Unknown" ? analysis.companyType : undefined,
+  });
+
   sections.push(
     "",
     `⏰ Posted: ${timeAgo}`,
     `📅 ${formatDate(postDate)}`,
     "",
     "🔗 Apply here:",
-    job.link,
+    trackingUrl,
     "",
     "━━━━━━━━━━━━━━━━━━━━━━",
     "💼 LinkedIn Jobs Monitor"
