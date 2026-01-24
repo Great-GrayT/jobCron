@@ -292,6 +292,48 @@ export class AppliedJobsR2Storage {
       lastUpdated: this.manifest?.updatedAt || new Date().toISOString(),
     };
   }
+
+  /**
+   * Clear all applied jobs data
+   */
+  async clearAll(): Promise<{ deletedMonths: string[]; totalDeleted: number }> {
+    if (!this.r2.isAvailable()) {
+      throw new Error('R2 not available');
+    }
+
+    if (!this.loaded) {
+      await this.load();
+    }
+
+    const deletedMonths: string[] = [];
+    let totalDeleted = 0;
+
+    if (this.manifest) {
+      // Delete all monthly files
+      for (const month of Object.keys(this.manifest.applicationsByMonth)) {
+        try {
+          await this.r2.delete(`applied/${month}.ndjson.gz`);
+          totalDeleted += this.manifest.applicationsByMonth[month];
+          deletedMonths.push(month);
+          logger.info(`Deleted applied jobs for ${month}`);
+        } catch (error) {
+          logger.warn(`Failed to delete applied/${month}.ndjson.gz:`, error);
+        }
+      }
+
+      // Reset manifest
+      this.manifest = this.createEmptyManifest();
+      await this.r2.putJSON(APPLIED_MANIFEST_KEY, this.manifest, 'public, max-age=60');
+    }
+
+    // Clear in-memory state
+    this.pendingApplications = [];
+    this.appliedUrls.clear();
+
+    logger.info(`Cleared all applied jobs: ${totalDeleted} total from ${deletedMonths.length} months`);
+
+    return { deletedMonths, totalDeleted };
+  }
 }
 
 // Singleton instance
