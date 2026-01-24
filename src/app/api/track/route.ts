@@ -4,16 +4,42 @@ import { getAppliedJobsStorage } from '@/lib/applied-jobs-r2';
 import { logger } from '@/lib/logger';
 
 /**
+ * Check if the request is from a bot (Telegram link preview, etc.)
+ */
+function isBotRequest(userAgent: string | null): boolean {
+  if (!userAgent) return false;
+
+  const botPatterns = [
+    'TelegramBot',
+    'Telegram',
+    'WhatsApp',
+    'Slackbot',
+    'Discordbot',
+    'facebookexternalhit',
+    'Twitterbot',
+    'LinkedInBot',
+    'bot',
+    'crawler',
+    'spider',
+    'preview',
+  ];
+
+  const lowerUA = userAgent.toLowerCase();
+  return botPatterns.some(pattern => lowerUA.includes(pattern.toLowerCase()));
+}
+
+/**
  * Tracking endpoint for job applications
  *
  * When a user clicks a tracking link in Telegram:
  * 1. Validates the URL signature
  * 2. Decodes the job data
- * 3. Stores the application in R2
+ * 3. Stores the application in R2 (only for real user clicks, not bot previews)
  * 4. Redirects to the actual job URL
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
+  const userAgent = request.headers.get('user-agent');
 
   const jobId = searchParams.get('j');
   const timestamp = searchParams.get('t');
@@ -49,8 +75,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Check if this is a bot request (Telegram link preview, etc.)
+  // If so, skip storing and just redirect
+  if (isBotRequest(userAgent)) {
+    logger.info(`Track: Ignoring bot request (${userAgent?.substring(0, 50)}...)`);
+    return NextResponse.redirect(jobData.jobUrl, 302);
+  }
+
   try {
-    // Store the application
+    // Store the application (only for real user clicks)
     const storage = getAppliedJobsStorage();
     await storage.load();
 
