@@ -30,6 +30,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  ComposedChart,
+  Area,
 } from "recharts";
 import "./applied.css";
 
@@ -53,6 +55,53 @@ interface Stats {
 }
 
 const CHART_COLORS = ["#00d4ff", "#00ff88", "#ffcc00", "#ff6b6b", "#9d4edd", "#4cc9f0", "#06ffa5", "#ff006e"];
+
+// Calculate delay in minutes between posted and applied
+const calculateDelayMinutes = (postedDate: string, appliedAt: string): number | null => {
+  if (!postedDate || !appliedAt) return null;
+  const posted = new Date(postedDate).getTime();
+  const applied = new Date(appliedAt).getTime();
+  if (isNaN(posted) || isNaN(applied)) return null;
+  const diffMs = applied - posted;
+  if (diffMs < 0) return null; // Applied before posted (data issue)
+  return Math.floor(diffMs / 60000); // Convert to minutes
+};
+
+// Format delay in a human-readable way with minute accuracy
+const formatDelay = (minutes: number | null): string => {
+  if (minutes === null) return "N/A";
+  if (minutes < 0) return "N/A";
+
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const mins = minutes % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h ${mins}m`;
+  } else if (hours > 0) {
+    return `${hours}h ${mins}m`;
+  } else {
+    return `${mins}m`;
+  }
+};
+
+// Format delay for compact display
+const formatDelayCompact = (minutes: number | null): string => {
+  if (minutes === null) return "N/A";
+  if (minutes < 0) return "N/A";
+
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const mins = minutes % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h`;
+  } else if (hours > 0) {
+    return `${hours}h ${mins}m`;
+  } else {
+    return `${mins}m`;
+  }
+};
 
 export default function AppliedJobsPage() {
   const [applications, setApplications] = useState<AppliedJob[]>([]);
@@ -204,6 +253,86 @@ export default function AppliedJobsPage() {
     // Most active day
     const mostActiveDay = Object.entries(byDate).sort(([, a], [, b]) => b - a)[0];
 
+    // Calculate delay statistics
+    const delays: number[] = [];
+    applications.forEach((app) => {
+      const delay = calculateDelayMinutes(app.postedDate, app.appliedAt);
+      if (delay !== null && delay >= 0) {
+        delays.push(delay);
+      }
+    });
+
+    // Average delay in minutes
+    const avgDelayMinutes = delays.length > 0
+      ? Math.round(delays.reduce((a, b) => a + b, 0) / delays.length)
+      : null;
+
+    // Median delay
+    const sortedDelays = [...delays].sort((a, b) => a - b);
+    const medianDelayMinutes = sortedDelays.length > 0
+      ? sortedDelays[Math.floor(sortedDelays.length / 2)]
+      : null;
+
+    // Min and max delay
+    const minDelayMinutes = delays.length > 0 ? Math.min(...delays) : null;
+    const maxDelayMinutes = delays.length > 0 ? Math.max(...delays) : null;
+
+    // Delay distribution buckets (in hours for visualization)
+    const delayBuckets: Record<string, number> = {
+      "< 1h": 0,
+      "1-6h": 0,
+      "6-12h": 0,
+      "12-24h": 0,
+      "1-2d": 0,
+      "2-7d": 0,
+      "> 7d": 0,
+    };
+
+    delays.forEach((mins) => {
+      if (mins < 60) delayBuckets["< 1h"]++;
+      else if (mins < 360) delayBuckets["1-6h"]++;
+      else if (mins < 720) delayBuckets["6-12h"]++;
+      else if (mins < 1440) delayBuckets["12-24h"]++;
+      else if (mins < 2880) delayBuckets["1-2d"]++;
+      else if (mins < 10080) delayBuckets["2-7d"]++;
+      else delayBuckets["> 7d"]++;
+    });
+
+    const delayDistributionData = Object.entries(delayBuckets)
+      .filter(([, count]) => count > 0)
+      .map(([range, count]) => ({ range, count }));
+
+    // Average delay per day (for trend visualization)
+    const delaysByDate: Record<string, number[]> = {};
+    applications.forEach((app) => {
+      const delay = calculateDelayMinutes(app.postedDate, app.appliedAt);
+      if (delay !== null && delay >= 0) {
+        const date = app.appliedAt.split("T")[0];
+        if (!delaysByDate[date]) delaysByDate[date] = [];
+        delaysByDate[date].push(delay);
+      }
+    });
+
+    const dailyDelayData = Object.entries(delaysByDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-14) // Last 14 days
+      .map(([date, delays]) => {
+        const avgDelay = Math.round(delays.reduce((a, b) => a + b, 0) / delays.length);
+        const minDelay = Math.min(...delays);
+        const maxDelay = Math.max(...delays);
+        return {
+          date: new Date(date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+          avgDelayHours: Number((avgDelay / 60).toFixed(1)), // Convert to hours for better visualization
+          avgDelayMinutes: avgDelay,
+          minDelayHours: Number((minDelay / 60).toFixed(1)),
+          maxDelayHours: Number((maxDelay / 60).toFixed(1)),
+          count: delays.length,
+        };
+      });
+
     return {
       dateData,
       companyData,
@@ -214,6 +343,14 @@ export default function AppliedJobsPage() {
       mostActiveDay,
       totalCompanies: Object.keys(byCompany).length,
       totalLocations: Object.keys(byLocation).length,
+      // Delay statistics
+      avgDelayMinutes,
+      medianDelayMinutes,
+      minDelayMinutes,
+      maxDelayMinutes,
+      delayDistributionData,
+      dailyDelayData,
+      totalWithDelay: delays.length,
     };
   }, [applications]);
 
@@ -329,6 +466,14 @@ export default function AppliedJobsPage() {
                 <div className="metric-compact-label">MONTHS TRACKED</div>
                 <div className="metric-compact-value">
                   {availableMonths.length}
+                </div>
+              </div>
+              <div className="metric-compact">
+                <div className="metric-compact-label">AVG DELAY</div>
+                <div className="metric-compact-value" style={{ color: "#ff6b6b" }}>
+                  {analyticsData?.avgDelayMinutes !== null
+                    ? formatDelayCompact(analyticsData.avgDelayMinutes)
+                    : "N/A"}
                 </div>
               </div>
               <div className="metric-compact">
@@ -554,6 +699,206 @@ export default function AppliedJobsPage() {
             </div>
           )}
 
+          {/* Application Response Time Analysis */}
+          {analyticsData && analyticsData.delayDistributionData.length > 0 && (
+            <div className="terminal-panel span-2">
+              <div className="panel-header">
+                <Clock size={14} />
+                <span>APPLICATION RESPONSE TIME</span>
+                <span style={{ marginLeft: "auto", fontSize: "0.65rem", color: "#6b7280" }}>
+                  Time between job posting and your application
+                </span>
+              </div>
+              <div className="chart-container compact" style={{ height: 240 }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart
+                    data={analyticsData.delayDistributionData}
+                    margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                    <XAxis
+                      dataKey="range"
+                      stroke="#4a5568"
+                      tick={{ fontSize: 10 }}
+                    />
+                    <YAxis
+                      stroke="#4a5568"
+                      tick={{ fontSize: 10 }}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#0a0e1a",
+                        border: "1px solid #ff6b6b",
+                        fontSize: 11,
+                      }}
+                      labelStyle={{ color: "#ff6b6b" }}
+                      formatter={(value: number) => [`${value} applications`, "Count"]}
+                    />
+                    <Bar
+                      dataKey="count"
+                      fill="#ff6b6b"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                padding: "0.5rem 0.75rem",
+                borderTop: "1px solid #1a2332",
+                fontSize: "0.7rem"
+              }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ color: "#6b7280" }}>AVERAGE</div>
+                  <div style={{ color: "#ff6b6b", fontWeight: "bold" }}>
+                    {formatDelay(analyticsData.avgDelayMinutes)}
+                  </div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ color: "#6b7280" }}>MEDIAN</div>
+                  <div style={{ color: "#ffcc00", fontWeight: "bold" }}>
+                    {formatDelay(analyticsData.medianDelayMinutes)}
+                  </div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ color: "#6b7280" }}>FASTEST</div>
+                  <div style={{ color: "#00ff88", fontWeight: "bold" }}>
+                    {formatDelay(analyticsData.minDelayMinutes)}
+                  </div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ color: "#6b7280" }}>SLOWEST</div>
+                  <div style={{ color: "#9d4edd", fontWeight: "bold" }}>
+                    {formatDelay(analyticsData.maxDelayMinutes)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Daily Average Delay Trend */}
+          {analyticsData && analyticsData.dailyDelayData.length >= 1 && (
+            <div className="terminal-panel span-full">
+              <div className="panel-header">
+                <TrendingUp size={14} />
+                <span>DAILY RESPONSE TIME TREND</span>
+                <span style={{ marginLeft: "auto", fontSize: "0.65rem", color: "#6b7280" }}>
+                  Average delay per day (in hours) with min/max range
+                </span>
+              </div>
+              <div className="chart-container compact" style={{ height: 220 }}>
+                <ResponsiveContainer width="100%" height={200}>
+                  <ComposedChart
+                    data={analyticsData.dailyDelayData}
+                    margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
+                  >
+                    <defs>
+                      <linearGradient id="delayGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ff6b6b" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#ff6b6b" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#4a5568"
+                      tick={{ fontSize: 10 }}
+                    />
+                    <YAxis
+                      stroke="#4a5568"
+                      tick={{ fontSize: 10 }}
+                      label={{
+                        value: "Hours",
+                        angle: -90,
+                        position: "insideLeft",
+                        style: { fill: "#6b7280", fontSize: 10 }
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#0a0e1a",
+                        border: "1px solid #ff6b6b",
+                        fontSize: 11,
+                      }}
+                      labelStyle={{ color: "#ff6b6b" }}
+                      formatter={(value: number, name: string) => {
+                        if (name === "avgDelayHours") {
+                          const hours = Math.floor(value);
+                          const mins = Math.round((value - hours) * 60);
+                          return [`${hours}h ${mins}m`, "Avg Delay"];
+                        }
+                        if (name === "minDelayHours") {
+                          const hours = Math.floor(value);
+                          const mins = Math.round((value - hours) * 60);
+                          return [`${hours}h ${mins}m`, "Min Delay"];
+                        }
+                        if (name === "maxDelayHours") {
+                          const hours = Math.floor(value);
+                          const mins = Math.round((value - hours) * 60);
+                          return [`${hours}h ${mins}m`, "Max Delay"];
+                        }
+                        return [value, name];
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="maxDelayHours"
+                      fill="url(#delayGradient)"
+                      stroke="none"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="minDelayHours"
+                      stroke="#00ff88"
+                      strokeWidth={1}
+                      strokeDasharray="3 3"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="maxDelayHours"
+                      stroke="#9d4edd"
+                      strokeWidth={1}
+                      strokeDasharray="3 3"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="avgDelayHours"
+                      stroke="#ff6b6b"
+                      strokeWidth={2}
+                      dot={{ fill: "#ff6b6b", r: 4 }}
+                      activeDot={{ r: 6, fill: "#ffcc00" }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "2rem",
+                padding: "0.5rem",
+                borderTop: "1px solid #1a2332",
+                fontSize: "0.65rem"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <div style={{ width: 12, height: 2, backgroundColor: "#ff6b6b" }} />
+                  <span style={{ color: "#6b7280" }}>Average</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <div style={{ width: 12, height: 2, backgroundColor: "#00ff88", borderStyle: "dashed" }} />
+                  <span style={{ color: "#6b7280" }}>Fastest</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <div style={{ width: 12, height: 2, backgroundColor: "#9d4edd", borderStyle: "dashed" }} />
+                  <span style={{ color: "#6b7280" }}>Slowest</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Applications Table */}
           <div className="terminal-panel span-full">
             <div className="panel-header">
@@ -584,44 +929,59 @@ export default function AppliedJobsPage() {
                 <table className="jobs-table">
                   <thead>
                     <tr>
-                      <th style={{ width: "30%" }}>JOB TITLE</th>
-                      <th style={{ width: "15%" }}>COMPANY</th>
-                      <th style={{ width: "15%" }}>LOCATION</th>
-                      <th style={{ width: "12%" }}>ROLE TYPE</th>
-                      <th style={{ width: "13%" }}>APPLIED</th>
+                      <th style={{ width: "26%" }}>JOB TITLE</th>
+                      <th style={{ width: "13%" }}>COMPANY</th>
+                      <th style={{ width: "13%" }}>LOCATION</th>
+                      <th style={{ width: "10%" }}>ROLE TYPE</th>
+                      <th style={{ width: "10%" }}>APPLIED</th>
                       <th style={{ width: "10%" }}>POSTED</th>
-                      <th style={{ width: "5%" }}></th>
+                      <th style={{ width: "10%" }}>DELAY</th>
+                      <th style={{ width: "4%" }}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {applications.map((app, index) => (
-                      <tr
-                        key={app.id}
-                        onClick={() => window.open(app.originalUrl, "_blank")}
-                      >
-                        <td className="job-title-cell">{app.jobTitle}</td>
-                        <td className="company-cell">{app.company}</td>
-                        <td className="location-cell">{app.location}</td>
-                        <td style={{ color: "#ffcc00" }}>
-                          {app.roleType || "N/A"}
-                        </td>
-                        <td className="date-cell">{formatShortDate(app.appliedAt)}</td>
-                        <td className="date-cell">
-                          {app.postedDate ? formatShortDate(app.postedDate) : "N/A"}
-                        </td>
-                        <td>
-                          <a
-                            href={app.originalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="external-link"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <ExternalLink size={14} />
-                          </a>
-                        </td>
-                      </tr>
-                    ))}
+                    {applications.map((app) => {
+                      const delayMinutes = calculateDelayMinutes(app.postedDate, app.appliedAt);
+                      return (
+                        <tr
+                          key={app.id}
+                          onClick={() => window.open(app.originalUrl, "_blank")}
+                        >
+                          <td className="job-title-cell">{app.jobTitle}</td>
+                          <td className="company-cell">{app.company}</td>
+                          <td className="location-cell">{app.location}</td>
+                          <td style={{ color: "#ffcc00" }}>
+                            {app.roleType || "N/A"}
+                          </td>
+                          <td className="date-cell">{formatShortDate(app.appliedAt)}</td>
+                          <td className="date-cell">
+                            {app.postedDate ? formatShortDate(app.postedDate) : "N/A"}
+                          </td>
+                          <td style={{
+                            color: delayMinutes !== null
+                              ? delayMinutes < 60 ? "#00ff88"
+                              : delayMinutes < 1440 ? "#ffcc00"
+                              : "#ff6b6b"
+                              : "#6b7280",
+                            fontWeight: "600",
+                            fontSize: "0.7rem"
+                          }}>
+                            {formatDelayCompact(delayMinutes)}
+                          </td>
+                          <td>
+                            <a
+                              href={app.originalUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="external-link"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink size={14} />
+                            </a>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -730,6 +1090,40 @@ export default function AppliedJobsPage() {
                           {analyticsData.industryData[0]?.value || 0})
                         </td>
                       </tr>
+                    )}
+                    {analyticsData.avgDelayMinutes !== null && (
+                      <>
+                        <tr>
+                          <td style={{ color: "#6b7280" }}>Average Response Time</td>
+                          <td
+                            style={{
+                              textAlign: "right",
+                              color: "#ff6b6b",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {formatDelay(analyticsData.avgDelayMinutes)}
+                          </td>
+                          <td style={{ color: "#6b7280" }}>
+                            Median: {formatDelay(analyticsData.medianDelayMinutes)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style={{ color: "#6b7280" }}>Response Time Range</td>
+                          <td
+                            style={{
+                              textAlign: "right",
+                              color: "#00ff88",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {formatDelay(analyticsData.minDelayMinutes)}
+                          </td>
+                          <td style={{ color: "#6b7280" }}>
+                            Fastest to Slowest: {formatDelay(analyticsData.minDelayMinutes)} → {formatDelay(analyticsData.maxDelayMinutes)}
+                          </td>
+                        </tr>
+                      </>
                     )}
                   </tbody>
                 </table>
