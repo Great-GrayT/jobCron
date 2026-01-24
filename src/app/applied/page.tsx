@@ -733,7 +733,7 @@ export default function AppliedJobsPage() {
                         fontSize: 11,
                       }}
                       labelStyle={{ color: "#ff6b6b" }}
-                      formatter={(value: number) => [`${value} applications`, "Count"]}
+                      formatter={(value) => [`${value ?? 0} applications`, "Count"]}
                     />
                     <Bar
                       dataKey="count"
@@ -823,23 +823,24 @@ export default function AppliedJobsPage() {
                         fontSize: 11,
                       }}
                       labelStyle={{ color: "#ff6b6b" }}
-                      formatter={(value: number, name: string) => {
+                      formatter={(value, name) => {
+                        const v = typeof value === "number" ? value : 0;
                         if (name === "avgDelayHours") {
-                          const hours = Math.floor(value);
-                          const mins = Math.round((value - hours) * 60);
+                          const hours = Math.floor(v);
+                          const mins = Math.round((v - hours) * 60);
                           return [`${hours}h ${mins}m`, "Avg Delay"];
                         }
                         if (name === "minDelayHours") {
-                          const hours = Math.floor(value);
-                          const mins = Math.round((value - hours) * 60);
+                          const hours = Math.floor(v);
+                          const mins = Math.round((v - hours) * 60);
                           return [`${hours}h ${mins}m`, "Min Delay"];
                         }
                         if (name === "maxDelayHours") {
-                          const hours = Math.floor(value);
-                          const mins = Math.round((value - hours) * 60);
+                          const hours = Math.floor(v);
+                          const mins = Math.round((v - hours) * 60);
                           return [`${hours}h ${mins}m`, "Max Delay"];
                         }
-                        return [value, name];
+                        return [v, name];
                       }}
                     />
                     <Area
