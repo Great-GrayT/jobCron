@@ -471,7 +471,7 @@ export default function AppliedJobsPage() {
               <div className="metric-compact">
                 <div className="metric-compact-label">AVG DELAY</div>
                 <div className="metric-compact-value" style={{ color: "#ff6b6b" }}>
-                  {analyticsData?.avgDelayMinutes !== null
+                  {analyticsData && analyticsData.avgDelayMinutes !== null
                     ? formatDelayCompact(analyticsData.avgDelayMinutes)
                     : "N/A"}
                 </div>
