@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Load persistent cache and filter out already cached jobs
-      await sendEvent("log", { message: "🗄️  Loading cache from GitHub Gist...", timestamp: new Date().toISOString() });
+      await sendEvent("log", { message: "🗄️  Loading cache from R2 storage...", timestamp: new Date().toISOString() });
       const urlCache = new UrlCache('url-scraper');
       await urlCache.load();
 
@@ -125,7 +125,9 @@ export async function GET(request: NextRequest) {
       await sendEvent("log", { message: `💾 Adding ${newJobs.length} URLs to cache...`, timestamp: new Date().toISOString() });
       for (const job of newJobs) {
         const normalizedUrl = job.url.toLowerCase().trim();
-        urlCache.add(normalizedUrl);
+        // Use postedDate as the timestamp for 48-hour expiry calculation
+        // This ensures URLs expire based on when the job was posted, not when we cached it
+        urlCache.add(normalizedUrl, job.postedDate || undefined);
       }
 
       await urlCache.save();

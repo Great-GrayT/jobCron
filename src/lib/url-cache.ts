@@ -1,9 +1,19 @@
-import { promises as fs } from 'fs';
-import path from 'path';
 import { logger } from './logger';
+import { getR2Storage } from './r2-storage';
 
+/**
+ * Cache entry with individual timestamp for per-URL expiry
+ */
+interface CacheEntry {
+  url: string;
+  timestamp: string;  // ISO date - pubDate/postedDate if available, otherwise extraction time
+}
+
+/**
+ * Data structure stored in R2
+ */
 interface CacheData {
-  urls: string[];
+  entries: CacheEntry[];
   lastUpdated: string;
   metadata: {
     totalUrlsCached: number;
@@ -11,322 +21,213 @@ interface CacheData {
   };
 }
 
+/**
+ * URL Cache with per-URL timestamp-based expiry
+ *
+ * URLs are kept for 48 hours based on their individual timestamps (post date or extraction time),
+ * not based on when the cache was last updated. This prevents duplicates from being re-sent
+ * when old posts are reposted.
+ */
 export class UrlCache {
-  private cacheKey: string; // Unique key for this cache (e.g., 'url-scraper', 'url-rss')
-  private cache: Set<string>;
-  private cacheTimestamp?: string;
+  private cacheKey: string;
+  private cache: Map<string, string>; // url -> timestamp
   private isDirty: boolean = false;
-  private useGitHubGist: boolean;
-  private gistId?: string;
   private readonly CACHE_EXPIRY_HOURS = 48;
 
   constructor(cacheKey: string = 'url-scraper') {
     this.cacheKey = cacheKey;
-    this.cache = new Set<string>();
+    this.cache = new Map<string, string>();
 
-    // Use GitHub Gist if GITHUB_TOKEN and GIST_ID are available
-    this.useGitHubGist = !!(process.env.GITHUB_TOKEN && process.env.GIST_ID);
-    this.gistId = process.env.GIST_ID;
-
-    const storageType = this.useGitHubGist
-      ? 'GitHub Gist (persistent)'
-      : 'Local file system';
-
-    logger.info(`Cache storage: ${storageType}`);
     logger.info(`Cache key: ${this.cacheKey}`);
-    logger.info(`Cache expiry: ${this.CACHE_EXPIRY_HOURS} hours`);
+    logger.info(`Cache expiry: ${this.CACHE_EXPIRY_HOURS} hours per URL (based on post/extraction time)`);
   }
 
   /**
-   * Load cache from storage (GitHub Gist or local file)
+   * Check if a timestamp is older than the expiry threshold
    */
-  async load(): Promise<void> {
-    try {
-      if (this.useGitHubGist) {
-        await this.loadFromGitHubGist();
-      } else {
-        await this.loadFromLocalFile();
-      }
-    } catch (error) {
-      logger.error(`Error loading cache:`, error);
-      logger.info(`Starting with empty cache.`);
-      this.cache = new Set<string>();
-    }
-  }
-
-  /**
-   * Check if cache is expired (older than 48 hours)
-   */
-  private isCacheExpired(lastUpdated: string): boolean {
-    const cacheDate = new Date(lastUpdated);
+  private isEntryExpired(timestamp: string): boolean {
+    const entryDate = new Date(timestamp);
     const now = new Date();
-    const hoursDiff = (now.getTime() - cacheDate.getTime()) / (1000 * 60 * 60);
+    const hoursDiff = (now.getTime() - entryDate.getTime()) / (1000 * 60 * 60);
     return hoursDiff > this.CACHE_EXPIRY_HOURS;
   }
 
   /**
-   * Load cache from GitHub Gist
+   * Get the R2 key for this cache
    */
-  private async loadFromGitHubGist(): Promise<void> {
+  private getR2Key(): string {
+    return `url-cache/${this.cacheKey}.json`;
+  }
+
+  /**
+   * Load cache from R2 storage
+   */
+  async load(): Promise<void> {
     try {
-      const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
-        headers: {
-          'Authorization': `token ${process.env.GITHUB_TOKEN}`,
-          'Accept': 'application/vnd.github.v3+json',
-        },
-      });
+      const r2 = getR2Storage();
 
-      if (!response.ok) {
-        throw new Error(`GitHub API error: ${response.status}`);
-      }
-
-      const gist = await response.json();
-
-      // Debug: Log all available files in the Gist
-      const availableFiles = Object.keys(gist.files || {});
-      logger.info(`Available files in Gist: ${availableFiles.join(', ')}`);
-      logger.info(`Looking for file: ${this.cacheKey}.json`);
-
-      const fileName = this.cacheKey + '.json';
-      const file = gist.files[fileName];
-
-      if (!file) {
-        logger.warn(`File "${fileName}" not found in Gist. Available files: ${availableFiles.join(', ')}`);
-        logger.info(`No cache for key "${this.cacheKey}" in GitHub Gist. Starting with empty cache.`);
-        this.cache = new Set<string>();
+      if (!r2.isAvailable()) {
+        logger.warn('R2 Storage not configured. Starting with empty cache.');
+        this.cache = new Map<string, string>();
         return;
       }
 
-      logger.info(`Found file "${fileName}" in Gist. Content length: ${file.content?.length || 0}, Truncated: ${file.truncated || false}`);
+      const key = this.getR2Key();
+      logger.info(`Loading cache from R2: ${key}`);
 
-      let fileContent = file.content;
+      const data = await r2.getJSON<CacheData>(key);
 
-      // If file is truncated or has no content, fetch from raw_url
-      if (!fileContent || file.truncated) {
-        logger.info(`File is ${!fileContent ? 'empty' : 'truncated'}. Fetching from raw URL: ${file.raw_url}`);
+      if (!data) {
+        logger.info(`No cache found in R2 for "${this.cacheKey}". Starting with empty cache.`);
+        this.cache = new Map<string, string>();
+        return;
+      }
 
-        const rawResponse = await fetch(file.raw_url, {
-          headers: {
-            'Authorization': `token ${process.env.GITHUB_TOKEN}`,
-          },
-        });
+      // Filter out expired entries and load valid ones
+      let expiredCount = 0;
+      let validCount = 0;
 
-        if (!rawResponse.ok) {
-          throw new Error(`Failed to fetch raw file: ${rawResponse.status}`);
+      for (const entry of data.entries) {
+        if (this.isEntryExpired(entry.timestamp)) {
+          expiredCount++;
+        } else {
+          this.cache.set(entry.url, entry.timestamp);
+          validCount++;
         }
-
-        fileContent = await rawResponse.text();
-        logger.info(`Fetched raw content. Length: ${fileContent.length}`);
       }
 
-      if (!fileContent || fileContent.trim() === '') {
-        logger.warn(`File "${fileName}" is empty after fetching. Starting with empty cache.`);
-        this.cache = new Set<string>();
-        return;
-      }
-
-      const data: CacheData = JSON.parse(fileContent);
-
-      // Check if cache is expired
-      if (this.isCacheExpired(data.lastUpdated)) {
-        logger.info(`⏰ Cache expired (older than ${this.CACHE_EXPIRY_HOURS} hours). Starting fresh.`);
-        logger.info(`  - Last updated: ${data.lastUpdated}`);
-        this.cache = new Set<string>();
-        this.cacheTimestamp = new Date().toISOString();
-        return;
-      }
-
-      this.cache = new Set(data.urls);
-      this.cacheTimestamp = data.lastUpdated;
-
-      logger.info(`✓ Cache loaded from GitHub Gist`);
-      logger.info(`  - Gist URL: ${gist.html_url}`);
+      logger.info(`✓ Cache loaded from R2`);
       logger.info(`  - Cache key: ${this.cacheKey}`);
-      logger.info(`  - URLs in cache: ${this.cache.size}`);
+      logger.info(`  - Valid URLs loaded: ${validCount}`);
+      logger.info(`  - Expired URLs filtered: ${expiredCount}`);
       logger.info(`  - Last updated: ${data.lastUpdated}`);
       logger.info(`  - Cache version: ${data.metadata.version}`);
+
+      // Save immediately if we filtered out expired entries to clean up storage
+      if (expiredCount > 0) {
+        logger.info(`  - Cleaning ${expiredCount} expired entries from storage...`);
+        await this.save();
+        logger.info(`  - Storage cleaned`);
+      }
     } catch (error: any) {
-      logger.error(`Error loading from GitHub Gist:`, error);
-      logger.info(`No existing cache for "${this.cacheKey}" in GitHub Gist. Starting with empty cache.`);
-      this.cache = new Set<string>();
+      logger.error(`Error loading cache from R2:`, error);
+      logger.info(`Starting with empty cache.`);
+      this.cache = new Map<string, string>();
     }
   }
 
   /**
-   * Load cache from local file system
-   */
-  private async loadFromLocalFile(): Promise<void> {
-    const cacheDir = path.join(process.cwd(), 'cache');
-    const cacheFilePath = path.join(cacheDir, this.cacheKey + '.json');
-
-    try {
-      // Ensure cache directory exists
-      await fs.mkdir(cacheDir, { recursive: true });
-
-      // Try to read existing cache file
-      const fileContent = await fs.readFile(cacheFilePath, 'utf-8');
-      const data: CacheData = JSON.parse(fileContent);
-
-      // Check if cache is expired
-      if (this.isCacheExpired(data.lastUpdated)) {
-        logger.info(`⏰ Cache expired (older than ${this.CACHE_EXPIRY_HOURS} hours). Starting fresh.`);
-        logger.info(`  - Last updated: ${data.lastUpdated}`);
-        this.cache = new Set<string>();
-        this.cacheTimestamp = new Date().toISOString();
-        return;
-      }
-
-      this.cache = new Set(data.urls);
-      this.cacheTimestamp = data.lastUpdated;
-
-      logger.info(`✓ Cache loaded from local file`);
-      logger.info(`  - File path: ${cacheFilePath}`);
-      logger.info(`  - Cache key: ${this.cacheKey}`);
-      logger.info(`  - URLs in cache: ${this.cache.size}`);
-      logger.info(`  - Last updated: ${data.lastUpdated}`);
-      logger.info(`  - Cache version: ${data.metadata.version}`);
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
-        logger.info(`No existing cache file for "${this.cacheKey}". Starting with empty cache.`);
-        // Ensure directory exists for when we save
-        await fs.mkdir(cacheDir, { recursive: true });
-      } else {
-        throw error;
-      }
-      this.cache = new Set<string>();
-      this.cacheTimestamp = new Date().toISOString();
-    }
-  }
-
-  /**
-   * Save cache to storage (GitHub Gist or local file)
+   * Save cache to R2 storage
    */
   async save(): Promise<void> {
     try {
-      if (this.useGitHubGist) {
-        await this.saveToGitHubGist();
-      } else {
-        await this.saveToLocalFile();
+      const r2 = getR2Storage();
+
+      if (!r2.isAvailable()) {
+        logger.warn('R2 Storage not configured. Cache not saved.');
+        return;
       }
+
+      const now = new Date().toISOString();
+
+      // Convert map to array of entries (only non-expired ones)
+      const entries: CacheEntry[] = [];
+      for (const [url, timestamp] of this.cache) {
+        if (!this.isEntryExpired(timestamp)) {
+          entries.push({ url, timestamp });
+        }
+      }
+
+      const data: CacheData = {
+        entries,
+        lastUpdated: now,
+        metadata: {
+          totalUrlsCached: entries.length,
+          version: '2.0.0',  // New version with per-URL timestamps
+        },
+      };
+
+      const key = this.getR2Key();
+      await r2.putJSON(key, data, 'public, max-age=60');
+
       this.isDirty = false;
+
+      logger.info(`✓ Cache saved to R2`);
+      logger.info(`  - Cache key: ${this.cacheKey}`);
+      logger.info(`  - Total URLs cached: ${entries.length}`);
     } catch (error) {
-      logger.error(`Error saving cache:`, error);
+      logger.error(`Error saving cache to R2:`, error);
       throw error;
     }
   }
 
   /**
-   * Save cache to GitHub Gist
-   */
-  private async saveToGitHubGist(): Promise<void> {
-    const now = new Date().toISOString();
-    this.cacheTimestamp = this.cacheTimestamp || now;
-
-    const data: CacheData = {
-      urls: Array.from(this.cache),
-      lastUpdated: this.cacheTimestamp,
-      metadata: {
-        totalUrlsCached: this.cache.size,
-        version: '1.0.0',
-      },
-    };
-
-    const fileName = this.cacheKey + '.json';
-
-    const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `token ${process.env.GITHUB_TOKEN}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        files: {
-          [fileName]: {
-            content: JSON.stringify(data, null, 2),
-          },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
-    }
-
-    const gist = await response.json();
-
-    logger.info(`✓ Cache saved to GitHub Gist`);
-    logger.info(`  - Gist URL: ${gist.html_url}`);
-    logger.info(`  - Cache key: ${this.cacheKey}`);
-    logger.info(`  - Total URLs cached: ${this.cache.size}`);
-  }
-
-  /**
-   * Save cache to local file system
-   */
-  private async saveToLocalFile(): Promise<void> {
-    const cacheDir = path.join(process.cwd(), 'cache');
-    const cacheFilePath = path.join(cacheDir, this.cacheKey + '.json');
-
-    const now = new Date().toISOString();
-    this.cacheTimestamp = this.cacheTimestamp || now;
-
-    const data: CacheData = {
-      urls: Array.from(this.cache),
-      lastUpdated: this.cacheTimestamp,
-      metadata: {
-        totalUrlsCached: this.cache.size,
-        version: '1.0.0',
-      },
-    };
-
-    await fs.writeFile(
-      cacheFilePath,
-      JSON.stringify(data, null, 2),
-      'utf-8'
-    );
-
-    logger.info(`✓ Cache saved to local file`);
-    logger.info(`  - File path: ${cacheFilePath}`);
-    logger.info(`  - Cache key: ${this.cacheKey}`);
-    logger.info(`  - Total URLs cached: ${this.cache.size}`);
-  }
-
-  /**
-   * Check if URL exists in cache
+   * Check if URL exists in cache (and is not expired)
    */
   has(url: string): boolean {
     const normalizedUrl = url.toLowerCase().trim();
-    return this.cache.has(normalizedUrl);
+    const timestamp = this.cache.get(normalizedUrl);
+
+    if (!timestamp) {
+      return false;
+    }
+
+    // Check if this specific entry is expired
+    if (this.isEntryExpired(timestamp)) {
+      // Remove expired entry from in-memory cache
+      this.cache.delete(normalizedUrl);
+      this.isDirty = true;
+      return false;
+    }
+
+    return true;
   }
 
   /**
-   * Add URL to cache
+   * Add URL to cache with optional timestamp
+   * @param url The URL to cache
+   * @param timestamp Optional ISO date string (post date). Defaults to current time if not provided.
    */
-  add(url: string): boolean {
+  add(url: string, timestamp?: string): boolean {
     const normalizedUrl = url.toLowerCase().trim();
 
-    if (this.cache.has(normalizedUrl)) {
+    // Use provided timestamp or current time
+    const entryTimestamp = timestamp || new Date().toISOString();
+
+    // Check if already exists (and not expired)
+    if (this.has(normalizedUrl)) {
       return false; // Already exists
     }
 
-    this.cache.add(normalizedUrl);
+    this.cache.set(normalizedUrl, entryTimestamp);
     this.isDirty = true;
     return true; // Successfully added
   }
 
   /**
-   * Get all URLs in cache
+   * Get all URLs in cache (non-expired only)
    */
   getAll(): string[] {
-    return Array.from(this.cache);
+    const urls: string[] = [];
+    for (const [url, timestamp] of this.cache) {
+      if (!this.isEntryExpired(timestamp)) {
+        urls.push(url);
+      }
+    }
+    return urls;
   }
 
   /**
-   * Get cache size
+   * Get cache size (non-expired entries only)
    */
   size(): number {
-    return this.cache.size;
+    let count = 0;
+    for (const [, timestamp] of this.cache) {
+      if (!this.isEntryExpired(timestamp)) {
+        count++;
+      }
+    }
+    return count;
   }
 
   /**
@@ -342,22 +243,38 @@ export class UrlCache {
    * Get cache statistics
    */
   getStats() {
+    let validCount = 0;
+    let expiredCount = 0;
+
+    for (const [, timestamp] of this.cache) {
+      if (this.isEntryExpired(timestamp)) {
+        expiredCount++;
+      } else {
+        validCount++;
+      }
+    }
+
     return {
-      totalUrls: this.cache.size,
-      storageType: this.useGitHubGist ? 'GitHub Gist' : 'Local File',
+      totalUrls: validCount,
+      expiredUrls: expiredCount,
+      storageType: 'R2',
       cacheKey: this.cacheKey,
       isDirty: this.isDirty,
     };
   }
 
   /**
-   * Log all cached URLs
+   * Log all cached URLs with their timestamps
    */
   logAll(): void {
-    logger.info(`\n=== Cache Contents (${this.cache.size} URLs) ===`);
-    const urls = Array.from(this.cache);
-    urls.forEach((url, index) => {
-      logger.info(`${index + 1}. ${url}`);
-    });
+    logger.info(`\n=== Cache Contents (${this.size()} URLs) ===`);
+    let index = 1;
+    for (const [url, timestamp] of this.cache) {
+      if (!this.isEntryExpired(timestamp)) {
+        const date = new Date(timestamp);
+        logger.info(`${index}. ${url} (cached: ${date.toISOString()})`);
+        index++;
+      }
+    }
   }
 }

@@ -102,8 +102,10 @@ export async function checkAndSendJobs(): Promise<CronJobResult> {
       const sentJobs = newJobs.slice(0, sent);
       for (const job of sentJobs) {
         const normalizedUrl = job.link.toLowerCase().trim();
-        urlCache.add(normalizedUrl);
-        logger.info(`✓ Added to cache after successful send: ${normalizedUrl}`);
+        // Use pubDate as the timestamp for 48-hour expiry calculation
+        // This ensures URLs expire based on when the job was posted, not when we cached it
+        urlCache.add(normalizedUrl, job.pubDate);
+        logger.info(`✓ Added to cache after successful send: ${normalizedUrl} (pubDate: ${job.pubDate})`);
       }
       await urlCache.save();
       logger.info(`Cache saved with ${urlCache.size()} total URLs`);

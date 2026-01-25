@@ -28,6 +28,23 @@ export class JobMetadataExtractor {
     'Data Science': ['data science', 'machine learning', 'AI', 'artificial intelligence', 'data analyst', 'big data'],
   };
 
+  // Compound seniority phrases that should be matched first (order matters: more specific first)
+  // These handle cases like "Senior Associate" which should be Senior, not Entry
+  private static readonly COMPOUND_SENIORITY: Array<{ pattern: RegExp; level: string }> = [
+    { pattern: /\bsenior\s+associate\b/i, level: 'Senior' },
+    { pattern: /\bsenior\s+analyst\b/i, level: 'Senior' },
+    { pattern: /\bsenior\s+consultant\b/i, level: 'Senior' },
+    { pattern: /\blead\s+associate\b/i, level: 'Senior' },
+    { pattern: /\bprincipal\s+associate\b/i, level: 'Senior' },
+    { pattern: /\bassociate\s+director\b/i, level: 'Management' },
+    { pattern: /\bassociate\s+manager\b/i, level: 'Management' },
+    { pattern: /\bsenior\s+manager\b/i, level: 'Management' },
+    { pattern: /\bsenior\s+director\b/i, level: 'Management' },
+    { pattern: /\bjunior\s+developer\b/i, level: 'Entry' },
+    { pattern: /\bjunior\s+engineer\b/i, level: 'Entry' },
+    { pattern: /\bjunior\s+analyst\b/i, level: 'Entry' },
+  ];
+
   // Seniority levels
   private static readonly SENIORITY_KEYWORDS: Record<string, string[]> = {
     'Entry': ['entry', 'junior', 'associate', 'graduate', 'intern', 'trainee', 'assistant'],
@@ -90,6 +107,13 @@ export class JobMetadataExtractor {
    * Extract seniority level from job title
    */
   static extractSeniority(title: string): string {
+    // First, check for compound phrases (e.g., "Senior Associate" should be Senior, not Entry)
+    for (const { pattern, level } of this.COMPOUND_SENIORITY) {
+      if (pattern.test(title)) {
+        return level;
+      }
+    }
+
     const titleLower = title.toLowerCase();
     const scores: Record<string, number> = {};
 
