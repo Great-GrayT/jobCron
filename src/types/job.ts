@@ -5,6 +5,7 @@ export interface JobItem {
   description: string;
   company?: string;
   location?: string;
+  sourceUrl?: string; // RSS feed URL this job came from
 }
 
 export interface JobDetails {
@@ -32,4 +33,5 @@ export interface CronJobResult {
   sent: number;
   failed: number;
   pubDates: string[];
+  locationFiltered?: number; // Jobs filtered out by location rules
 }

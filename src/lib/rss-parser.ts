@@ -31,6 +31,8 @@ async function parseSingleFeed(url: string): Promise<JobItem[]> {
     const xmlText = await response.text();
     console.log(`[RSS] Received ${xmlText.length} bytes from feed`);
     const jobs = extractJobsFromXML(xmlText);
+    // Add source URL to each job
+    jobs.forEach(job => job.sourceUrl = url);
     console.log(`[RSS] Parsed ${jobs.length} jobs from feed`);
     return jobs;
   } catch (error) {

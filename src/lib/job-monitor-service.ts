@@ -6,6 +6,60 @@ import { logger } from "./logger";
 import { dailyJobCache } from "./daily-cache";
 import { UrlCache } from "./url-cache";
 import { RSS_FEED_URLS, CHECK_INTERVAL_MINUTES, RATE_LIMIT_DELAY_MS } from "@/config/constants";
+import { LocationExtractor } from "./location-extractor";
+
+// Feed URL that should only send Europe and Canada jobs
+const EUROPE_CANADA_ONLY_FEED = 'https://rss.app/feeds/cbDOTKxD2MnLmSzW.xml';
+
+// Allowed countries for the filtered feed (Europe + Canada)
+const ALLOWED_COUNTRIES = new Set([
+  // European countries (canonical names from countries.ts)
+  'United Kingdom', 'Germany', 'France', 'Italy', 'Spain', 'Netherlands',
+  'Belgium', 'Switzerland', 'Austria', 'Poland', 'Czech Republic', 'Sweden',
+  'Norway', 'Denmark', 'Finland', 'Ireland', 'Portugal', 'Greece', 'Hungary',
+  'Romania', 'Bulgaria', 'Ukraine', 'Russia', 'Serbia', 'Croatia', 'Slovenia',
+  'Slovakia', 'Lithuania', 'Latvia', 'Estonia', 'Cyprus', 'Malta', 'Iceland',
+  'Luxembourg', 'Monaco', 'Andorra', 'Liechtenstein', 'San Marino', 'Vatican City',
+  'Albania', 'North Macedonia', 'Montenegro', 'Bosnia and Herzegovina', 'Moldova', 'Belarus',
+  // Canada
+  'Canada',
+]);
+
+/**
+ * Filter jobs from specific feeds based on location
+ * For EUROPE_CANADA_ONLY_FEED, only allow jobs from Europe or Canada
+ * Uses LocationExtractor which finds countries via direct match, city lookup, or state lookup
+ * Returns { filtered: JobItem[], removedCount: number }
+ */
+function filterJobsByFeedLocation(jobs: JobItem[]): { filtered: JobItem[]; removedCount: number } {
+  let removedCount = 0;
+
+  const filtered = jobs.filter(job => {
+    // Only apply filter to the specific feed
+    if (job.sourceUrl !== EUROPE_CANADA_ONLY_FEED) {
+      return true; // Allow all jobs from other feeds
+    }
+
+    // Use LocationExtractor to extract country (handles cities, states, and direct country matches)
+    const locationData = LocationExtractor.extractLocation(
+      job.location || '',
+      job.link,
+      job.title,
+      job.description
+    );
+
+    // Allow if country is in the allowed list
+    if (locationData.country && ALLOWED_COUNTRIES.has(locationData.country)) {
+      return true;
+    }
+
+    removedCount++;
+    logger.info(`Filtering out job from ${EUROPE_CANADA_ONLY_FEED}: ${job.title} (location: ${job.location || 'unknown'}, detected country: ${locationData.country || 'unknown'}, city: ${locationData.city || 'unknown'})`);
+    return false;
+  });
+
+  return { filtered, removedCount };
+}
 
 /**
  * Deduplicate jobs based on URL
@@ -57,8 +111,12 @@ export async function checkAndSendJobs(): Promise<CronJobResult> {
     const uniqueJobs = deduplicateJobs(allJobs);
     logger.info(`After deduplication: ${uniqueJobs.length} unique jobs (removed ${allJobs.length - uniqueJobs.length} duplicates)`);
 
+    // Filter jobs by feed-specific location rules (Europe/Canada only for specific feed)
+    const { filtered: locationFilteredJobs, removedCount: locationFilteredCount } = filterJobsByFeedLocation(uniqueJobs);
+    logger.info(`After location filter: ${locationFilteredJobs.length} jobs (removed ${locationFilteredCount} non-Europe/Canada jobs from filtered feed)`);
+
     // Filter for recent jobs
-    const recentJobs = filterRecentJobs(uniqueJobs, CHECK_INTERVAL_MINUTES);
+    const recentJobs = filterRecentJobs(locationFilteredJobs, CHECK_INTERVAL_MINUTES);
     logger.info(`Found ${recentJobs.length} recent jobs (within ${CHECK_INTERVAL_MINUTES} minutes)`);
 
     // Load persistent cache and filter out already cached jobs
@@ -84,7 +142,7 @@ export async function checkAndSendJobs(): Promise<CronJobResult> {
     // If no new jobs, return early
     if (newJobs.length === 0) {
       logger.info("No new jobs to send - all already cached");
-      return { total: allJobs.length, sent: 0, failed: 0, pubDates };
+      return { total: allJobs.length, sent: 0, failed: 0, pubDates, locationFiltered: locationFilteredCount };
     }
 
     // Format all messages
@@ -123,6 +181,7 @@ export async function checkAndSendJobs(): Promise<CronJobResult> {
       sent,
       failed,
       pubDates,
+      locationFiltered: locationFilteredCount,
     };
   } catch (error) {
     logger.error("Error in checkAndSendJobs:", error);
