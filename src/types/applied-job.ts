@@ -4,7 +4,10 @@ export interface AppliedJob {
   appliedAt: string;    // ISO timestamp when user clicked
   jobTitle: string;     // Job title
   company: string;      // Company name
-  location: string;     // Job location
+  location: string;     // Job location (raw)
+  city?: string;        // Normalized city name
+  country?: string;     // Extracted country name
+  region?: string;      // Geographical region (e.g., Europe, America)
   originalUrl: string;  // Actual job application URL
   postedDate: string;   // When job was posted
   roleType?: string;    // Type of role

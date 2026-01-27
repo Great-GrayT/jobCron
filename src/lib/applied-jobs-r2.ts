@@ -2,6 +2,7 @@ import { getR2Storage } from './r2-storage';
 import { logger } from './logger';
 import { AppliedJob, AppliedJobsManifest, TrackingJobData } from '@/types/applied-job';
 import { generateJobId } from './tracking-url';
+import { LocationExtractor, normalizeCity } from './location-extractor';
 
 /**
  * Applied Jobs R2 Storage
@@ -119,6 +120,15 @@ export class AppliedJobsR2Storage {
     const jobId = generateJobId(jobData.jobUrl);
     const now = new Date();
 
+    // Extract and normalize location data
+    const locationData = LocationExtractor.extractLocation(
+      jobData.location,
+      jobData.jobUrl,
+      null,
+      ''
+    );
+    const normalizedCity = normalizeCity(locationData.city);
+
     const application: AppliedJob = {
       id: `${jobId}-${now.getTime()}`,
       jobId,
@@ -126,6 +136,9 @@ export class AppliedJobsR2Storage {
       jobTitle: jobData.title,
       company: jobData.company,
       location: jobData.location,
+      city: normalizedCity || undefined,
+      country: locationData.country || undefined,
+      region: locationData.region || undefined,
       originalUrl: jobData.jobUrl,
       postedDate: jobData.postedDate,
       roleType: jobData.roleType,
