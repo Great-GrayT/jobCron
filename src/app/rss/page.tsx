@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Radio, Zap, Target, Database, ArrowLeft, ArrowRight, Loader2, RefreshCw, Clock, CheckCircle2, XCircle, Info, Sparkles } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import "./rss.css";
 
 interface RSSResult {
@@ -250,6 +251,7 @@ export default function RSSPage() {
             <span>LinkedIn Scraper</span>
             <ArrowRight size={16} />
           </Link>
+          <ThemeToggle />
         </div>
 
         {/* Easter egg hint */}

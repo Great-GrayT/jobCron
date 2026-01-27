@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import "./scrape.css";
 
 interface ProgressLog {
@@ -388,6 +389,8 @@ export default function ScrapePage() {
           <a href="/stats">View Statistics</a>
           <span style={{ margin: "0 1rem", opacity: 0.5 }}>|</span>
           <a href="/rss">RSS Monitor</a>
+          <span style={{ margin: "0 1rem", opacity: 0.5 }}>|</span>
+          <ThemeToggle />
         </div>
       </div>
 

@@ -14,6 +14,7 @@ import {
   CertsBump,
   CHART_COLORS,
 } from '@/components/charts';
+import { ThemeToggle } from "@/components/ThemeToggle";
 import "./stats.css";
 
 interface SalaryData {
@@ -835,6 +836,7 @@ export default function StatsPage() {
             <ArrowLeft size={14} />
             <span>HOME</span>
           </Link>
+          <ThemeToggle />
         </div>
       </div>
 
@@ -1428,52 +1430,31 @@ export default function StatsPage() {
               <Briefcase size={14} />
               <span>RECENT JOBS (TOP 100)</span>
             </div>
-            <div style={{ padding: '12px', overflowX: 'auto', maxHeight: '600px', overflowY: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-                <thead style={{ position: 'sticky', top: 0, backgroundColor: '#0a0e1a', zIndex: 1 }}>
-                  <tr style={{ borderBottom: '2px solid #00d4ff' }}>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '35%' }}>JOB TITLE</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '13%' }}>EMPLOYER</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '12%' }}>INDUSTRY</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '10%' }}>SENIORITY</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '10%' }}>COUNTRY</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '10%' }}>CITY</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff', width: '10%' }}>PUBLISHED</th>
+            <div className="jobs-table-container">
+              <table className="jobs-table-full">
+                <thead>
+                  <tr>
+                    <th style={{ width: '35%' }}>JOB TITLE</th>
+                    <th style={{ width: '13%' }}>EMPLOYER</th>
+                    <th style={{ width: '12%' }}>INDUSTRY</th>
+                    <th style={{ width: '10%' }}>SENIORITY</th>
+                    <th style={{ width: '10%' }}>COUNTRY</th>
+                    <th style={{ width: '10%' }}>CITY</th>
+                    <th style={{ width: '10%' }}>PUBLISHED</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {getSortedJobs().map((job, index) => (
+                  {getSortedJobs().map((job) => (
                     <tr
                       key={job.id}
-                      style={{
-                        borderBottom: '1px solid #1a2332',
-                        cursor: 'pointer',
-                        backgroundColor: hoveringJobId === job.id
-                          ? (index % 2 === 0 ? 'transparent' : '#0a0e1a80')
-                          : (index % 2 === 0 ? 'transparent' : '#0a0e1a80')
-                      }}
                       onClick={() => window.open(job.url, '_blank')}
-                      onMouseEnter={(e) => {
-                        // Only highlight if not hovering on title cell (loading state)
-                        if (hoveringJobId !== job.id) {
-                          e.currentTarget.style.backgroundColor = '#00d4ff20';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'transparent' : '#0a0e1a80';
-                      }}
                     >
                       <td
-                        style={{ padding: '8px', color: '#00ff88', position: 'relative' }}
+                        className="cell-title"
+                        style={{ position: 'relative' }}
                         onMouseEnter={(e) => {
                           e.stopPropagation();
                           setHoveringJobId(job.id);
-
-                          // Reset row background when entering title cell
-                          const row = e.currentTarget.parentElement;
-                          if (row) {
-                            row.style.backgroundColor = index % 2 === 0 ? 'transparent' : '#0a0e1a80';
-                          }
 
                           // Show popup after 3 seconds
                           hoverTimerRef.current = setTimeout(() => {
@@ -1521,7 +1502,7 @@ export default function StatsPage() {
                               cy="10"
                               r="8"
                               fill="none"
-                              stroke="#1a2332"
+                              className="loading-circle-bg"
                               strokeWidth="2"
                             />
                             <circle
@@ -1529,12 +1510,11 @@ export default function StatsPage() {
                               cy="10"
                               r="8"
                               fill="none"
-                              stroke="#00d4ff"
+                              className="loading-circle-fg loading-circle-progress"
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeDasharray="50.27"
                               strokeDashoffset="50.27"
-                              className="loading-circle-progress"
                             />
                           </svg>
                         )}
@@ -1542,12 +1522,12 @@ export default function StatsPage() {
                           <span style={{ fontWeight: 'bold' }}>{job.title}</span>
                         </div>
                       </td>
-                      <td style={{ padding: '8px', color: '#9d4edd', fontSize: '10px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.company || 'N/A'}</td>
-                      <td style={{ padding: '8px', color: '#ff6b6b', fontSize: '10px', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.industry || 'N/A'}</td>
-                      <td style={{ padding: '8px', color: '#ffcc00', fontSize: '10px', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.seniority || 'N/A'}</td>
-                      <td style={{ padding: '8px', color: '#06ffa5', fontSize: '10px', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.country || 'N/A'}</td>
-                      <td style={{ padding: '8px', color: '#06ffa5', fontSize: '10px', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{normalizeCity(job.city) || 'N/A'}</td>
-                      <td style={{ padding: '8px', color: '#4a5568', fontSize: '10px' }}>
+                      <td className="cell-company">{job.company || 'N/A'}</td>
+                      <td className="cell-industry">{job.industry || 'N/A'}</td>
+                      <td className="cell-seniority">{job.seniority || 'N/A'}</td>
+                      <td className="cell-location">{job.country || 'N/A'}</td>
+                      <td className="cell-location">{normalizeCity(job.city) || 'N/A'}</td>
+                      <td className="cell-date">
                         {formatPublishDate(job.postedDate)}
                       </td>
                     </tr>
@@ -1563,117 +1543,105 @@ export default function StatsPage() {
               <BarChart3 size={14} />
               <span>COMPREHENSIVE STATISTICS</span>
             </div>
-            <div style={{ padding: '12px', overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+            <div className="stats-table-container">
+              <table className="stats-table">
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #00d4ff' }}>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff' }}>METRIC</th>
-                    <th style={{ textAlign: 'right', padding: '8px', color: '#00d4ff' }}>VALUE</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff' }}>DETAILS</th>
+                  <tr>
+                    <th>METRIC</th>
+                    <th>VALUE</th>
+                    <th>DETAILS</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>Total Jobs</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{filteredStats?.totalJobs.toLocaleString()}</td>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>Filtered results</td>
+                  <tr>
+                    <td>Total Jobs</td>
+                    <td>{filteredStats?.totalJobs.toLocaleString()}</td>
+                    <td>Filtered results</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>Industries</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{Object.keys(filteredStats?.byIndustry || {}).length}</td>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>
+                  <tr>
+                    <td>Industries</td>
+                    <td>{Object.keys(filteredStats?.byIndustry || {}).length}</td>
+                    <td>
                       Top: {Object.entries(filteredStats?.byIndustry || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'}
                     </td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>Companies</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{Object.keys(filteredStats?.byCompany || {}).length}</td>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>
+                  <tr>
+                    <td>Companies</td>
+                    <td>{Object.keys(filteredStats?.byCompany || {}).length}</td>
+                    <td>
                       Most Active: {Object.entries(filteredStats?.byCompany || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.byCompany || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
                     </td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>Locations</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{Object.keys(filteredStats?.byLocation || {}).length}</td>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>
+                  <tr>
+                    <td>Locations</td>
+                    <td>{Object.keys(filteredStats?.byLocation || {}).length}</td>
+                    <td>
                       Countries: {Object.keys(filteredStats?.byCountry || {}).length} | Cities: {Object.keys(filteredStats?.byCity || {}).length}
                     </td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>Certificates</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{Object.keys(filteredStats?.byCertificate || {}).length}</td>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>
+                  <tr>
+                    <td>Certificates</td>
+                    <td>{Object.keys(filteredStats?.byCertificate || {}).length}</td>
+                    <td>
                       Most Required: {Object.entries(filteredStats?.byCertificate || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'}
                     </td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>Seniority Levels</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#00ff88', fontWeight: 'bold' }}>{Object.keys(filteredStats?.bySeniority || {}).length}</td>
-                    <td style={{ padding: '8px', color: '#4a5568' }}>
+                  <tr>
+                    <td>Seniority Levels</td>
+                    <td>{Object.keys(filteredStats?.bySeniority || {}).length}</td>
+                    <td>
                       Most Common: {Object.entries(filteredStats?.bySeniority || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'}
                     </td>
                   </tr>
                   {hasSoftwareData && (
-                    <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                      <td style={{ padding: '8px', color: '#4a5568' }}>Software & Tools</td>
-                      <td style={{ padding: '8px', textAlign: 'right', color: '#9d4edd', fontWeight: 'bold' }}>
-                        {Object.keys(filteredStats?.bySoftware || {}).length}
-                      </td>
-                      <td style={{ padding: '8px', color: '#4a5568' }}>
+                    <tr>
+                      <td>Software & Tools</td>
+                      <td className="cell-company">{Object.keys(filteredStats?.bySoftware || {}).length}</td>
+                      <td>
                         Most Required: {Object.entries(filteredStats?.bySoftware || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.bySoftware || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
                       </td>
                     </tr>
                   )}
                   {hasProgrammingData && (
-                    <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                      <td style={{ padding: '8px', color: '#4a5568' }}>Programming Languages</td>
-                      <td style={{ padding: '8px', textAlign: 'right', color: '#ff006e', fontWeight: 'bold' }}>
-                        {Object.keys(filteredStats?.byProgrammingSkill || {}).length}
-                      </td>
-                      <td style={{ padding: '8px', color: '#4a5568' }}>
+                    <tr>
+                      <td>Programming Languages</td>
+                      <td className="cell-industry">{Object.keys(filteredStats?.byProgrammingSkill || {}).length}</td>
+                      <td>
                         Most Used: {Object.entries(filteredStats?.byProgrammingSkill || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.byProgrammingSkill || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
                       </td>
                     </tr>
                   )}
                   {hasYearsExperienceData && (
-                    <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                      <td style={{ padding: '8px', color: '#4a5568' }}>Years of Experience</td>
-                      <td style={{ padding: '8px', textAlign: 'right', color: '#4cc9f0', fontWeight: 'bold' }}>
-                        {Object.values(filteredStats?.byYearsExperience || {}).reduce((a, b) => a + b, 0)}
-                      </td>
-                      <td style={{ padding: '8px', color: '#4a5568' }}>
+                    <tr>
+                      <td>Years of Experience</td>
+                      <td className="cell-location">{Object.values(filteredStats?.byYearsExperience || {}).reduce((a, b) => a + b, 0)}</td>
+                      <td>
                         Most Common: {Object.entries(filteredStats?.byYearsExperience || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.byYearsExperience || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
                       </td>
                     </tr>
                   )}
                   {hasAcademicDegreesData && (
-                    <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                      <td style={{ padding: '8px', color: '#4a5568' }}>Academic Degrees</td>
-                      <td style={{ padding: '8px', textAlign: 'right', color: '#ffcc00', fontWeight: 'bold' }}>
-                        {Object.values(filteredStats?.byAcademicDegree || {}).reduce((a, b) => a + b, 0)}
-                      </td>
-                      <td style={{ padding: '8px', color: '#4a5568' }}>
+                    <tr>
+                      <td>Academic Degrees</td>
+                      <td className="cell-seniority">{Object.values(filteredStats?.byAcademicDegree || {}).reduce((a, b) => a + b, 0)}</td>
+                      <td>
                         Most Required: {Object.entries(filteredStats?.byAcademicDegree || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.byAcademicDegree || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
                       </td>
                     </tr>
                   )}
                   {hasSalaryData && (
                     <>
-                      <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                        <td style={{ padding: '8px', color: '#4a5568' }}>Salary Transparency</td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#ffcc00', fontWeight: 'bold' }}>
-                          {(((filteredStats.salaryStats?.totalWithSalary || 0) / filteredStats.totalJobs) * 100).toFixed(1)}%
-                        </td>
-                        <td style={{ padding: '8px', color: '#4a5568' }}>
+                      <tr>
+                        <td>Salary Transparency</td>
+                        <td className="cell-seniority">{(((filteredStats.salaryStats?.totalWithSalary || 0) / filteredStats.totalJobs) * 100).toFixed(1)}%</td>
+                        <td>
                           {filteredStats.salaryStats?.totalWithSalary || 0} jobs with salary data
                         </td>
                       </tr>
-                      <tr style={{ borderBottom: '1px solid #1a2332' }}>
-                        <td style={{ padding: '8px', color: '#4a5568' }}>Average Salary</td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#ffcc00', fontWeight: 'bold' }}>
-                          {formatSalary(filteredStats.salaryStats?.averageSalary || null)}
-                        </td>
-                        <td style={{ padding: '8px', color: '#4a5568' }}>
+                      <tr>
+                        <td>Average Salary</td>
+                        <td className="cell-seniority">{formatSalary(filteredStats.salaryStats?.averageSalary || null)}</td>
+                        <td>
                           Median: {formatSalary(filteredStats.salaryStats?.medianSalary || null)}
                         </td>
                       </tr>
@@ -1748,15 +1716,15 @@ export default function StatsPage() {
               <Zap size={14} />
               <span>KEYWORD ANALYSIS - DETAILED BREAKDOWN</span>
             </div>
-            <div style={{ padding: '12px', overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+            <div className="stats-table-container">
+              <table className="stats-table">
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #00d4ff' }}>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff' }}>RANK</th>
-                    <th style={{ textAlign: 'left', padding: '8px', color: '#00d4ff' }}>KEYWORD</th>
-                    <th style={{ textAlign: 'right', padding: '8px', color: '#00d4ff' }}>COUNT</th>
-                    <th style={{ textAlign: 'right', padding: '8px', color: '#00d4ff' }}>% OF JOBS</th>
-                    <th style={{ textAlign: 'center', padding: '8px', color: '#00d4ff' }}>TREND</th>
+                  <tr>
+                    <th style={{ textAlign: 'left' }}>RANK</th>
+                    <th style={{ textAlign: 'left' }}>KEYWORD</th>
+                    <th style={{ textAlign: 'right' }}>COUNT</th>
+                    <th style={{ textAlign: 'right' }}>% OF JOBS</th>
+                    <th style={{ textAlign: 'center' }}>TREND</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1765,18 +1733,14 @@ export default function StatsPage() {
                     return (
                       <tr
                         key={keyword}
-                        style={{
-                          borderBottom: '1px solid #1a2332',
-                          cursor: 'pointer',
-                          backgroundColor: activeFilters.keyword.includes(keyword) ? '#00d4ff20' : 'transparent'
-                        }}
+                        className={`keyword-row ${activeFilters.keyword.includes(keyword) ? 'active' : ''}`}
                         onClick={() => toggleFilter('keyword', keyword)}
                       >
-                        <td style={{ padding: '8px', color: '#4a5568', fontWeight: 'bold' }}>#{index + 1}</td>
-                        <td style={{ padding: '8px', color: '#00ff88', fontWeight: 'bold' }}>{keyword}</td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#00d4ff', fontWeight: 'bold' }}>{count}</td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#ffcc00' }}>{percentage}%</td>
-                        <td style={{ padding: '8px', textAlign: 'center', color: '#06ffa5' }}>
+                        <td className="cell-muted" style={{ fontWeight: 'bold' }}>#{index + 1}</td>
+                        <td className="cell-title">{keyword}</td>
+                        <td className="cell-highlight" style={{ textAlign: 'right' }}>{count}</td>
+                        <td className="cell-seniority" style={{ textAlign: 'right' }}>{percentage}%</td>
+                        <td className="cell-location" style={{ textAlign: 'center' }}>
                           {index < 5 ? '🔥 HOT' : index < 10 ? '↗ RISING' : '→ STABLE'}
                         </td>
                       </tr>
@@ -1809,22 +1773,12 @@ export default function StatsPage() {
       {hoveredJob && popupPosition && (
         <div
           ref={popupRef}
+          className="job-popup job-description-popup"
           style={{
-            position: 'fixed',
             left: `${popupPosition.x}px`,
             top: `${popupPosition.y}px`,
-            width: '400px',
-            maxHeight: '500px',
-            backgroundColor: '#0a0e1a',
-            border: '2px solid #00d4ff',
-            borderRadius: '8px',
-            zIndex: 9999,
-            boxShadow: '0 8px 32px rgba(0, 212, 255, 0.5)',
             pointerEvents: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
           }}
-          className="job-description-popup"
           onMouseEnter={() => {
             setIsMouseOverPopup(true);
           }}
@@ -1835,34 +1789,13 @@ export default function StatsPage() {
           }}
         >
           {/* Header with close button - fixed */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            padding: '8px 16px',
-            borderBottom: '1px solid #1a2332',
-            flexShrink: 0,
-          }}>
+          <div className="job-popup-header">
             <button
+              className="job-popup-close"
               onClick={() => {
                 setIsMouseOverPopup(false);
                 setHoveredJob(null);
                 setPopupPosition(null);
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#4a5568',
-                cursor: 'pointer',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#00d4ff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#4a5568';
               }}
             >
               <X size={16} />
@@ -1870,26 +1803,13 @@ export default function StatsPage() {
           </div>
           {/* Scrollable content area */}
           <div
-            style={{
-              padding: '16px',
-              overflowY: 'auto',
-              overflowX: 'hidden',
-              flex: 1,
-              maxHeight: '450px',
-            }}
+            className="job-popup-content"
             onWheel={(e) => {
               // Stop propagation to prevent main page from scrolling
               e.stopPropagation();
             }}
           >
-            <div
-              style={{
-                color: '#e2e8f0',
-                fontSize: '11px',
-                lineHeight: '1.5',
-              }}
-              dangerouslySetInnerHTML={{ __html: hoveredJob.description }}
-            />
+            <div dangerouslySetInnerHTML={{ __html: hoveredJob.description }} />
           </div>
         </div>
       )}

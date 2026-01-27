@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo, memo, useEffect } from 'react';
 import {
   ComposableMap,
   Geographies,
   Geography,
   ZoomableGroup,
 } from 'react-simple-maps';
+import { getThemeColors } from './charts/theme';
 
 interface CountryData {
   name: string;
@@ -67,9 +68,49 @@ function normalizeCountryName(geoName: string, dataCountries: Set<string>): stri
   return null;
 }
 
+// Theme-aware color gradients
+const DARK_GRADIENT = {
+  empty: '#1a2332',
+  stroke: '#2a3a4a',
+  gradient: ['#024530', '#026745', '#038d5d', '#04b375', '#05d98d', '#06ffa5'],
+  hover: '#08ffb8',
+  accent: '#06ffa5',
+};
+
+const LIGHT_GRADIENT = {
+  empty: '#e2e8f0',
+  stroke: '#cbd5e1',
+  gradient: ['#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669'],
+  hover: '#047857',
+  accent: '#059669',
+};
+
 function WorldMap({ data, onCountryClick, selectedCountry }: WorldMapProps) {
   const [tooltipContent, setTooltipContent] = useState<{ name: string; value: number } | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [themeColors, setThemeColors] = useState(getThemeColors());
+  const [gradientColors, setGradientColors] = useState(DARK_GRADIENT);
+
+  // Listen for theme changes
+  useEffect(() => {
+    const updateTheme = () => {
+      const colors = getThemeColors();
+      setThemeColors(colors);
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      setGradientColors(isLight ? LIGHT_GRADIENT : DARK_GRADIENT);
+    };
+
+    updateTheme();
+
+    // Watch for theme attribute changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   // Create lookup maps
   const { countryValues, dataCountries, maxValue } = useMemo(() => {
@@ -96,16 +137,17 @@ function WorldMap({ data, onCountryClick, selectedCountry }: WorldMapProps) {
 
   // Get color based on value with smooth gradient
   const getCountryColor = (value: number | undefined) => {
-    if (value === undefined || value === 0) return '#1a2332';
+    if (value === undefined || value === 0) return gradientColors.empty;
 
     const intensity = value / maxValue;
-    // Color gradient from dark to bright cyan/green
-    if (intensity > 0.8) return '#06ffa5';
-    if (intensity > 0.6) return '#05d98d';
-    if (intensity > 0.4) return '#04b375';
-    if (intensity > 0.2) return '#038d5d';
-    if (intensity > 0.05) return '#026745';
-    return '#024530';
+    const gradient = gradientColors.gradient;
+    // Color gradient from dark to bright
+    if (intensity > 0.8) return gradient[5];
+    if (intensity > 0.6) return gradient[4];
+    if (intensity > 0.4) return gradient[3];
+    if (intensity > 0.2) return gradient[2];
+    if (intensity > 0.05) return gradient[1];
+    return gradient[0];
   };
 
   const handleMouseMove = (
@@ -134,7 +176,7 @@ function WorldMap({ data, onCountryClick, selectedCountry }: WorldMapProps) {
   };
 
   return (
-    <div className="world-map-container" style={{ position: 'relative', width: '100%', height: '100%', background: '#0a0e1a', overflow: 'hidden' }}>
+    <div className="world-map-container" style={{ position: 'relative', width: '100%', height: '100%', background: themeColors.bg, overflow: 'hidden' }}>
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{
@@ -165,21 +207,21 @@ function WorldMap({ data, onCountryClick, selectedCountry }: WorldMapProps) {
                     style={{
                       default: {
                         fill: getCountryColor(value),
-                        stroke: isSelected ? '#ffffff' : '#2a3a4a',
+                        stroke: isSelected ? '#ffffff' : gradientColors.stroke,
                         strokeWidth: isSelected ? 1.5 : 0.3,
                         outline: 'none',
                         transition: 'fill 0.2s',
                         cursor: hasData ? 'pointer' : 'default',
                       },
                       hover: {
-                        fill: hasData ? '#08ffb8' : getCountryColor(value),
-                        stroke: hasData ? '#06ffa5' : '#2a3a4a',
+                        fill: hasData ? gradientColors.hover : getCountryColor(value),
+                        stroke: hasData ? gradientColors.accent : gradientColors.stroke,
                         strokeWidth: hasData ? 1 : 0.3,
                         outline: 'none',
                         cursor: hasData ? 'pointer' : 'default',
                       },
                       pressed: {
-                        fill: '#06ffa5',
+                        fill: gradientColors.accent,
                         stroke: '#ffffff',
                         strokeWidth: 1,
                         outline: 'none',
@@ -200,18 +242,18 @@ function WorldMap({ data, onCountryClick, selectedCountry }: WorldMapProps) {
             position: 'fixed',
             left: tooltipPos.x + 12,
             top: tooltipPos.y - 45,
-            backgroundColor: '#0a0e1a',
-            border: '1px solid #06ffa5',
+            backgroundColor: themeColors.bg,
+            border: `1px solid ${gradientColors.accent}`,
             padding: '8px 12px',
             borderRadius: '4px',
             fontSize: '11px',
-            color: '#e0e0e0',
+            color: themeColors.text,
             pointerEvents: 'none',
             zIndex: 1000,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+            boxShadow: `0 4px 12px ${gradientColors.accent}40`,
           }}
         >
-          <div style={{ color: '#06ffa5', fontWeight: 'bold', marginBottom: '2px' }}>
+          <div style={{ color: gradientColors.accent, fontWeight: 'bold', marginBottom: '2px' }}>
             {tooltipContent.name}
           </div>
           <div>{tooltipContent.value.toLocaleString()} jobs</div>
@@ -224,21 +266,21 @@ function WorldMap({ data, onCountryClick, selectedCountry }: WorldMapProps) {
           position: 'absolute',
           bottom: '6px',
           left: '6px',
-          background: 'rgba(10, 14, 26, 0.95)',
-          border: '1px solid #2a3a4a',
+          background: `${themeColors.bg}f2`,
+          border: `1px solid ${gradientColors.stroke}`,
           padding: '5px 8px',
           borderRadius: '3px',
           fontSize: '9px',
         }}
       >
-        <div style={{ color: '#06ffa5', marginBottom: '3px', fontWeight: 'bold' }}>
+        <div style={{ color: gradientColors.accent, marginBottom: '3px', fontWeight: 'bold' }}>
           Jobs
         </div>
         <div
           style={{
             width: '80px',
             height: '6px',
-            background: 'linear-gradient(to right, #024530, #026745, #038d5d, #04b375, #05d98d, #06ffa5)',
+            background: `linear-gradient(to right, ${gradientColors.gradient.join(', ')})`,
             borderRadius: '2px',
           }}
         />
@@ -246,7 +288,7 @@ function WorldMap({ data, onCountryClick, selectedCountry }: WorldMapProps) {
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            color: '#6b7280',
+            color: themeColors.textMuted,
             marginTop: '2px',
             fontSize: '8px',
           }}

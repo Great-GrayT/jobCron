@@ -33,6 +33,7 @@ import {
   ComposedChart,
   Area,
 } from "recharts";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import "./applied.css";
 
 interface AppliedJob {
@@ -385,6 +386,7 @@ export default function AppliedJobsPage() {
             <ArrowLeft size={14} />
             <span>HOME</span>
           </Link>
+          <ThemeToggle />
         </div>
       </div>
 

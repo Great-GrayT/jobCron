@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { getThemeColors } from './theme';
 
 interface Job {
   postedDate: string;
@@ -17,7 +18,44 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 // Hour labels for the X axis (every 3 hours)
 const HOURS = ['00', '03', '06', '09', '12', '15', '18', '21'];
 
+// Theme-aware color gradients
+const DARK_GRADIENT = {
+  empty: '#1a2332',
+  stroke: '#0a0e1a',
+  hoverStroke: '#00d4ff',
+  gradient: ['#024530', '#026745', '#038d5d', '#04b375', '#05d98d', '#00ff88'],
+};
+
+const LIGHT_GRADIENT = {
+  empty: '#e2e8f0',
+  stroke: '#f8fafc',
+  hoverStroke: '#2563eb',
+  gradient: ['#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669'],
+};
+
 export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
+  const [themeColors, setThemeColors] = useState(getThemeColors());
+  const [gradientColors, setGradientColors] = useState(DARK_GRADIENT);
+
+  // Listen for theme changes
+  useEffect(() => {
+    const updateTheme = () => {
+      setThemeColors(getThemeColors());
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      setGradientColors(isLight ? LIGHT_GRADIENT : DARK_GRADIENT);
+    };
+
+    updateTheme();
+
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   const heatmapData = useMemo(() => {
     // Create a 7x24 grid (days x hours)
     const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
@@ -37,14 +75,14 @@ export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
   }, [heatmapData]);
 
   const getColor = (value: number): string => {
-    if (value === 0) return '#1a2332';
+    if (value === 0) return gradientColors.empty;
     const intensity = value / maxValue;
-    if (intensity > 0.8) return '#00ff88';
-    if (intensity > 0.6) return '#05d98d';
-    if (intensity > 0.4) return '#04b375';
-    if (intensity > 0.2) return '#038d5d';
-    if (intensity > 0.05) return '#026745';
-    return '#024530';
+    if (intensity > 0.8) return gradientColors.gradient[5];
+    if (intensity > 0.6) return gradientColors.gradient[4];
+    if (intensity > 0.4) return gradientColors.gradient[3];
+    if (intensity > 0.2) return gradientColors.gradient[2];
+    if (intensity > 0.05) return gradientColors.gradient[1];
+    return gradientColors.gradient[0];
   };
 
   const cellSize = 18;
@@ -54,7 +92,7 @@ export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
 
   if (jobs.length === 0) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#4a5568' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: themeColors.textMuted }}>
         No data available
       </div>
     );
@@ -73,7 +111,7 @@ export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
           key={`hour-${hour}`}
           x={paddingLeft + i * 3 * (cellSize + gap) + cellSize / 2}
           y={15}
-          fill="#6b7280"
+          fill={themeColors.textMuted}
           fontSize="9"
           fontFamily="'Courier New', monospace"
           textAnchor="middle"
@@ -88,7 +126,7 @@ export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
           key={`day-${day}`}
           x={5}
           y={paddingTop + dayIndex * (cellSize + gap) + cellSize / 2 + 4}
-          fill="#6b7280"
+          fill={themeColors.textMuted}
           fontSize="9"
           fontFamily="'Courier New', monospace"
         >
@@ -115,9 +153,9 @@ export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
               height={cellSize}
               rx={2}
               fill={getColor(value)}
-              stroke="#0a0e1a"
+              stroke={gradientColors.stroke}
               strokeWidth={1}
-              whileHover={{ scale: 1.2, strokeWidth: 2, stroke: '#00d4ff' }}
+              whileHover={{ scale: 1.2, strokeWidth: 2, stroke: gradientColors.hoverStroke }}
               style={{ cursor: value > 0 ? 'pointer' : 'default' }}
             />
             {value > 0 && (
@@ -129,7 +167,7 @@ export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
 
       {/* Legend */}
       <g transform={`translate(${paddingLeft}, ${paddingTop + 7 * (cellSize + gap) + 10})`}>
-        <text fill="#6b7280" fontSize="9" fontFamily="'Courier New', monospace" y="5">
+        <text fill={themeColors.textMuted} fontSize="9" fontFamily="'Courier New', monospace" y="5">
           Less
         </text>
         {[0, 0.2, 0.4, 0.6, 0.8, 1].map((intensity, i) => (
@@ -140,10 +178,10 @@ export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
             width={12}
             height={12}
             rx={2}
-            fill={intensity === 0 ? '#1a2332' : getColor(intensity * maxValue)}
+            fill={intensity === 0 ? gradientColors.empty : getColor(intensity * maxValue)}
           />
         ))}
-        <text fill="#6b7280" fontSize="9" fontFamily="'Courier New', monospace" x={125} y="10">
+        <text fill={themeColors.textMuted} fontSize="9" fontFamily="'Courier New', monospace" x={125} y="10">
           More
         </text>
       </g>

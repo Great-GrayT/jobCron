@@ -1,8 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useMemo } from 'react';
-import { CHART_COLORS } from './theme';
+import { useMemo, useState, useEffect } from 'react';
+import { getChartColors, getThemeColors } from './theme';
 
 interface SkillsWordCloudProps {
   data: Array<[string, number]>;
@@ -27,6 +27,27 @@ export function SkillsWordCloud({
   activeFilters,
   maxWords = 25,
 }: SkillsWordCloudProps) {
+  const [themeColors, setThemeColors] = useState(getThemeColors());
+  const [chartColors, setChartColors] = useState(getChartColors());
+
+  // Listen for theme changes
+  useEffect(() => {
+    const updateTheme = () => {
+      setThemeColors(getThemeColors());
+      setChartColors(getChartColors());
+    };
+
+    updateTheme();
+
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   const words = useMemo(() => {
     if (data.length === 0) return [];
 
@@ -64,18 +85,18 @@ export function SkillsWordCloud({
         x: baseX + xOffset,
         y: baseY + yOffset,
         color: activeFilters.includes(text)
-          ? '#00ff88'
-          : CHART_COLORS[i % CHART_COLORS.length],
+          ? themeColors.accentSecondary
+          : chartColors[i % chartColors.length],
         rotation: 0,
       };
     });
 
     return positions;
-  }, [data, activeFilters, maxWords]);
+  }, [data, activeFilters, maxWords, themeColors.accentSecondary, chartColors]);
 
   if (data.length === 0) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#4a5568' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: themeColors.textMuted }}>
         No data available
       </div>
     );
@@ -102,7 +123,7 @@ export function SkillsWordCloud({
             textAnchor="middle"
             dominantBaseline="middle"
             transform={`rotate(${word.rotation}, ${word.x}, ${word.y})`}
-            whileHover={{ scale: 1.2, fill: '#ffffff' }}
+            whileHover={{ scale: 1.2, fill: themeColors.text }}
             transition={{ duration: 0.15 }}
           >
             {word.text}
@@ -112,7 +133,7 @@ export function SkillsWordCloud({
             cx={word.x + word.text.length * (word.fontSize * 0.3) + 5}
             cy={word.y - word.fontSize * 0.3}
             r={8}
-            fill="#00d4ff"
+            fill={themeColors.accent}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: i * 0.02 + 0.1 }}
@@ -120,7 +141,7 @@ export function SkillsWordCloud({
           <motion.text
             x={word.x + word.text.length * (word.fontSize * 0.3) + 5}
             y={word.y - word.fontSize * 0.3}
-            fill="#000"
+            fill={themeColors.bg}
             fontSize={7}
             fontFamily="'Courier New', monospace"
             fontWeight="bold"
@@ -145,9 +166,30 @@ export function SkillsTagCloud({
   activeFilters,
   maxWords = 15,
 }: SkillsWordCloudProps) {
+  const [themeColors, setThemeColors] = useState(getThemeColors());
+  const [chartColors, setChartColors] = useState(getChartColors());
+
+  // Listen for theme changes
+  useEffect(() => {
+    const updateTheme = () => {
+      setThemeColors(getThemeColors());
+      setChartColors(getChartColors());
+    };
+
+    updateTheme();
+
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   if (data.length === 0) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#4a5568' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: themeColors.textMuted }}>
         No data available
       </div>
     );
@@ -185,14 +227,14 @@ export function SkillsTagCloud({
               gap: '6px',
               padding: '6px 12px',
               background: isActive
-                ? 'linear-gradient(135deg, #00ff88 0%, #00d4aa 100%)'
-                : `linear-gradient(135deg, ${CHART_COLORS[i % CHART_COLORS.length]}40 0%, ${CHART_COLORS[i % CHART_COLORS.length]}20 100%)`,
-              border: `1px solid ${isActive ? '#00ff88' : CHART_COLORS[i % CHART_COLORS.length]}`,
+                ? `linear-gradient(135deg, ${themeColors.accentSecondary} 0%, ${themeColors.accentSecondary}cc 100%)`
+                : `linear-gradient(135deg, ${chartColors[i % chartColors.length]}40 0%, ${chartColors[i % chartColors.length]}20 100%)`,
+              border: `1px solid ${isActive ? themeColors.accentSecondary : chartColors[i % chartColors.length]}`,
               borderRadius: '20px',
               fontSize: `${fontSize}px`,
               fontFamily: "'Courier New', monospace",
               fontWeight: 600,
-              color: isActive ? '#000' : '#e5e7eb',
+              color: isActive ? themeColors.bg : themeColors.text,
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
@@ -205,8 +247,8 @@ export function SkillsTagCloud({
               minWidth: '22px',
               height: '18px',
               padding: '0 6px',
-              background: isActive ? '#000' : '#00d4ff',
-              color: isActive ? '#00ff88' : '#000',
+              background: isActive ? themeColors.bg : themeColors.accent,
+              color: isActive ? themeColors.accentSecondary : themeColors.bg,
               fontSize: '10px',
               fontWeight: 700,
               borderRadius: '10px',

@@ -341,14 +341,14 @@
 .logs-container {
   max-height: 400px;
   overflow-y: auto;
-  background: rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, var(--color-bg-primary) 80%, transparent);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
   margin-top: var(--spacing-md);
   font-family: 'Share Tech Mono', var(--font-mono);
   font-size: 0.875rem;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 2px 8px color-mix(in srgb, var(--color-bg-primary) 50%, transparent);
 }
 
 .log-entry {
@@ -373,7 +373,7 @@
 }
 
 .log-entry:hover {
-  background: rgba(59, 130, 246, 0.1);
+  background: color-mix(in srgb, var(--color-blue-primary) 10%, transparent);
   border-left-color: var(--color-blue-primary);
 }
 
