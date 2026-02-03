@@ -39,10 +39,22 @@ export class SalaryExtractor {
       type: 'range',
       confidence: 'high' as const,
     },
+    // Range with k suffix on both numbers: $50k - $70k, £45k-£60k
+    {
+      regex: /([£$€¥₹]|USD|EUR|GBP|CAD|AUD)\s*(\d{1,3}(?:\.\d{1,2})?)\s*(k|K)\s*[-–—to]\s*([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:\.\d{1,2})?)\s*(k|K)/gi,
+      type: 'range-k-both',
+      confidence: 'high' as const,
+    },
     // Range with "between": between $50k and $70k
     {
       regex: /between\s+([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand)?\s+and\s+([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand)?/gi,
       type: 'range-between',
+      confidence: 'high' as const,
+    },
+    // Per annum patterns: £70,000 per annum, $80k p.a., €65,000 annually
+    {
+      regex: /([£$€¥₹]|USD|EUR|GBP|CAD|AUD)\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand)?\s*(?:per annum|p\.?a\.?|annually|\/year|\/yr|per year)/gi,
+      type: 'annual-single',
       confidence: 'high' as const,
     },
     // Up to patterns: up to $70k, max £60,000
@@ -53,13 +65,19 @@ export class SalaryExtractor {
     },
     // Starting from: starting from $50k, minimum £45,000
     {
-      regex: /(?:starting from|from|minimum|min|starting)\s+([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand|mil)?/gi,
+      regex: /(?:starting from|from|minimum|min|starting at)\s+([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand|mil)?/gi,
       type: 'min-only',
       confidence: 'medium' as const,
     },
     // Single value with explicit salary keyword: salary: $60k, compensation $70,000
     {
-      regex: /(?:salary|compensation|pay|package|remuneration)(?:\s*:|\s+of|\s+is)?\s+([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand|mil)?/gi,
+      regex: /(?:salary|compensation|pay|package|remuneration|base)(?:\s*:|\s+of|\s+is|\s+range)?\s*([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand|mil)?/gi,
+      type: 'single',
+      confidence: 'medium' as const,
+    },
+    // OTE patterns: OTE $100k, On Target Earnings £80,000
+    {
+      regex: /(?:OTE|on.target.earnings?)\s*(?:of|:)?\s*([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand|mil)?/gi,
       type: 'single',
       confidence: 'medium' as const,
     },
@@ -68,6 +86,12 @@ export class SalaryExtractor {
       regex: /([£$€¥₹])\s*(\d{1,3})(?:\.\d{1,2})?\s*[-–]\s*(\d{1,3})(?:\.\d{1,2})?\s*(k|K)/g,
       type: 'compact-range',
       confidence: 'high' as const,
+    },
+    // Currency after number: 50,000 USD, 70k GBP, 60,000 EUR per year
+    {
+      regex: /(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand)?\s*(USD|EUR|GBP|CAD|AUD|CHF|SGD)/gi,
+      type: 'currency-after',
+      confidence: 'medium' as const,
     },
   ];
 
@@ -160,6 +184,32 @@ export class SalaryExtractor {
           currency = this.normalizeCurrency(match[1]);
           min = this.parseNumber(match[2], match[4]);
           max = this.parseNumber(match[3], match[4]);
+          break;
+        }
+
+        case 'range-k-both': {
+          // Groups: [full, currency1, num1, k1, currency2?, num2, k2]
+          currency = this.normalizeCurrency(match[1] || match[4]);
+          min = this.parseNumber(match[2], match[3]);
+          max = this.parseNumber(match[5], match[6]);
+          break;
+        }
+
+        case 'annual-single': {
+          // Groups: [full, currency, num, multiplier?]
+          currency = this.normalizeCurrency(match[1]);
+          const value = this.parseNumber(match[2], match[3]);
+          min = value;
+          max = value;
+          break;
+        }
+
+        case 'currency-after': {
+          // Groups: [full, num, multiplier?, currency]
+          currency = this.normalizeCurrency(match[3]);
+          const value = this.parseNumber(match[1], match[2]);
+          min = value;
+          max = value;
           break;
         }
       }

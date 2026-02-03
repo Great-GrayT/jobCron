@@ -47,6 +47,8 @@ interface JobStatistic {
   programmingSkills?: string[];
   yearsExperience?: string | null;
   academicDegrees?: string[];
+  roleType?: string | null;
+  roleCategory?: string | null;
 }
 
 interface SalaryStats {
@@ -85,6 +87,13 @@ interface MonthlyStatistics {
   byProgrammingSkill?: Record<string, number>;
   byYearsExperience?: Record<string, number>;
   byAcademicDegree?: Record<string, number>;
+  // Role type / job functionality
+  byRoleType?: Record<string, number>;
+  byRoleCategory?: Record<string, number>;
+  // Publication time data (hour of day in UTC, e.g., "14" for 2PM)
+  byHour?: Record<string, number>;
+  // Heatmap data (day-hour combinations, e.g., "0-14" for Sunday 2PM UTC)
+  byDayHour?: Record<string, number>;
   salaryStats?: SalaryStats;
 }
 
@@ -136,6 +145,8 @@ interface ActiveFilters {
   yearsExperience: string[];
   academicDegree: string[];
   region: string[];
+  roleType: string[];
+  roleCategory: string[];
 }
 
 export default function StatsPage() {
@@ -159,6 +170,8 @@ export default function StatsPage() {
     yearsExperience: [],
     academicDegree: [],
     region: [],
+    roleType: [],
+    roleCategory: [],
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [hoveredJob, setHoveredJob] = useState<JobStatistic | null>(null);
@@ -233,6 +246,8 @@ export default function StatsPage() {
       yearsExperience: [],
       academicDegree: [],
       region: [],
+      roleType: [],
+      roleCategory: [],
     });
     setSelectedDate(null);
   };
@@ -323,6 +338,16 @@ export default function StatsPage() {
         if (!job.region || !activeFilters.region.includes(job.region)) return false;
       }
 
+      // Role type filter
+      if (activeFilters.roleType.length > 0) {
+        if (!job.roleType || !activeFilters.roleType.includes(job.roleType)) return false;
+      }
+
+      // Role category filter
+      if (activeFilters.roleCategory.length > 0) {
+        if (!job.roleCategory || !activeFilters.roleCategory.includes(job.roleCategory)) return false;
+      }
+
       if (selectedDate) {
         const jobDate = job.extractedDate.split('T')[0];
         if (jobDate !== selectedDate) return false;
@@ -355,6 +380,8 @@ export default function StatsPage() {
       byProgrammingSkill: {},
       byYearsExperience: {},
       byAcademicDegree: {},
+      byRoleType: {},
+      byRoleCategory: {},
     };
 
     filteredJobs.forEach(job => {
@@ -395,6 +422,14 @@ export default function StatsPage() {
           if (!filtered.byAcademicDegree) filtered.byAcademicDegree = {};
           filtered.byAcademicDegree[degree] = (filtered.byAcademicDegree[degree] || 0) + 1;
         });
+      }
+      if (job.roleType) {
+        if (!filtered.byRoleType) filtered.byRoleType = {};
+        filtered.byRoleType[job.roleType] = (filtered.byRoleType[job.roleType] || 0) + 1;
+      }
+      if (job.roleCategory) {
+        if (!filtered.byRoleCategory) filtered.byRoleCategory = {};
+        filtered.byRoleCategory[job.roleCategory] = (filtered.byRoleCategory[job.roleCategory] || 0) + 1;
       }
     });
 
@@ -755,6 +790,26 @@ export default function StatsPage() {
       .map(([name, value]) => ({ name, value }));
   };
 
+  // Role type data helpers
+  const getRoleTypeData = () => {
+    const stats = getFilteredStatistics();
+    if (!stats || !stats.byRoleType) return [];
+    return Object.entries(stats.byRoleType)
+      .filter(([name]) => !shouldFilterOut(name))
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 20)
+      .map(([name, value]) => ({ name, value }));
+  };
+
+  const getRoleCategoryData = () => {
+    const stats = getFilteredStatistics();
+    if (!stats || !stats.byRoleCategory) return [];
+    return Object.entries(stats.byRoleCategory)
+      .filter(([name]) => !shouldFilterOut(name))
+      .sort(([, a], [, b]) => b - a)
+      .map(([name, value]) => ({ name, value }));
+  };
+
   const filteredStats = getFilteredStatistics();
   const filteredJobs = getFilteredJobs();
   const hasSalaryData = filteredStats?.salaryStats && filteredStats.salaryStats.totalWithSalary > 0;
@@ -762,9 +817,25 @@ export default function StatsPage() {
   const hasProgrammingData = filteredStats?.byProgrammingSkill && Object.keys(filteredStats.byProgrammingSkill).length > 0;
   const hasYearsExperienceData = filteredStats?.byYearsExperience && Object.keys(filteredStats.byYearsExperience).length > 0;
   const hasAcademicDegreesData = filteredStats?.byAcademicDegree && Object.keys(filteredStats.byAcademicDegree).length > 0;
+  const hasRoleTypeData = filteredStats?.byRoleType && Object.keys(filteredStats.byRoleType).length > 0;
+  const hasRoleCategoryData = filteredStats?.byRoleCategory && Object.keys(filteredStats.byRoleCategory).length > 0;
 
   // Get publication time analysis data
   const getPublicationTimeData = () => {
+    const stats = getFilteredStatistics();
+
+    // If we have aggregated byHour data from statistics, use it
+    if (stats?.byHour && Object.keys(stats.byHour).length > 0 && !hasActiveFilters) {
+      // Convert hourly data to time slots format (just hours since we store by hour)
+      return Object.entries(stats.byHour)
+        .map(([hour, count]) => ({
+          time: `${hour}:00`,
+          count
+        }))
+        .sort((a, b) => a.time.localeCompare(b.time));
+    }
+
+    // Fall back to computing from individual jobs (for current month or filtered data)
     const jobs = getFilteredJobs();
     const timeSlots: Record<string, number> = {};
 
@@ -1140,7 +1211,10 @@ export default function StatsPage() {
               <span>POSTING HEATMAP</span>
             </div>
             <div className="chart-container compact" style={{ height: 240 }}>
-              <PostingHeatmap jobs={filteredJobs} />
+              <PostingHeatmap
+                jobs={filteredJobs}
+                byDayHour={!hasActiveFilters ? filteredStats?.byDayHour : undefined}
+              />
             </div>
           </div>
 
@@ -1629,6 +1703,24 @@ export default function StatsPage() {
                       </td>
                     </tr>
                   )}
+                  {hasRoleTypeData && (
+                    <tr>
+                      <td>Role Types</td>
+                      <td className="cell-title">{Object.keys(filteredStats?.byRoleType || {}).length}</td>
+                      <td>
+                        Top Role: {Object.entries(filteredStats?.byRoleType || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.byRoleType || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
+                      </td>
+                    </tr>
+                  )}
+                  {hasRoleCategoryData && (
+                    <tr>
+                      <td>Role Categories</td>
+                      <td className="cell-highlight">{Object.keys(filteredStats?.byRoleCategory || {}).length}</td>
+                      <td>
+                        Top Category: {Object.entries(filteredStats?.byRoleCategory || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'} ({Object.entries(filteredStats?.byRoleCategory || {}).sort(([,a], [,b]) => b - a)[0]?.[1] || 0} jobs)
+                      </td>
+                    </tr>
+                  )}
                   {hasSalaryData && (
                     <>
                       <tr>
@@ -1699,6 +1791,107 @@ export default function StatsPage() {
                         ? `linear-gradient(135deg, #d90429 0%, #a4031f 100%)`
                         : `linear-gradient(135deg, #ff006e 0%, #d90429 100%)`,
                       border: '1px solid #ff006e',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <span className="keyword-name">{name}</span>
+                    <span className="keyword-value">{value}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Role Categories - Pie Chart */}
+          {hasRoleCategoryData && (
+            <div className="terminal-panel">
+              <div className="panel-header">
+                <Briefcase size={14} />
+                <span>JOB CATEGORIES</span>
+              </div>
+              <div className="chart-container compact" style={{ height: 280 }}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie
+                      data={getRoleCategoryData()}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => (percent || 0) > 0.05 ? `${(name || '').toString().split(' ')[0]} ${((percent || 0) * 100).toFixed(0)}%` : ''}
+                      outerRadius={90}
+                      fill="#8884d8"
+                      dataKey="value"
+                      onClick={(data) => data && data.name && toggleFilter('roleCategory', data.name)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {getRoleCategoryData().map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={activeFilters.roleCategory.includes(entry.name) ? '#00ff88' : CHART_COLORS[index % CHART_COLORS.length]}
+                          stroke={activeFilters.roleCategory.includes(entry.name) ? '#00ff88' : 'transparent'}
+                          strokeWidth={activeFilters.roleCategory.includes(entry.name) ? 2 : 0}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #00d4ff', fontSize: 11 }}
+                      labelStyle={{ color: '#00d4ff' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Role Types - Horizontal Bar Chart */}
+          {hasRoleTypeData && (
+            <div className="terminal-panel span-2">
+              <div className="panel-header">
+                <Target size={14} />
+                <span>TOP ROLE TYPES</span>
+              </div>
+              <div className="chart-container compact" style={{ height: 280 }}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={getRoleTypeData().slice(0, 12)} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
+                    <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
+                    <YAxis dataKey="name" type="category" stroke="#4a5568" width={140} tick={{ fontSize: 9 }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #00d4ff', fontSize: 11 }}
+                      labelStyle={{ color: '#00d4ff' }}
+                    />
+                    <Bar
+                      dataKey="value"
+                      fill="#00d4ff"
+                      onClick={(data) => data.name && toggleFilter('roleType', data.name)}
+                      cursor="pointer"
+                      radius={[0, 4, 4, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Role Types - Tag Cloud */}
+          {hasRoleTypeData && (
+            <div className="terminal-panel span-full">
+              <div className="panel-header">
+                <Briefcase size={14} />
+                <span>JOB ROLE TYPES</span>
+              </div>
+              <div className="keywords-compact">
+                {getRoleTypeData().map(({name, value}) => (
+                  <button
+                    key={name}
+                    className={`keyword-compact ${activeFilters.roleType.includes(name) ? 'active' : ''}`}
+                    onClick={() => toggleFilter('roleType', name)}
+                    style={{
+                      background: activeFilters.roleType.includes(name)
+                        ? `linear-gradient(135deg, #0077b6 0%, #023e8a 100%)`
+                        : `linear-gradient(135deg, #00d4ff 0%, #0077b6 100%)`,
+                      border: '1px solid #00d4ff',
                       cursor: 'pointer'
                     }}
                   >

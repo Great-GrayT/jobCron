@@ -10,6 +10,8 @@ interface Job {
 
 interface PostingHeatmapProps {
   jobs: Job[];
+  // Optional aggregated data (day-hour combinations, e.g., "0-14" for Sunday 2PM UTC)
+  byDayHour?: Record<string, number>;
 }
 
 // Day names for the Y axis
@@ -33,7 +35,7 @@ const LIGHT_GRADIENT = {
   gradient: ['#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669'],
 };
 
-export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
+export function PostingHeatmap({ jobs, byDayHour }: PostingHeatmapProps) {
   const [themeColors, setThemeColors] = useState(getThemeColors());
   const [gradientColors, setGradientColors] = useState(DARK_GRADIENT);
 
@@ -60,6 +62,20 @@ export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
     // Create a 7x24 grid (days x hours)
     const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
 
+    // Use aggregated byDayHour data if available
+    if (byDayHour && Object.keys(byDayHour).length > 0) {
+      for (const [key, count] of Object.entries(byDayHour)) {
+        const [dayStr, hourStr] = key.split('-');
+        const day = parseInt(dayStr, 10);
+        const hour = parseInt(hourStr, 10);
+        if (day >= 0 && day < 7 && hour >= 0 && hour < 24) {
+          grid[day][hour] += count;
+        }
+      }
+      return grid;
+    }
+
+    // Fall back to computing from individual jobs
     jobs.forEach(job => {
       const date = new Date(job.postedDate);
       const day = date.getUTCDay();
@@ -68,7 +84,7 @@ export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
     });
 
     return grid;
-  }, [jobs]);
+  }, [jobs, byDayHour]);
 
   const maxValue = useMemo(() => {
     return Math.max(...heatmapData.flat(), 1);
@@ -90,7 +106,9 @@ export function PostingHeatmap({ jobs }: PostingHeatmapProps) {
   const paddingLeft = 35;
   const paddingTop = 25;
 
-  if (jobs.length === 0) {
+  const hasData = jobs.length > 0 || (byDayHour && Object.keys(byDayHour).length > 0);
+
+  if (!hasData) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: themeColors.textMuted }}>
         No data available

@@ -45,6 +45,8 @@ export interface JobStatistic {
   programmingSkills?: string[];
   yearsExperience?: string | null;
   academicDegrees?: string[];
+  roleType?: string | null;
+  roleCategory?: string | null;
 }
 
 export interface MonthlyStatistics {
@@ -63,6 +65,13 @@ export interface MonthlyStatistics {
   byProgrammingSkill: Record<string, number>;
   byYearsExperience: Record<string, number>;
   byAcademicDegree: Record<string, number>;
+  // Role type / job functionality
+  byRoleType: Record<string, number>;
+  byRoleCategory: Record<string, number>;
+  // Publication time data (hour of day in UTC)
+  byHour?: Record<string, number>;
+  // Heatmap data (day-hour combinations, e.g., "0-14" for Sunday 2PM UTC)
+  byDayHour?: Record<string, number>;
   salaryStats?: {
     totalWithSalary: number;
     averageSalary: number | null;
@@ -184,6 +193,10 @@ export class JobStatisticsCache {
       byProgrammingSkill: stats.byProgrammingSkill || {},
       byYearsExperience: stats.byYearsExperience || {},
       byAcademicDegree: stats.byAcademicDegree || {},
+      byRoleType: stats.byRoleType || {},
+      byRoleCategory: stats.byRoleCategory || {},
+      byHour: stats.byHour || {},
+      byDayHour: stats.byDayHour || {},
       salaryStats: stats.salaryStats ? {
         ...stats.salaryStats,
         byCountry: stats.salaryStats.byCountry || {},
@@ -212,6 +225,10 @@ export class JobStatisticsCache {
       byProgrammingSkill: {},
       byYearsExperience: {},
       byAcademicDegree: {},
+      byRoleType: {},
+      byRoleCategory: {},
+      byHour: {},
+      byDayHour: {},
       salaryStats: {
         totalWithSalary: 0,
         averageSalary: null,
@@ -513,6 +530,31 @@ export class JobStatisticsCache {
       });
     }
 
+    // By role type
+    if (job.roleType) {
+      stats.byRoleType[job.roleType] = (stats.byRoleType[job.roleType] || 0) + 1;
+    }
+
+    // By role category
+    if (job.roleCategory) {
+      stats.byRoleCategory[job.roleCategory] = (stats.byRoleCategory[job.roleCategory] || 0) + 1;
+    }
+
+    // By hour of day (publication times) - using postedDate
+    if (job.postedDate) {
+      const postedDate = new Date(job.postedDate);
+      const hour = postedDate.getUTCHours();
+      const hourKey = String(hour).padStart(2, '0');
+      if (!stats.byHour) stats.byHour = {};
+      stats.byHour[hourKey] = (stats.byHour[hourKey] || 0) + 1;
+
+      // By day-hour combination (for heatmap)
+      const dayOfWeek = postedDate.getUTCDay(); // 0=Sunday, 6=Saturday
+      const dayHourKey = `${dayOfWeek}-${hour}`;
+      if (!stats.byDayHour) stats.byDayHour = {};
+      stats.byDayHour[dayHourKey] = (stats.byDayHour[dayHourKey] || 0) + 1;
+    }
+
     // Recalculate salary statistics for all jobs
     this.recalculateSalaryStats();
   }
@@ -724,6 +766,103 @@ export class JobStatisticsCache {
         };
       }
     });
+  }
+
+  /**
+   * Merge salary stats from source into aggregated stats
+   * Uses weighted averages for avg/median since we don't have individual values
+   */
+  private mergeSalaryStats(
+    aggregated: MonthlyStatistics,
+    source: NonNullable<MonthlyStatistics['salaryStats']>
+  ): void {
+    if (!aggregated.salaryStats) {
+      aggregated.salaryStats = {
+        totalWithSalary: 0,
+        averageSalary: null,
+        medianSalary: null,
+        byIndustry: {},
+        bySeniority: {},
+        byLocation: {},
+        byCountry: {},
+        byCity: {},
+        byCurrency: {},
+        salaryRanges: {
+          '0-30k': 0,
+          '30-50k': 0,
+          '50-75k': 0,
+          '75-100k': 0,
+          '100-150k': 0,
+          '150k+': 0,
+        },
+      };
+    }
+
+    const agg = aggregated.salaryStats;
+
+    // Merge totalWithSalary
+    const prevTotal = agg.totalWithSalary;
+    const srcTotal = source.totalWithSalary;
+    agg.totalWithSalary += srcTotal;
+
+    // Merge average salary using weighted average
+    if (source.averageSalary !== null && srcTotal > 0) {
+      if (agg.averageSalary === null || prevTotal === 0) {
+        agg.averageSalary = source.averageSalary;
+      } else {
+        agg.averageSalary = Math.round(
+          (agg.averageSalary * prevTotal + source.averageSalary * srcTotal) /
+          (prevTotal + srcTotal)
+        );
+      }
+    }
+
+    // Merge median salary using weighted average (approximation)
+    if (source.medianSalary !== null && srcTotal > 0) {
+      if (agg.medianSalary === null || prevTotal === 0) {
+        agg.medianSalary = source.medianSalary;
+      } else {
+        agg.medianSalary = Math.round(
+          (agg.medianSalary * prevTotal + source.medianSalary * srcTotal) /
+          (prevTotal + srcTotal)
+        );
+      }
+    }
+
+    // Merge salary ranges
+    for (const range of Object.keys(agg.salaryRanges) as Array<keyof typeof agg.salaryRanges>) {
+      agg.salaryRanges[range] += source.salaryRanges[range] || 0;
+    }
+
+    // Merge byCurrency
+    for (const [currency, count] of Object.entries(source.byCurrency)) {
+      agg.byCurrency[currency] = (agg.byCurrency[currency] || 0) + count;
+    }
+
+    // Helper to merge grouped salary stats
+    const mergeGroupedStats = (
+      aggGroup: Record<string, { avg: number; median: number; count: number }>,
+      srcGroup: Record<string, { avg: number; median: number; count: number }>
+    ) => {
+      for (const [key, src] of Object.entries(srcGroup)) {
+        if (!aggGroup[key]) {
+          aggGroup[key] = { avg: src.avg, median: src.median, count: src.count };
+        } else {
+          const agg = aggGroup[key];
+          const totalCount = agg.count + src.count;
+          agg.avg = Math.round((agg.avg * agg.count + src.avg * src.count) / totalCount);
+          agg.median = Math.round((agg.median * agg.count + src.median * src.count) / totalCount);
+          agg.count = totalCount;
+        }
+      }
+    };
+
+    // Merge grouped stats
+    mergeGroupedStats(agg.byIndustry, source.byIndustry);
+    mergeGroupedStats(agg.bySeniority, source.bySeniority);
+    mergeGroupedStats(agg.byLocation, source.byLocation);
+    if (source.byCountry) mergeGroupedStats(agg.byCountry, source.byCountry);
+    if (source.byCity) mergeGroupedStats(agg.byCity, source.byCity);
   }
 
   /**
@@ -984,6 +1123,41 @@ export class JobStatisticsCache {
               aggregated.byAcademicDegree[degree] = (aggregated.byAcademicDegree[degree] || 0) + count;
             }
           }
+
+          // Merge byRoleType (if available)
+          if (archive.statistics.byRoleType) {
+            for (const [roleType, count] of Object.entries(archive.statistics.byRoleType)) {
+              aggregated.byRoleType[roleType] = (aggregated.byRoleType[roleType] || 0) + count;
+            }
+          }
+
+          // Merge byRoleCategory (if available)
+          if (archive.statistics.byRoleCategory) {
+            for (const [category, count] of Object.entries(archive.statistics.byRoleCategory)) {
+              aggregated.byRoleCategory[category] = (aggregated.byRoleCategory[category] || 0) + count;
+            }
+          }
+
+          // Merge salary stats from archive
+          if (archive.statistics.salaryStats) {
+            this.mergeSalaryStats(aggregated, archive.statistics.salaryStats);
+          }
+
+          // Merge byHour (publication times) if available
+          if (archive.statistics.byHour) {
+            if (!aggregated.byHour) aggregated.byHour = {};
+            for (const [hour, count] of Object.entries(archive.statistics.byHour)) {
+              aggregated.byHour[hour] = (aggregated.byHour[hour] || 0) + count;
+            }
+          }
+
+          // Merge byDayHour (heatmap) if available
+          if (archive.statistics.byDayHour) {
+            if (!aggregated.byDayHour) aggregated.byDayHour = {};
+            for (const [key, count] of Object.entries(archive.statistics.byDayHour)) {
+              aggregated.byDayHour[key] = (aggregated.byDayHour[key] || 0) + count;
+            }
+          }
         }
       }
 
@@ -1052,6 +1226,39 @@ export class JobStatisticsCache {
       if (this.currentMonthData.statistics.byAcademicDegree) {
         for (const [degree, count] of Object.entries(this.currentMonthData.statistics.byAcademicDegree)) {
           aggregated.byAcademicDegree[degree] = (aggregated.byAcademicDegree[degree] || 0) + count;
+        }
+      }
+      // Merge byRoleType (if available - for backward compatibility)
+      if (this.currentMonthData.statistics.byRoleType) {
+        for (const [roleType, count] of Object.entries(this.currentMonthData.statistics.byRoleType)) {
+          aggregated.byRoleType[roleType] = (aggregated.byRoleType[roleType] || 0) + count;
+        }
+      }
+      // Merge byRoleCategory (if available - for backward compatibility)
+      if (this.currentMonthData.statistics.byRoleCategory) {
+        for (const [category, count] of Object.entries(this.currentMonthData.statistics.byRoleCategory)) {
+          aggregated.byRoleCategory[category] = (aggregated.byRoleCategory[category] || 0) + count;
+        }
+      }
+
+      // Merge salary stats from current month
+      if (this.currentMonthData.statistics.salaryStats) {
+        this.mergeSalaryStats(aggregated, this.currentMonthData.statistics.salaryStats);
+      }
+
+      // Merge byHour from current month (if available)
+      if (this.currentMonthData.statistics.byHour) {
+        if (!aggregated.byHour) aggregated.byHour = {};
+        for (const [hour, count] of Object.entries(this.currentMonthData.statistics.byHour)) {
+          aggregated.byHour[hour] = (aggregated.byHour[hour] || 0) + count;
+        }
+      }
+
+      // Merge byDayHour from current month (if available)
+      if (this.currentMonthData.statistics.byDayHour) {
+        if (!aggregated.byDayHour) aggregated.byDayHour = {};
+        for (const [key, count] of Object.entries(this.currentMonthData.statistics.byDayHour)) {
+          aggregated.byDayHour[key] = (aggregated.byDayHour[key] || 0) + count;
         }
       }
 
