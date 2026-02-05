@@ -33,6 +33,8 @@ export interface JobStatistic {
   programmingSkills?: string[];
   yearsExperience?: string | null;
   academicDegrees?: string[];
+  roleType?: string | null;
+  roleCategory?: string | null;
 }
 
 /**
@@ -59,6 +61,8 @@ export interface JobMetadata {
   programmingSkills?: string[];
   yearsExperience?: string | null;
   academicDegrees?: string[];
+  roleType?: string | null;
+  roleCategory?: string | null;
 }
 
 /**
@@ -86,6 +90,10 @@ export interface MonthlyStatistics {
   byProgrammingSkill: Record<string, number>;
   byYearsExperience: Record<string, number>;
   byAcademicDegree: Record<string, number>;
+  byRoleType?: Record<string, number>;
+  byRoleCategory?: Record<string, number>;
+  byHour?: Record<string, number>;
+  byDayHour?: Record<string, number>;
   salaryStats?: {
     totalWithSalary: number;
     averageSalary: number | null;
@@ -493,6 +501,16 @@ export class JobStatisticsCacheR2 {
       });
     }
 
+    // Update role type and category
+    if (job.roleType) {
+      if (!stats.byRoleType) stats.byRoleType = {};
+      stats.byRoleType[job.roleType] = (stats.byRoleType[job.roleType] || 0) + 1;
+    }
+    if (job.roleCategory) {
+      if (!stats.byRoleCategory) stats.byRoleCategory = {};
+      stats.byRoleCategory[job.roleCategory] = (stats.byRoleCategory[job.roleCategory] || 0) + 1;
+    }
+
     // Update salary stats
     this.updateSalaryStats(job);
   }
@@ -879,47 +897,139 @@ export class JobStatisticsCacheR2 {
   }
 
   private mergeStatistics(target: MonthlyStatistics, source: MonthlyStatistics): void {
-    for (const [key, value] of Object.entries(source.byDate)) {
-      target.byDate[key] = (target.byDate[key] || 0) + value;
+    // Helper to merge Record<string, number> fields
+    const mergeRecord = (
+      targetRec: Record<string, number>,
+      sourceRec: Record<string, number> | undefined
+    ) => {
+      if (!sourceRec) return;
+      for (const [key, value] of Object.entries(sourceRec)) {
+        targetRec[key] = (targetRec[key] || 0) + value;
+      }
+    };
+
+    mergeRecord(target.byDate, source.byDate);
+    mergeRecord(target.byIndustry, source.byIndustry);
+    mergeRecord(target.byCertificate, source.byCertificate);
+    mergeRecord(target.byKeyword, source.byKeyword);
+    mergeRecord(target.bySeniority, source.bySeniority);
+    mergeRecord(target.byLocation, source.byLocation);
+    mergeRecord(target.byCountry, source.byCountry);
+    mergeRecord(target.byCity, source.byCity);
+    mergeRecord(target.byRegion, source.byRegion);
+    mergeRecord(target.byCompany, source.byCompany);
+    mergeRecord(target.bySoftware, source.bySoftware);
+    mergeRecord(target.byProgrammingSkill, source.byProgrammingSkill);
+    mergeRecord(target.byYearsExperience, source.byYearsExperience);
+    mergeRecord(target.byAcademicDegree, source.byAcademicDegree);
+
+    // Merge role type and category
+    if (source.byRoleType) {
+      if (!target.byRoleType) target.byRoleType = {};
+      mergeRecord(target.byRoleType, source.byRoleType);
     }
-    for (const [key, value] of Object.entries(source.byIndustry)) {
-      target.byIndustry[key] = (target.byIndustry[key] || 0) + value;
+    if (source.byRoleCategory) {
+      if (!target.byRoleCategory) target.byRoleCategory = {};
+      mergeRecord(target.byRoleCategory, source.byRoleCategory);
     }
-    for (const [key, value] of Object.entries(source.byCertificate)) {
-      target.byCertificate[key] = (target.byCertificate[key] || 0) + value;
+
+    // Merge time-based data
+    if (source.byHour) {
+      if (!target.byHour) target.byHour = {};
+      mergeRecord(target.byHour, source.byHour);
     }
-    for (const [key, value] of Object.entries(source.byKeyword)) {
-      target.byKeyword[key] = (target.byKeyword[key] || 0) + value;
+    if (source.byDayHour) {
+      if (!target.byDayHour) target.byDayHour = {};
+      mergeRecord(target.byDayHour, source.byDayHour);
     }
-    for (const [key, value] of Object.entries(source.bySeniority)) {
-      target.bySeniority[key] = (target.bySeniority[key] || 0) + value;
-    }
-    for (const [key, value] of Object.entries(source.byLocation)) {
-      target.byLocation[key] = (target.byLocation[key] || 0) + value;
-    }
-    for (const [key, value] of Object.entries(source.byCountry || {})) {
-      target.byCountry[key] = (target.byCountry[key] || 0) + value;
-    }
-    for (const [key, value] of Object.entries(source.byCity || {})) {
-      target.byCity[key] = (target.byCity[key] || 0) + value;
-    }
-    for (const [key, value] of Object.entries(source.byRegion || {})) {
-      target.byRegion[key] = (target.byRegion[key] || 0) + value;
-    }
-    for (const [key, value] of Object.entries(source.byCompany)) {
-      target.byCompany[key] = (target.byCompany[key] || 0) + value;
-    }
-    for (const [key, value] of Object.entries(source.bySoftware || {})) {
-      target.bySoftware[key] = (target.bySoftware[key] || 0) + value;
-    }
-    for (const [key, value] of Object.entries(source.byProgrammingSkill || {})) {
-      target.byProgrammingSkill[key] = (target.byProgrammingSkill[key] || 0) + value;
-    }
-    for (const [key, value] of Object.entries(source.byYearsExperience || {})) {
-      target.byYearsExperience[key] = (target.byYearsExperience[key] || 0) + value;
-    }
-    for (const [key, value] of Object.entries(source.byAcademicDegree || {})) {
-      target.byAcademicDegree[key] = (target.byAcademicDegree[key] || 0) + value;
+
+    // Merge salary statistics
+    if (source.salaryStats && source.salaryStats.totalWithSalary > 0) {
+      if (!target.salaryStats) {
+        target.salaryStats = {
+          totalWithSalary: 0,
+          averageSalary: null,
+          medianSalary: null,
+          byIndustry: {},
+          bySeniority: {},
+          byLocation: {},
+          byCountry: {},
+          byCity: {},
+          byCurrency: {},
+          salaryRanges: {
+            '0-30k': 0,
+            '30-50k': 0,
+            '50-75k': 0,
+            '75-100k': 0,
+            '100-150k': 0,
+            '150k+': 0,
+          },
+        };
+      }
+
+      const ts = target.salaryStats;
+      const ss = source.salaryStats;
+
+      // Weighted average for overall salary
+      const targetTotal = ts.totalWithSalary;
+      const sourceTotal = ss.totalWithSalary;
+      const combinedTotal = targetTotal + sourceTotal;
+
+      if (ss.averageSalary !== null) {
+        if (ts.averageSalary !== null && targetTotal > 0) {
+          ts.averageSalary = Math.round(
+            (ts.averageSalary * targetTotal + ss.averageSalary * sourceTotal) / combinedTotal
+          );
+        } else {
+          ts.averageSalary = ss.averageSalary;
+        }
+      }
+
+      if (ss.medianSalary !== null) {
+        if (ts.medianSalary !== null && targetTotal > 0) {
+          // Weighted approximation of median
+          ts.medianSalary = Math.round(
+            (ts.medianSalary * targetTotal + ss.medianSalary * sourceTotal) / combinedTotal
+          );
+        } else {
+          ts.medianSalary = ss.medianSalary;
+        }
+      }
+
+      ts.totalWithSalary = combinedTotal;
+
+      // Merge salary ranges
+      const rangeKeys = ['0-30k', '30-50k', '50-75k', '75-100k', '100-150k', '150k+'] as const;
+      for (const key of rangeKeys) {
+        ts.salaryRanges[key] = (ts.salaryRanges[key] || 0) + (ss.salaryRanges[key] || 0);
+      }
+
+      // Merge currency counts
+      mergeRecord(ts.byCurrency, ss.byCurrency);
+
+      // Helper to merge grouped salary stats (byIndustry, bySeniority, etc.)
+      const mergeGroupedSalary = (
+        targetGroup: Record<string, { avg: number; median: number; count: number }>,
+        sourceGroup: Record<string, { avg: number; median: number; count: number }>
+      ) => {
+        for (const [key, srcVal] of Object.entries(sourceGroup)) {
+          if (targetGroup[key]) {
+            const tgt = targetGroup[key];
+            const combined = tgt.count + srcVal.count;
+            tgt.avg = Math.round((tgt.avg * tgt.count + srcVal.avg * srcVal.count) / combined);
+            tgt.median = Math.round((tgt.median * tgt.count + srcVal.median * srcVal.count) / combined);
+            tgt.count = combined;
+          } else {
+            targetGroup[key] = { ...srcVal };
+          }
+        }
+      };
+
+      mergeGroupedSalary(ts.byIndustry, ss.byIndustry);
+      mergeGroupedSalary(ts.bySeniority, ss.bySeniority);
+      mergeGroupedSalary(ts.byLocation, ss.byLocation);
+      mergeGroupedSalary(ts.byCountry, ss.byCountry);
+      mergeGroupedSalary(ts.byCity, ss.byCity);
     }
   }
 

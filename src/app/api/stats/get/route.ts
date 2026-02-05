@@ -10,6 +10,7 @@ import { LocationExtractor } from "@/lib/location-extractor";
 import { extractJobDetails, analyzeJobDescription } from "@/lib/job-analyzer";
 import { softwareKeywords } from "@/lib/dictionaries/software";
 import { programmingKeywords } from "@/lib/dictionaries/programming-languages";
+import { RoleTypeExtractor } from "@/lib/role-type-extractor";
 
 // Get RSS Stats Feed URLs from environment (separate from RSS monitor)
 const RSS_STATS_FEED_URLS = process.env.RSS_STATS_FEED_URLS
@@ -169,6 +170,14 @@ export async function GET(request: NextRequest) {
             }
           }
 
+          // Extract role type and category
+          const roleTypeMatch = RoleTypeExtractor.extractRoleType(
+            finalPosition,
+            metadata.keywords,
+            rssJob.description || '',
+            metadata.industry
+          );
+
           // Create job statistic object
           const jobStat: JobStatistic = {
             id: metadata.id,
@@ -191,6 +200,8 @@ export async function GET(request: NextRequest) {
             programmingSkills: programmingSkills.length > 0 ? programmingSkills : undefined,
             yearsExperience: validatedYearsExperience,
             academicDegrees: analysis.academicDegrees.length > 0 ? analysis.academicDegrees : undefined,
+            roleType: roleTypeMatch?.roleType || null,
+            roleCategory: roleTypeMatch?.category || null,
           };
 
           // Add to cache

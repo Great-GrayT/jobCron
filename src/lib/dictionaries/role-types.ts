@@ -1,6 +1,8 @@
 /**
  * Comprehensive dictionary of job role types/functionalities
- * Organized by domain/industry for fuzzy matching
+ * Organized by FUNCTIONAL PURPOSE - what the job actually does
+ * Categories answer: "Is this quantitative? Real estate? Data analysis?
+ * Corporate finance? Investment banking?"
  */
 
 export interface RoleTypeDefinition {
@@ -10,57 +12,47 @@ export interface RoleTypeDefinition {
   titlePatterns: RegExp[];
 }
 
-// Categories for grouping role types
+// Functional categories - focused on what the job DOES, not broad industry
 export const ROLE_CATEGORIES = [
-  "Finance & Investment",
-  "Technology - Development",
-  "Technology - Data & AI",
-  "Technology - Infrastructure",
-  "Technology - Security",
+  "Quantitative Finance",
+  "Investment Banking",
+  "Trading",
+  "Asset & Portfolio Management",
+  "Private Equity & Venture Capital",
+  "Corporate Finance & Accounting",
+  "Risk Management",
+  "Compliance & Regulatory",
+  "Wealth Management & Advisory",
+  "Real Estate",
+  "Insurance & Actuarial",
+  "Credit & Lending",
+  "Data & Analytics",
+  "Machine Learning & AI",
+  "Software Engineering",
+  "Infrastructure & Cloud",
+  "Cybersecurity",
+  "Product & Design",
+  "Sales & Business Development",
+  "Marketing & Communications",
+  "Consulting & Advisory",
+  "Operations & Project Management",
   "Research & Science",
   "Engineering",
-  "Product & Design",
-  "Marketing & Growth",
-  "Sales & Business Development",
-  "Operations & Supply Chain",
-  "Human Resources",
-  "Legal & Compliance",
-  "Healthcare & Medical",
-  "Education & Training",
-  "Creative & Media",
-  "Customer Service",
-  "Consulting",
-  "Executive & Leadership",
-  "Administrative",
+  "Healthcare & Life Sciences",
+  "Other Professional",
 ] as const;
 
 export type RoleCategory = (typeof ROLE_CATEGORIES)[number];
 
 export const roleTypes: RoleTypeDefinition[] = [
   // =====================================================
-  // FINANCE & INVESTMENT
+  // QUANTITATIVE FINANCE
+  // Jobs involving mathematical modeling, statistical analysis,
+  // algorithmic strategies, and quantitative methods in finance
   // =====================================================
   {
-    roleType: "Equity Research",
-    category: "Finance & Investment",
-    keywords: [
-      "equity research",
-      "research analyst",
-      "sell-side research",
-      "buy-side research",
-      "equity analyst",
-      "stock research",
-      "securities research",
-    ],
-    titlePatterns: [
-      /equity\s*research/i,
-      /research\s*analyst/i,
-      /securities\s*analyst/i,
-    ],
-  },
-  {
     roleType: "Quantitative Research",
-    category: "Finance & Investment",
+    category: "Quantitative Finance",
     keywords: [
       "quantitative research",
       "quant researcher",
@@ -77,7 +69,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Quantitative Trading",
-    category: "Finance & Investment",
+    category: "Quantitative Finance",
     keywords: [
       "quantitative trading",
       "quant trader",
@@ -94,8 +86,46 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
   },
   {
+    roleType: "Quantitative Development",
+    category: "Quantitative Finance",
+    keywords: [
+      "quant developer",
+      "quantitative developer",
+      "quant dev",
+      "strat tech",
+      "quantitative software",
+      "pricing library",
+    ],
+    titlePatterns: [
+      /quant(?:itative)?\s*(?:develop|dev|software)/i,
+      /strat(?:s)?\s*tech/i,
+    ],
+  },
+  {
+    roleType: "Financial Engineering",
+    category: "Quantitative Finance",
+    keywords: [
+      "financial engineer",
+      "derivatives pricing",
+      "structured products",
+      "financial modeling",
+      "options pricing",
+      "monte carlo",
+    ],
+    titlePatterns: [
+      /financial\s*engineer/i,
+      /derivatives?\s*(?:pricing|structur)/i,
+      /structured\s*products/i,
+    ],
+  },
+
+  // =====================================================
+  // INVESTMENT BANKING
+  // M&A, capital markets, deal execution, corporate advisory
+  // =====================================================
+  {
     roleType: "Investment Banking",
-    category: "Finance & Investment",
+    category: "Investment Banking",
     keywords: [
       "investment banking",
       "investment banker",
@@ -109,8 +139,50 @@ export const roleTypes: RoleTypeDefinition[] = [
     titlePatterns: [/investment\s*bank/i, /\bM&A\b/i, /capital\s*markets/i],
   },
   {
+    roleType: "Equity Research",
+    category: "Investment Banking",
+    keywords: [
+      "equity research",
+      "research analyst",
+      "sell-side research",
+      "buy-side research",
+      "equity analyst",
+      "stock research",
+      "securities research",
+    ],
+    titlePatterns: [
+      /equity\s*research/i,
+      /securities\s*analyst/i,
+    ],
+  },
+
+  // =====================================================
+  // TRADING
+  // Execution, market-making, prop trading, flow trading
+  // =====================================================
+  {
+    roleType: "Trading",
+    category: "Trading",
+    keywords: [
+      "trader",
+      "trading",
+      "desk trader",
+      "prop trading",
+      "proprietary trading",
+      "execution trader",
+      "flow trader",
+      "market maker",
+    ],
+    titlePatterns: [/\btrad(?:er|ing)\b/i, /market\s*mak/i],
+  },
+
+  // =====================================================
+  // ASSET & PORTFOLIO MANAGEMENT
+  // Fund management, asset allocation, investment management
+  // =====================================================
+  {
     roleType: "Portfolio Management",
-    category: "Finance & Investment",
+    category: "Asset & Portfolio Management",
     keywords: [
       "portfolio manager",
       "fund manager",
@@ -127,36 +199,24 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
   },
   {
-    roleType: "Risk Management",
-    category: "Finance & Investment",
+    roleType: "Hedge Fund",
+    category: "Asset & Portfolio Management",
     keywords: [
-      "risk management",
-      "risk analyst",
-      "risk manager",
-      "credit risk",
-      "market risk",
-      "operational risk",
-      "risk officer",
+      "hedge fund",
+      "fund management",
+      "alternative investments",
+      "hedge fund analyst",
     ],
-    titlePatterns: [/risk\s*(?:manag|analyst|officer)/i, /\bcro\b/i],
+    titlePatterns: [/hedge\s*fund/i],
   },
-  {
-    roleType: "Trading",
-    category: "Finance & Investment",
-    keywords: [
-      "trader",
-      "trading",
-      "desk trader",
-      "prop trading",
-      "proprietary trading",
-      "execution trader",
-      "flow trader",
-    ],
-    titlePatterns: [/\btrad(?:er|ing)\b/i],
-  },
+
+  // =====================================================
+  // PRIVATE EQUITY & VENTURE CAPITAL
+  // Buyout, growth equity, startup investing
+  // =====================================================
   {
     roleType: "Private Equity",
-    category: "Finance & Investment",
+    category: "Private Equity & Venture Capital",
     keywords: [
       "private equity",
       "PE",
@@ -174,7 +234,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Venture Capital",
-    category: "Finance & Investment",
+    category: "Private Equity & Venture Capital",
     keywords: [
       "venture capital",
       "VC",
@@ -185,36 +245,32 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
     titlePatterns: [/venture\s*capital/i, /\bVC\b/i],
   },
-  {
-    roleType: "Hedge Fund",
-    category: "Finance & Investment",
-    keywords: [
-      "hedge fund",
-      "fund management",
-      "alternative investments",
-      "hedge fund analyst",
-    ],
-    titlePatterns: [/hedge\s*fund/i],
-  },
+
+  // =====================================================
+  // CORPORATE FINANCE & ACCOUNTING
+  // FP&A, accounting, treasury, controller, tax
+  // =====================================================
   {
     roleType: "Financial Analysis",
-    category: "Finance & Investment",
+    category: "Corporate Finance & Accounting",
     keywords: [
       "financial analyst",
       "FP&A",
       "financial planning",
       "financial analysis",
       "corporate finance analyst",
+      "financial controller",
     ],
     titlePatterns: [
       /financial\s*analyst/i,
       /\bFP&A\b/i,
       /financial\s*planning/i,
+      /corporate\s*finance/i,
     ],
   },
   {
     roleType: "Accounting",
-    category: "Finance & Investment",
+    category: "Corporate Finance & Accounting",
     keywords: [
       "accountant",
       "accounting",
@@ -236,7 +292,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Treasury",
-    category: "Finance & Investment",
+    category: "Corporate Finance & Accounting",
     keywords: [
       "treasury",
       "treasurer",
@@ -246,9 +302,33 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
     titlePatterns: [/treasur(?:y|er)/i, /cash\s*manag/i],
   },
+
+  // =====================================================
+  // RISK MANAGEMENT
+  // Credit risk, market risk, operational risk
+  // =====================================================
+  {
+    roleType: "Risk Management",
+    category: "Risk Management",
+    keywords: [
+      "risk management",
+      "risk analyst",
+      "risk manager",
+      "credit risk",
+      "market risk",
+      "operational risk",
+      "risk officer",
+    ],
+    titlePatterns: [/risk\s*(?:manag|analyst|officer)/i, /\bcro\b/i],
+  },
+
+  // =====================================================
+  // COMPLIANCE & REGULATORY
+  // AML, KYC, regulatory compliance, financial crimes
+  // =====================================================
   {
     roleType: "Compliance",
-    category: "Finance & Investment",
+    category: "Compliance & Regulatory",
     keywords: [
       "compliance",
       "regulatory",
@@ -259,9 +339,14 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
     titlePatterns: [/compliance/i, /\bAML\b/i, /\bKYC\b/i],
   },
+
+  // =====================================================
+  // WEALTH MANAGEMENT & ADVISORY
+  // Financial advisory, private banking, client advisory
+  // =====================================================
   {
     roleType: "Wealth Management",
-    category: "Finance & Investment",
+    category: "Wealth Management & Advisory",
     keywords: [
       "wealth management",
       "financial advisor",
@@ -275,21 +360,42 @@ export const roleTypes: RoleTypeDefinition[] = [
       /private\s*bank/i,
     ],
   },
+
+  // =====================================================
+  // REAL ESTATE
+  // REIT, property management, real estate finance, CRE
+  // =====================================================
   {
-    roleType: "Credit Analysis",
-    category: "Finance & Investment",
+    roleType: "Real Estate Finance",
+    category: "Real Estate",
     keywords: [
-      "credit analyst",
-      "credit analysis",
-      "credit underwriting",
-      "loan analyst",
-      "credit risk",
+      "real estate",
+      "REIT",
+      "property",
+      "real estate finance",
+      "commercial real estate",
+      "CRE",
+      "mortgage",
+      "real estate analyst",
+      "property management",
+      "real estate investment",
     ],
-    titlePatterns: [/credit\s*(?:analyst|underwriter)/i, /loan\s*analyst/i],
+    titlePatterns: [
+      /real\s*estate/i,
+      /\bREIT\b/i,
+      /\bCRE\b/i,
+      /property\s*(?:manag|analyst|invest)/i,
+      /mortgage/i,
+    ],
   },
+
+  // =====================================================
+  // INSURANCE & ACTUARIAL
+  // Actuarial science, insurance underwriting, pricing
+  // =====================================================
   {
     roleType: "Actuarial",
-    category: "Finance & Investment",
+    category: "Insurance & Actuarial",
     keywords: [
       "actuary",
       "actuarial",
@@ -299,13 +405,194 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
     titlePatterns: [/actuar(?:y|ial)/i],
   },
+  {
+    roleType: "Insurance",
+    category: "Insurance & Actuarial",
+    keywords: [
+      "insurance",
+      "underwriter",
+      "insurance analyst",
+      "claims",
+      "reinsurance",
+    ],
+    titlePatterns: [
+      /insurance/i,
+      /\bunderwriter\b/i,
+      /reinsurance/i,
+    ],
+  },
 
   // =====================================================
-  // TECHNOLOGY - DEVELOPMENT
+  // CREDIT & LENDING
+  // Credit analysis, loan underwriting, credit risk
+  // =====================================================
+  {
+    roleType: "Credit Analysis",
+    category: "Credit & Lending",
+    keywords: [
+      "credit analyst",
+      "credit analysis",
+      "credit underwriting",
+      "loan analyst",
+      "credit risk",
+      "lending",
+    ],
+    titlePatterns: [/credit\s*(?:analyst|underwriter)/i, /loan\s*analyst/i, /lending/i],
+  },
+
+  // =====================================================
+  // DATA & ANALYTICS
+  // Data analysis, BI, reporting, business analytics
+  // =====================================================
+  {
+    roleType: "Data Analysis",
+    category: "Data & Analytics",
+    keywords: [
+      "data analyst",
+      "business analyst",
+      "analytics",
+      "BI analyst",
+      "reporting analyst",
+      "insights analyst",
+    ],
+    titlePatterns: [
+      /data\s*analyst/i,
+      /business\s*analyst/i,
+      /\bBI\s*analyst/i,
+      /analytics\s*analyst/i,
+    ],
+  },
+  {
+    roleType: "Data Science",
+    category: "Data & Analytics",
+    keywords: [
+      "data scientist",
+      "data science",
+      "machine learning scientist",
+      "ML scientist",
+      "applied scientist",
+    ],
+    titlePatterns: [
+      /data\s*scientist/i,
+      /\bML\s*scientist/i,
+      /applied\s*scientist/i,
+    ],
+  },
+  {
+    roleType: "Data Engineering",
+    category: "Data & Analytics",
+    keywords: [
+      "data engineer",
+      "data engineering",
+      "ETL developer",
+      "data pipeline",
+      "big data engineer",
+      "data platform engineer",
+    ],
+    titlePatterns: [
+      /data\s*engineer/i,
+      /\bETL\s*developer/i,
+      /big\s*data\s*engineer/i,
+    ],
+  },
+  {
+    roleType: "Business Intelligence",
+    category: "Data & Analytics",
+    keywords: [
+      "business intelligence",
+      "BI developer",
+      "BI analyst",
+      "tableau developer",
+      "power BI developer",
+      "data visualization",
+    ],
+    titlePatterns: [
+      /business\s*intelligence/i,
+      /\bBI\s*(?:developer|analyst)/i,
+      /tableau\s*developer/i,
+      /power\s*BI/i,
+    ],
+  },
+
+  // =====================================================
+  // MACHINE LEARNING & AI
+  // ML engineering, AI research, NLP, computer vision
+  // =====================================================
+  {
+    roleType: "Machine Learning Engineering",
+    category: "Machine Learning & AI",
+    keywords: [
+      "machine learning engineer",
+      "ML engineer",
+      "AI engineer",
+      "deep learning engineer",
+      "MLOps engineer",
+    ],
+    titlePatterns: [
+      /machine\s*learning\s*engineer/i,
+      /\bML\s*engineer/i,
+      /\bAI\s*engineer/i,
+      /MLOps/i,
+    ],
+  },
+  {
+    roleType: "AI Research",
+    category: "Machine Learning & AI",
+    keywords: [
+      "AI research",
+      "research scientist",
+      "deep learning researcher",
+      "NLP researcher",
+      "computer vision researcher",
+      "AI researcher",
+    ],
+    titlePatterns: [
+      /\bAI\s*research/i,
+      /research\s*scientist/i,
+      /deep\s*learning\s*research/i,
+      /\bNLP\s*research/i,
+    ],
+  },
+  {
+    roleType: "NLP Engineering",
+    category: "Machine Learning & AI",
+    keywords: [
+      "NLP engineer",
+      "natural language processing",
+      "computational linguist",
+      "text mining",
+      "conversational AI",
+    ],
+    titlePatterns: [
+      /\bNLP\s*engineer/i,
+      /natural\s*language/i,
+      /computational\s*linguist/i,
+    ],
+  },
+  {
+    roleType: "Computer Vision",
+    category: "Machine Learning & AI",
+    keywords: [
+      "computer vision",
+      "vision engineer",
+      "image processing",
+      "video analytics",
+      "CV engineer",
+    ],
+    titlePatterns: [
+      /computer\s*vision/i,
+      /vision\s*engineer/i,
+      /image\s*process/i,
+    ],
+  },
+
+  // =====================================================
+  // SOFTWARE ENGINEERING
+  // Software development, web dev, mobile, full stack
   // =====================================================
   {
     roleType: "Software Engineering",
-    category: "Technology - Development",
+    category: "Software Engineering",
     keywords: [
       "software engineer",
       "software developer",
@@ -322,7 +609,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Full Stack Development",
-    category: "Technology - Development",
+    category: "Software Engineering",
     keywords: [
       "full stack",
       "fullstack",
@@ -333,7 +620,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Frontend Development",
-    category: "Technology - Development",
+    category: "Software Engineering",
     keywords: [
       "frontend",
       "front-end",
@@ -355,7 +642,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Backend Development",
-    category: "Technology - Development",
+    category: "Software Engineering",
     keywords: [
       "backend",
       "back-end",
@@ -375,7 +662,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Mobile Development",
-    category: "Technology - Development",
+    category: "Software Engineering",
     keywords: [
       "mobile developer",
       "iOS developer",
@@ -395,8 +682,115 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
   },
   {
+    roleType: "Software Architecture",
+    category: "Software Engineering",
+    keywords: [
+      "software architect",
+      "solutions architect",
+      "technical architect",
+      "enterprise architect",
+      "system architect",
+    ],
+    titlePatterns: [
+      /(?:software|solutions|technical|enterprise|system)\s*architect/i,
+    ],
+  },
+  {
+    roleType: "QA Engineering",
+    category: "Software Engineering",
+    keywords: [
+      "QA engineer",
+      "quality assurance",
+      "test engineer",
+      "SDET",
+      "automation tester",
+      "QA analyst",
+      "test automation",
+    ],
+    titlePatterns: [
+      /\bQA\s*(?:engineer|analyst)/i,
+      /quality\s*assurance/i,
+      /test\s*(?:engineer|automation)/i,
+      /\bSDET\b/i,
+    ],
+  },
+  {
+    roleType: "Database Administration",
+    category: "Software Engineering",
+    keywords: [
+      "DBA",
+      "database administrator",
+      "database engineer",
+      "database developer",
+      "SQL developer",
+    ],
+    titlePatterns: [
+      /\bDBA\b/i,
+      /database\s*(?:admin|engineer|developer)/i,
+      /\bSQL\s*developer/i,
+    ],
+  },
+  {
+    roleType: "Embedded Systems",
+    category: "Software Engineering",
+    keywords: [
+      "embedded systems",
+      "firmware engineer",
+      "embedded software",
+      "embedded developer",
+      "IoT developer",
+      "hardware engineer",
+    ],
+    titlePatterns: [
+      /embedded\s*(?:systems|software|engineer|developer)/i,
+      /firmware/i,
+      /\bIoT\s*(?:developer|engineer)/i,
+    ],
+  },
+  {
+    roleType: "Game Development",
+    category: "Software Engineering",
+    keywords: [
+      "game developer",
+      "game programmer",
+      "unity developer",
+      "unreal developer",
+      "game engineer",
+      "graphics programmer",
+    ],
+    titlePatterns: [
+      /game\s*(?:developer|programmer|engineer)/i,
+      /unity\s*developer/i,
+      /unreal\s*developer/i,
+    ],
+  },
+  {
+    roleType: "Blockchain Development",
+    category: "Software Engineering",
+    keywords: [
+      "blockchain developer",
+      "smart contract",
+      "solidity developer",
+      "web3 developer",
+      "crypto developer",
+      "DeFi developer",
+    ],
+    titlePatterns: [
+      /blockchain\s*(?:developer|engineer)/i,
+      /smart\s*contract/i,
+      /solidity/i,
+      /web3/i,
+      /\bDeFi\b/i,
+    ],
+  },
+
+  // =====================================================
+  // INFRASTRUCTURE & CLOUD
+  // DevOps, SRE, cloud, networking, sysadmin
+  // =====================================================
+  {
     roleType: "DevOps Engineering",
-    category: "Technology - Development",
+    category: "Infrastructure & Cloud",
     keywords: [
       "devops",
       "devops engineer",
@@ -416,7 +810,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Cloud Engineering",
-    category: "Technology - Development",
+    category: "Infrastructure & Cloud",
     keywords: [
       "cloud engineer",
       "AWS engineer",
@@ -432,254 +826,8 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
   },
   {
-    roleType: "Software Architecture",
-    category: "Technology - Development",
-    keywords: [
-      "software architect",
-      "solutions architect",
-      "technical architect",
-      "enterprise architect",
-      "system architect",
-    ],
-    titlePatterns: [
-      /(?:software|solutions|technical|enterprise|system)\s*architect/i,
-    ],
-  },
-  {
-    roleType: "QA Engineering",
-    category: "Technology - Development",
-    keywords: [
-      "QA engineer",
-      "quality assurance",
-      "test engineer",
-      "SDET",
-      "automation tester",
-      "QA analyst",
-      "test automation",
-    ],
-    titlePatterns: [
-      /\bQA\s*(?:engineer|analyst)/i,
-      /quality\s*assurance/i,
-      /test\s*(?:engineer|automation)/i,
-      /\bSDET\b/i,
-    ],
-  },
-  {
-    roleType: "Database Administration",
-    category: "Technology - Development",
-    keywords: [
-      "DBA",
-      "database administrator",
-      "database engineer",
-      "database developer",
-      "SQL developer",
-    ],
-    titlePatterns: [
-      /\bDBA\b/i,
-      /database\s*(?:admin|engineer|developer)/i,
-      /\bSQL\s*developer/i,
-    ],
-  },
-  {
-    roleType: "Embedded Systems",
-    category: "Technology - Development",
-    keywords: [
-      "embedded systems",
-      "firmware engineer",
-      "embedded software",
-      "embedded developer",
-      "IoT developer",
-      "hardware engineer",
-    ],
-    titlePatterns: [
-      /embedded\s*(?:systems|software|engineer|developer)/i,
-      /firmware/i,
-      /\bIoT\s*(?:developer|engineer)/i,
-    ],
-  },
-  {
-    roleType: "Game Development",
-    category: "Technology - Development",
-    keywords: [
-      "game developer",
-      "game programmer",
-      "unity developer",
-      "unreal developer",
-      "game engineer",
-      "graphics programmer",
-    ],
-    titlePatterns: [
-      /game\s*(?:developer|programmer|engineer)/i,
-      /unity\s*developer/i,
-      /unreal\s*developer/i,
-    ],
-  },
-  {
-    roleType: "Blockchain Development",
-    category: "Technology - Development",
-    keywords: [
-      "blockchain developer",
-      "smart contract",
-      "solidity developer",
-      "web3 developer",
-      "crypto developer",
-      "DeFi developer",
-    ],
-    titlePatterns: [
-      /blockchain\s*(?:developer|engineer)/i,
-      /smart\s*contract/i,
-      /solidity/i,
-      /web3/i,
-      /\bDeFi\b/i,
-    ],
-  },
-
-  // =====================================================
-  // TECHNOLOGY - DATA & AI
-  // =====================================================
-  {
-    roleType: "Data Science",
-    category: "Technology - Data & AI",
-    keywords: [
-      "data scientist",
-      "data science",
-      "machine learning scientist",
-      "ML scientist",
-      "applied scientist",
-    ],
-    titlePatterns: [
-      /data\s*scientist/i,
-      /\bML\s*scientist/i,
-      /applied\s*scientist/i,
-    ],
-  },
-  {
-    roleType: "Data Engineering",
-    category: "Technology - Data & AI",
-    keywords: [
-      "data engineer",
-      "data engineering",
-      "ETL developer",
-      "data pipeline",
-      "big data engineer",
-      "data platform engineer",
-    ],
-    titlePatterns: [
-      /data\s*engineer/i,
-      /\bETL\s*developer/i,
-      /big\s*data\s*engineer/i,
-    ],
-  },
-  {
-    roleType: "Data Analysis",
-    category: "Technology - Data & AI",
-    keywords: [
-      "data analyst",
-      "business analyst",
-      "analytics",
-      "BI analyst",
-      "reporting analyst",
-      "insights analyst",
-    ],
-    titlePatterns: [
-      /data\s*analyst/i,
-      /business\s*analyst/i,
-      /\bBI\s*analyst/i,
-      /analytics\s*analyst/i,
-    ],
-  },
-  {
-    roleType: "Machine Learning Engineering",
-    category: "Technology - Data & AI",
-    keywords: [
-      "machine learning engineer",
-      "ML engineer",
-      "AI engineer",
-      "deep learning engineer",
-      "MLOps engineer",
-    ],
-    titlePatterns: [
-      /machine\s*learning\s*engineer/i,
-      /\bML\s*engineer/i,
-      /\bAI\s*engineer/i,
-      /MLOps/i,
-    ],
-  },
-  {
-    roleType: "AI Research",
-    category: "Technology - Data & AI",
-    keywords: [
-      "AI research",
-      "research scientist",
-      "deep learning researcher",
-      "NLP researcher",
-      "computer vision researcher",
-      "AI researcher",
-    ],
-    titlePatterns: [
-      /\bAI\s*research/i,
-      /research\s*scientist/i,
-      /deep\s*learning\s*research/i,
-      /\bNLP\s*research/i,
-    ],
-  },
-  {
-    roleType: "Business Intelligence",
-    category: "Technology - Data & AI",
-    keywords: [
-      "business intelligence",
-      "BI developer",
-      "BI analyst",
-      "tableau developer",
-      "power BI developer",
-      "data visualization",
-    ],
-    titlePatterns: [
-      /business\s*intelligence/i,
-      /\bBI\s*(?:developer|analyst)/i,
-      /tableau\s*developer/i,
-      /power\s*BI/i,
-    ],
-  },
-  {
-    roleType: "NLP Engineering",
-    category: "Technology - Data & AI",
-    keywords: [
-      "NLP engineer",
-      "natural language processing",
-      "computational linguist",
-      "text mining",
-      "conversational AI",
-    ],
-    titlePatterns: [
-      /\bNLP\s*engineer/i,
-      /natural\s*language/i,
-      /computational\s*linguist/i,
-    ],
-  },
-  {
-    roleType: "Computer Vision",
-    category: "Technology - Data & AI",
-    keywords: [
-      "computer vision",
-      "vision engineer",
-      "image processing",
-      "video analytics",
-      "CV engineer",
-    ],
-    titlePatterns: [
-      /computer\s*vision/i,
-      /vision\s*engineer/i,
-      /image\s*process/i,
-    ],
-  },
-
-  // =====================================================
-  // TECHNOLOGY - INFRASTRUCTURE
-  // =====================================================
-  {
     roleType: "Network Engineering",
-    category: "Technology - Infrastructure",
+    category: "Infrastructure & Cloud",
     keywords: [
       "network engineer",
       "network administrator",
@@ -692,7 +840,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Systems Administration",
-    category: "Technology - Infrastructure",
+    category: "Infrastructure & Cloud",
     keywords: [
       "systems administrator",
       "sysadmin",
@@ -710,7 +858,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "IT Support",
-    category: "Technology - Infrastructure",
+    category: "Infrastructure & Cloud",
     keywords: [
       "IT support",
       "help desk",
@@ -728,7 +876,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "IT Management",
-    category: "Technology - Infrastructure",
+    category: "Infrastructure & Cloud",
     keywords: [
       "IT manager",
       "technology manager",
@@ -740,17 +888,16 @@ export const roleTypes: RoleTypeDefinition[] = [
     titlePatterns: [
       /\bIT\s*(?:manager|director)/i,
       /technology\s*manager/i,
-      /\bCTO\b/i,
-      /\bCIO\b/i,
     ],
   },
 
   // =====================================================
-  // TECHNOLOGY - SECURITY
+  // CYBERSECURITY
+  // Security engineering, pen testing, SOC, security architecture
   // =====================================================
   {
     roleType: "Security Engineering",
-    category: "Technology - Security",
+    category: "Cybersecurity",
     keywords: [
       "security engineer",
       "cybersecurity engineer",
@@ -767,7 +914,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Penetration Testing",
-    category: "Technology - Security",
+    category: "Cybersecurity",
     keywords: [
       "penetration tester",
       "ethical hacker",
@@ -786,7 +933,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Security Analysis",
-    category: "Technology - Security",
+    category: "Cybersecurity",
     keywords: [
       "security analyst",
       "SOC analyst",
@@ -804,7 +951,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Security Architecture",
-    category: "Technology - Security",
+    category: "Cybersecurity",
     keywords: [
       "security architect",
       "cybersecurity architect",
@@ -815,298 +962,8 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
 
   // =====================================================
-  // RESEARCH & SCIENCE
-  // =====================================================
-  {
-    roleType: "Scientific Research",
-    category: "Research & Science",
-    keywords: [
-      "research scientist",
-      "scientist",
-      "researcher",
-      "principal scientist",
-      "senior scientist",
-      "staff scientist",
-    ],
-    titlePatterns: [
-      /research\s*scientist/i,
-      /(?:principal|senior|staff)\s*scientist/i,
-    ],
-  },
-  {
-    roleType: "Biology Research",
-    category: "Research & Science",
-    keywords: [
-      "biologist",
-      "biology researcher",
-      "microbiologist",
-      "molecular biologist",
-      "cell biologist",
-      "biochemist",
-      "life sciences",
-    ],
-    titlePatterns: [
-      /biolog(?:ist|y\s*research)/i,
-      /microbiolog/i,
-      /molecular\s*biolog/i,
-      /biochemist/i,
-    ],
-  },
-  {
-    roleType: "Chemistry Research",
-    category: "Research & Science",
-    keywords: [
-      "chemist",
-      "chemistry researcher",
-      "organic chemist",
-      "analytical chemist",
-      "medicinal chemist",
-      "polymer chemist",
-    ],
-    titlePatterns: [/chemist/i, /chemistry\s*research/i],
-  },
-  {
-    roleType: "Physics Research",
-    category: "Research & Science",
-    keywords: [
-      "physicist",
-      "physics researcher",
-      "theoretical physicist",
-      "experimental physicist",
-      "applied physicist",
-    ],
-    titlePatterns: [/physicist/i, /physics\s*research/i],
-  },
-  {
-    roleType: "Pharmaceutical Research",
-    category: "Research & Science",
-    keywords: [
-      "pharmaceutical",
-      "drug discovery",
-      "pharmacology",
-      "pharma research",
-      "drug development",
-      "clinical development",
-    ],
-    titlePatterns: [
-      /pharmac(?:eutical|ology)/i,
-      /drug\s*(?:discovery|development)/i,
-    ],
-  },
-  {
-    roleType: "Biotechnology",
-    category: "Research & Science",
-    keywords: [
-      "biotechnology",
-      "biotech",
-      "genetic engineering",
-      "genomics",
-      "proteomics",
-      "bioinformatics",
-    ],
-    titlePatterns: [
-      /biotech/i,
-      /biotechnology/i,
-      /genomics/i,
-      /bioinformatics/i,
-    ],
-  },
-  {
-    roleType: "Materials Science",
-    category: "Research & Science",
-    keywords: [
-      "materials scientist",
-      "materials engineer",
-      "materials research",
-      "nanotechnology",
-      "polymer science",
-    ],
-    titlePatterns: [
-      /materials?\s*(?:scientist|engineer|research)/i,
-      /nanotechnology/i,
-    ],
-  },
-  {
-    roleType: "Environmental Science",
-    category: "Research & Science",
-    keywords: [
-      "environmental scientist",
-      "ecologist",
-      "environmental research",
-      "climate scientist",
-      "sustainability researcher",
-    ],
-    titlePatterns: [
-      /environmental\s*scientist/i,
-      /ecologist/i,
-      /climate\s*scientist/i,
-    ],
-  },
-  {
-    roleType: "Neuroscience",
-    category: "Research & Science",
-    keywords: [
-      "neuroscientist",
-      "neuroscience",
-      "neurobiologist",
-      "cognitive scientist",
-      "brain research",
-    ],
-    titlePatterns: [
-      /neuro(?:scientist|science|biolog)/i,
-      /cognitive\s*scientist/i,
-    ],
-  },
-
-  // =====================================================
-  // ENGINEERING
-  // =====================================================
-  {
-    roleType: "Mechanical Engineering",
-    category: "Engineering",
-    keywords: [
-      "mechanical engineer",
-      "mechanical design",
-      "CAD engineer",
-      "product engineer",
-      "design engineer",
-    ],
-    titlePatterns: [
-      /mechanical\s*engineer/i,
-      /\bCAD\s*engineer/i,
-      /design\s*engineer/i,
-    ],
-  },
-  {
-    roleType: "Electrical Engineering",
-    category: "Engineering",
-    keywords: [
-      "electrical engineer",
-      "electronics engineer",
-      "power engineer",
-      "circuit design",
-      "PCB design",
-    ],
-    titlePatterns: [
-      /electrical\s*engineer/i,
-      /electronics\s*engineer/i,
-      /power\s*engineer/i,
-    ],
-  },
-  {
-    roleType: "Civil Engineering",
-    category: "Engineering",
-    keywords: [
-      "civil engineer",
-      "structural engineer",
-      "construction engineer",
-      "geotechnical engineer",
-      "transportation engineer",
-    ],
-    titlePatterns: [
-      /civil\s*engineer/i,
-      /structural\s*engineer/i,
-      /construction\s*engineer/i,
-    ],
-  },
-  {
-    roleType: "Chemical Engineering",
-    category: "Engineering",
-    keywords: [
-      "chemical engineer",
-      "process engineer",
-      "petrochemical engineer",
-      "refinery engineer",
-    ],
-    titlePatterns: [
-      /chemical\s*engineer/i,
-      /process\s*engineer/i,
-      /petrochemical/i,
-    ],
-  },
-  {
-    roleType: "Biomedical Engineering",
-    category: "Engineering",
-    keywords: [
-      "biomedical engineer",
-      "medical device engineer",
-      "clinical engineer",
-      "biomechanical engineer",
-    ],
-    titlePatterns: [
-      /biomedical\s*engineer/i,
-      /medical\s*device/i,
-      /clinical\s*engineer/i,
-    ],
-  },
-  {
-    roleType: "Manufacturing Engineering",
-    category: "Engineering",
-    keywords: [
-      "manufacturing engineer",
-      "production engineer",
-      "industrial engineer",
-      "process improvement",
-    ],
-    titlePatterns: [
-      /manufacturing\s*engineer/i,
-      /production\s*engineer/i,
-      /industrial\s*engineer/i,
-    ],
-  },
-  {
-    roleType: "Aerospace Engineering",
-    category: "Engineering",
-    keywords: [
-      "aerospace engineer",
-      "aeronautical engineer",
-      "aircraft engineer",
-      "propulsion engineer",
-      "avionics engineer",
-    ],
-    titlePatterns: [
-      /aerospace\s*engineer/i,
-      /aeronautical/i,
-      /aircraft\s*engineer/i,
-      /avionics/i,
-    ],
-  },
-  {
-    roleType: "Robotics Engineering",
-    category: "Engineering",
-    keywords: [
-      "robotics engineer",
-      "automation engineer",
-      "controls engineer",
-      "robot programmer",
-      "mechatronics",
-    ],
-    titlePatterns: [
-      /robotics\s*engineer/i,
-      /automation\s*engineer/i,
-      /controls\s*engineer/i,
-      /mechatronics/i,
-    ],
-  },
-  {
-    roleType: "Quality Engineering",
-    category: "Engineering",
-    keywords: [
-      "quality engineer",
-      "quality assurance engineer",
-      "reliability engineer",
-      "quality control",
-      "six sigma",
-    ],
-    titlePatterns: [
-      /quality\s*engineer/i,
-      /reliability\s*engineer/i,
-      /six\s*sigma/i,
-    ],
-  },
-
-  // =====================================================
   // PRODUCT & DESIGN
+  // Product management, UX/UI, graphic design
   // =====================================================
   {
     roleType: "Product Management",
@@ -1184,171 +1041,6 @@ export const roleTypes: RoleTypeDefinition[] = [
       /creative\s*designer/i,
     ],
   },
-  {
-    roleType: "Motion Design",
-    category: "Product & Design",
-    keywords: [
-      "motion designer",
-      "motion graphics",
-      "animator",
-      "2D animator",
-      "3D animator",
-      "video editor",
-    ],
-    titlePatterns: [/motion\s*(?:designer|graphics)/i, /\banimator\b/i],
-  },
-  {
-    roleType: "Industrial Design",
-    category: "Product & Design",
-    keywords: [
-      "industrial designer",
-      "product designer",
-      "ID designer",
-      "physical product design",
-    ],
-    titlePatterns: [/industrial\s*designer/i],
-  },
-
-  // =====================================================
-  // MARKETING & GROWTH
-  // =====================================================
-  {
-    roleType: "Digital Marketing",
-    category: "Marketing & Growth",
-    keywords: [
-      "digital marketing",
-      "online marketing",
-      "performance marketing",
-      "digital marketer",
-      "marketing manager",
-    ],
-    titlePatterns: [
-      /digital\s*market/i,
-      /performance\s*market/i,
-      /marketing\s*manager/i,
-    ],
-  },
-  {
-    roleType: "SEO Specialist",
-    category: "Marketing & Growth",
-    keywords: [
-      "SEO",
-      "search engine optimization",
-      "SEO specialist",
-      "SEO manager",
-      "organic search",
-    ],
-    titlePatterns: [/\bSEO\b/i, /search\s*engine\s*optim/i],
-  },
-  {
-    roleType: "Content Marketing",
-    category: "Marketing & Growth",
-    keywords: [
-      "content marketing",
-      "content strategist",
-      "content manager",
-      "content creator",
-      "editorial",
-    ],
-    titlePatterns: [
-      /content\s*(?:marketing|strategist|manager)/i,
-      /editorial/i,
-    ],
-  },
-  {
-    roleType: "Social Media Marketing",
-    category: "Marketing & Growth",
-    keywords: [
-      "social media",
-      "community manager",
-      "social media manager",
-      "social media specialist",
-    ],
-    titlePatterns: [/social\s*media/i, /community\s*manager/i],
-  },
-  {
-    roleType: "Growth Marketing",
-    category: "Marketing & Growth",
-    keywords: [
-      "growth marketing",
-      "growth manager",
-      "growth hacker",
-      "user acquisition",
-      "growth lead",
-    ],
-    titlePatterns: [
-      /growth\s*(?:marketing|manager|hacker|lead)/i,
-      /user\s*acquisition/i,
-    ],
-  },
-  {
-    roleType: "Brand Management",
-    category: "Marketing & Growth",
-    keywords: [
-      "brand manager",
-      "brand marketing",
-      "brand strategist",
-      "brand director",
-    ],
-    titlePatterns: [/brand\s*(?:manager|marketing|strategist|director)/i],
-  },
-  {
-    roleType: "Marketing Analytics",
-    category: "Marketing & Growth",
-    keywords: [
-      "marketing analyst",
-      "marketing analytics",
-      "marketing data",
-      "campaign analyst",
-    ],
-    titlePatterns: [
-      /marketing\s*(?:analyst|analytics)/i,
-      /campaign\s*analyst/i,
-    ],
-  },
-  {
-    roleType: "Product Marketing",
-    category: "Marketing & Growth",
-    keywords: [
-      "product marketing",
-      "PMM",
-      "product marketing manager",
-      "go-to-market",
-    ],
-    titlePatterns: [/product\s*marketing/i, /\bPMM\b/i],
-  },
-  {
-    roleType: "Public Relations",
-    category: "Marketing & Growth",
-    keywords: [
-      "public relations",
-      "PR manager",
-      "communications",
-      "media relations",
-      "PR specialist",
-    ],
-    titlePatterns: [
-      /public\s*relations/i,
-      /\bPR\s*(?:manager|specialist)/i,
-      /communications\s*manager/i,
-    ],
-  },
-  {
-    roleType: "Email Marketing",
-    category: "Marketing & Growth",
-    keywords: [
-      "email marketing",
-      "email specialist",
-      "CRM specialist",
-      "lifecycle marketing",
-      "retention marketing",
-    ],
-    titlePatterns: [
-      /email\s*market/i,
-      /\bCRM\s*specialist/i,
-      /lifecycle\s*market/i,
-    ],
-  },
 
   // =====================================================
   // SALES & BUSINESS DEVELOPMENT
@@ -1411,17 +1103,6 @@ export const roleTypes: RoleTypeDefinition[] = [
     titlePatterns: [/sales\s*engineer/i, /solutions\s*engineer/i, /presales/i],
   },
   {
-    roleType: "Inside Sales",
-    category: "Sales & Business Development",
-    keywords: [
-      "inside sales",
-      "SDR",
-      "sales development representative",
-      "inbound sales",
-    ],
-    titlePatterns: [/inside\s*sales/i, /\bSDR\b/i, /sales\s*development/i],
-  },
-  {
     roleType: "Customer Success",
     category: "Sales & Business Development",
     keywords: [
@@ -1433,29 +1114,139 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
     titlePatterns: [/customer\s*success/i, /\bCSM\b/i, /client\s*success/i],
   },
+
+  // =====================================================
+  // MARKETING & COMMUNICATIONS
+  // =====================================================
   {
-    roleType: "Sales Management",
-    category: "Sales & Business Development",
+    roleType: "Digital Marketing",
+    category: "Marketing & Communications",
     keywords: [
-      "sales manager",
-      "sales director",
-      "VP sales",
-      "head of sales",
-      "sales leader",
+      "digital marketing",
+      "online marketing",
+      "performance marketing",
+      "digital marketer",
+      "marketing manager",
     ],
     titlePatterns: [
-      /sales\s*(?:manager|director)/i,
-      /\bVP\s*(?:of\s*)?sales/i,
-      /head\s*of\s*sales/i,
+      /digital\s*market/i,
+      /performance\s*market/i,
+      /marketing\s*manager/i,
+    ],
+  },
+  {
+    roleType: "SEO Specialist",
+    category: "Marketing & Communications",
+    keywords: [
+      "SEO",
+      "search engine optimization",
+      "SEO specialist",
+      "SEO manager",
+      "organic search",
+    ],
+    titlePatterns: [/\bSEO\b/i, /search\s*engine\s*optim/i],
+  },
+  {
+    roleType: "Content Marketing",
+    category: "Marketing & Communications",
+    keywords: [
+      "content marketing",
+      "content strategist",
+      "content manager",
+      "content creator",
+      "editorial",
+      "copywriter",
+    ],
+    titlePatterns: [
+      /content\s*(?:marketing|strategist|manager)/i,
+      /editorial/i,
+      /copywriter/i,
+    ],
+  },
+  {
+    roleType: "Product Marketing",
+    category: "Marketing & Communications",
+    keywords: [
+      "product marketing",
+      "PMM",
+      "product marketing manager",
+      "go-to-market",
+    ],
+    titlePatterns: [/product\s*marketing/i, /\bPMM\b/i],
+  },
+  {
+    roleType: "Public Relations",
+    category: "Marketing & Communications",
+    keywords: [
+      "public relations",
+      "PR manager",
+      "communications",
+      "media relations",
+      "PR specialist",
+    ],
+    titlePatterns: [
+      /public\s*relations/i,
+      /\bPR\s*(?:manager|specialist)/i,
+      /communications\s*manager/i,
     ],
   },
 
   // =====================================================
-  // OPERATIONS & SUPPLY CHAIN
+  // CONSULTING & ADVISORY
+  // Management consulting, strategy, IT consulting
+  // =====================================================
+  {
+    roleType: "Management Consulting",
+    category: "Consulting & Advisory",
+    keywords: [
+      "management consultant",
+      "strategy consultant",
+      "business consultant",
+      "consulting analyst",
+    ],
+    titlePatterns: [
+      /management\s*consultant/i,
+      /strategy\s*consultant/i,
+      /business\s*consultant/i,
+      /consulting\s*analyst/i,
+    ],
+  },
+  {
+    roleType: "IT Consulting",
+    category: "Consulting & Advisory",
+    keywords: [
+      "IT consultant",
+      "technology consultant",
+      "digital consultant",
+      "technical consultant",
+    ],
+    titlePatterns: [
+      /\bIT\s*consultant/i,
+      /technology\s*consultant/i,
+      /digital\s*consultant/i,
+    ],
+  },
+  {
+    roleType: "Financial Consulting",
+    category: "Consulting & Advisory",
+    keywords: [
+      "financial consultant",
+      "finance consultant",
+      "advisory",
+      "financial advisory",
+    ],
+    titlePatterns: [
+      /financial\s*(?:consultant|advisory)/i,
+      /finance\s*consultant/i,
+    ],
+  },
+
+  // =====================================================
+  // OPERATIONS & PROJECT MANAGEMENT
   // =====================================================
   {
     roleType: "Operations Management",
-    category: "Operations & Supply Chain",
+    category: "Operations & Project Management",
     keywords: [
       "operations manager",
       "operations director",
@@ -1470,25 +1261,8 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
   },
   {
-    roleType: "Supply Chain Management",
-    category: "Operations & Supply Chain",
-    keywords: [
-      "supply chain",
-      "logistics",
-      "procurement",
-      "sourcing",
-      "supply chain manager",
-    ],
-    titlePatterns: [
-      /supply\s*chain/i,
-      /logistics/i,
-      /procurement/i,
-      /sourcing/i,
-    ],
-  },
-  {
     roleType: "Project Management",
-    category: "Operations & Supply Chain",
+    category: "Operations & Project Management",
     keywords: [
       "project manager",
       "program manager",
@@ -1504,8 +1278,25 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
   },
   {
+    roleType: "Supply Chain Management",
+    category: "Operations & Project Management",
+    keywords: [
+      "supply chain",
+      "logistics",
+      "procurement",
+      "sourcing",
+      "supply chain manager",
+    ],
+    titlePatterns: [
+      /supply\s*chain/i,
+      /logistics/i,
+      /procurement/i,
+      /sourcing/i,
+    ],
+  },
+  {
     roleType: "Scrum Master",
-    category: "Operations & Supply Chain",
+    category: "Operations & Project Management",
     keywords: [
       "scrum master",
       "agile coach",
@@ -1514,167 +1305,170 @@ export const roleTypes: RoleTypeDefinition[] = [
     ],
     titlePatterns: [/scrum\s*master/i, /agile\s*(?:coach|lead)/i],
   },
+
+  // =====================================================
+  // RESEARCH & SCIENCE
+  // =====================================================
   {
-    roleType: "Business Operations",
-    category: "Operations & Supply Chain",
+    roleType: "Scientific Research",
+    category: "Research & Science",
     keywords: [
-      "business operations",
-      "operations analyst",
-      "process analyst",
-      "strategy operations",
+      "research scientist",
+      "scientist",
+      "researcher",
+      "principal scientist",
+      "senior scientist",
+      "staff scientist",
     ],
     titlePatterns: [
-      /business\s*operations/i,
-      /operations\s*analyst/i,
-      /process\s*analyst/i,
+      /research\s*scientist/i,
+      /(?:principal|senior|staff)\s*scientist/i,
+    ],
+  },
+  {
+    roleType: "Biotechnology",
+    category: "Research & Science",
+    keywords: [
+      "biotechnology",
+      "biotech",
+      "genetic engineering",
+      "genomics",
+      "proteomics",
+      "bioinformatics",
+    ],
+    titlePatterns: [
+      /biotech/i,
+      /biotechnology/i,
+      /genomics/i,
+      /bioinformatics/i,
+    ],
+  },
+  {
+    roleType: "Pharmaceutical Research",
+    category: "Research & Science",
+    keywords: [
+      "pharmaceutical",
+      "drug discovery",
+      "pharmacology",
+      "pharma research",
+      "drug development",
+      "clinical development",
+    ],
+    titlePatterns: [
+      /pharmac(?:eutical|ology)/i,
+      /drug\s*(?:discovery|development)/i,
+    ],
+  },
+  {
+    roleType: "Environmental Science",
+    category: "Research & Science",
+    keywords: [
+      "environmental scientist",
+      "ecologist",
+      "environmental research",
+      "climate scientist",
+      "sustainability researcher",
+    ],
+    titlePatterns: [
+      /environmental\s*scientist/i,
+      /ecologist/i,
+      /climate\s*scientist/i,
     ],
   },
 
   // =====================================================
-  // HUMAN RESOURCES
+  // ENGINEERING (non-software)
+  // Mechanical, electrical, civil, aerospace, etc.
   // =====================================================
   {
-    roleType: "HR Management",
-    category: "Human Resources",
+    roleType: "Mechanical Engineering",
+    category: "Engineering",
     keywords: [
-      "HR manager",
-      "human resources manager",
-      "people manager",
-      "HR director",
-      "CHRO",
+      "mechanical engineer",
+      "mechanical design",
+      "CAD engineer",
+      "product engineer",
+      "design engineer",
     ],
     titlePatterns: [
-      /\bHR\s*(?:manager|director)/i,
-      /human\s*resources\s*manager/i,
-      /people\s*(?:manager|director)/i,
-      /\bCHRO\b/i,
+      /mechanical\s*engineer/i,
+      /\bCAD\s*engineer/i,
+      /design\s*engineer/i,
     ],
   },
   {
-    roleType: "Recruiting",
-    category: "Human Resources",
+    roleType: "Electrical Engineering",
+    category: "Engineering",
     keywords: [
-      "recruiter",
-      "talent acquisition",
-      "technical recruiter",
-      "recruiting",
-      "sourcer",
-      "headhunter",
-    ],
-    titlePatterns: [/recruiter/i, /talent\s*acquisition/i, /sourcer/i],
-  },
-  {
-    roleType: "HR Business Partner",
-    category: "Human Resources",
-    keywords: [
-      "HR business partner",
-      "HRBP",
-      "HR consultant",
-      "people partner",
+      "electrical engineer",
+      "electronics engineer",
+      "power engineer",
+      "circuit design",
+      "PCB design",
     ],
     titlePatterns: [
-      /\bHRBP\b/i,
-      /\bHR\s*business\s*partner/i,
-      /people\s*partner/i,
+      /electrical\s*engineer/i,
+      /electronics\s*engineer/i,
+      /power\s*engineer/i,
     ],
   },
   {
-    roleType: "Compensation & Benefits",
-    category: "Human Resources",
+    roleType: "Civil Engineering",
+    category: "Engineering",
     keywords: [
-      "compensation",
-      "benefits",
-      "total rewards",
-      "comp and benefits",
-      "compensation analyst",
+      "civil engineer",
+      "structural engineer",
+      "construction engineer",
+      "geotechnical engineer",
+      "transportation engineer",
     ],
     titlePatterns: [
-      /compensation/i,
-      /benefits\s*(?:manager|analyst)/i,
-      /total\s*rewards/i,
+      /civil\s*engineer/i,
+      /structural\s*engineer/i,
+      /construction\s*engineer/i,
     ],
   },
   {
-    roleType: "Learning & Development",
-    category: "Human Resources",
+    roleType: "Aerospace Engineering",
+    category: "Engineering",
     keywords: [
-      "learning development",
-      "training",
-      "L&D",
-      "organizational development",
-      "instructional designer",
+      "aerospace engineer",
+      "aeronautical engineer",
+      "aircraft engineer",
+      "propulsion engineer",
+      "avionics engineer",
     ],
     titlePatterns: [
-      /learning\s*(?:and|&)?\s*development/i,
-      /\bL&D\b/i,
-      /training\s*manager/i,
-      /instructional\s*design/i,
+      /aerospace\s*engineer/i,
+      /aeronautical/i,
+      /aircraft\s*engineer/i,
+      /avionics/i,
+    ],
+  },
+  {
+    roleType: "Robotics Engineering",
+    category: "Engineering",
+    keywords: [
+      "robotics engineer",
+      "automation engineer",
+      "controls engineer",
+      "robot programmer",
+      "mechatronics",
+    ],
+    titlePatterns: [
+      /robotics\s*engineer/i,
+      /automation\s*engineer/i,
+      /controls\s*engineer/i,
+      /mechatronics/i,
     ],
   },
 
   // =====================================================
-  // LEGAL & COMPLIANCE
-  // =====================================================
-  {
-    roleType: "Legal Counsel",
-    category: "Legal & Compliance",
-    keywords: [
-      "attorney",
-      "lawyer",
-      "legal counsel",
-      "in-house counsel",
-      "corporate counsel",
-      "general counsel",
-    ],
-    titlePatterns: [
-      /attorney/i,
-      /lawyer/i,
-      /(?:legal|corporate|general)\s*counsel/i,
-    ],
-  },
-  {
-    roleType: "Paralegal",
-    category: "Legal & Compliance",
-    keywords: [
-      "paralegal",
-      "legal assistant",
-      "litigation paralegal",
-      "corporate paralegal",
-    ],
-    titlePatterns: [/paralegal/i, /legal\s*assistant/i],
-  },
-  {
-    roleType: "Compliance Officer",
-    category: "Legal & Compliance",
-    keywords: [
-      "compliance officer",
-      "regulatory compliance",
-      "compliance manager",
-      "compliance analyst",
-    ],
-    titlePatterns: [
-      /compliance\s*(?:officer|manager|analyst)/i,
-      /regulatory\s*compliance/i,
-    ],
-  },
-  {
-    roleType: "Contract Management",
-    category: "Legal & Compliance",
-    keywords: [
-      "contract manager",
-      "contracts",
-      "contract negotiation",
-      "commercial contracts",
-    ],
-    titlePatterns: [/contract\s*(?:manager|specialist)/i],
-  },
-
-  // =====================================================
-  // HEALTHCARE & MEDICAL
+  // HEALTHCARE & LIFE SCIENCES
   // =====================================================
   {
     roleType: "Nursing",
-    category: "Healthcare & Medical",
+    category: "Healthcare & Life Sciences",
     keywords: [
       "registered nurse",
       "RN",
@@ -1694,7 +1488,7 @@ export const roleTypes: RoleTypeDefinition[] = [
   },
   {
     roleType: "Physician",
-    category: "Healthcare & Medical",
+    category: "Healthcare & Life Sciences",
     keywords: [
       "physician",
       "doctor",
@@ -1706,20 +1500,8 @@ export const roleTypes: RoleTypeDefinition[] = [
     titlePatterns: [/physician/i, /\bMD\b/i, /\bdoctor\b/i, /hospitalist/i],
   },
   {
-    roleType: "Pharmacy",
-    category: "Healthcare & Medical",
-    keywords: [
-      "pharmacist",
-      "pharmacy",
-      "clinical pharmacist",
-      "PharmD",
-      "pharmacy technician",
-    ],
-    titlePatterns: [/pharmacist/i, /pharmacy/i, /\bPharmD\b/i],
-  },
-  {
     roleType: "Clinical Research",
-    category: "Healthcare & Medical",
+    category: "Healthcare & Life Sciences",
     keywords: [
       "clinical research",
       "clinical trials",
@@ -1734,381 +1516,136 @@ export const roleTypes: RoleTypeDefinition[] = [
       /clinical\s*trials/i,
     ],
   },
-  {
-    roleType: "Healthcare Administration",
-    category: "Healthcare & Medical",
-    keywords: [
-      "healthcare administrator",
-      "hospital administrator",
-      "medical office manager",
-      "healthcare management",
-    ],
-    titlePatterns: [
-      /healthcare\s*admin/i,
-      /hospital\s*admin/i,
-      /medical\s*office/i,
-    ],
-  },
-  {
-    roleType: "Medical Technology",
-    category: "Healthcare & Medical",
-    keywords: [
-      "medical technologist",
-      "lab technician",
-      "clinical laboratory",
-      "medical lab",
-    ],
-    titlePatterns: [
-      /medical\s*technolog/i,
-      /lab\s*technician/i,
-      /clinical\s*lab/i,
-    ],
-  },
 
   // =====================================================
-  // EDUCATION & TRAINING
+  // OTHER PROFESSIONAL
+  // Legal, HR, admin, education, creative, executive
   // =====================================================
   {
-    roleType: "Teaching",
-    category: "Education & Training",
+    roleType: "Legal Counsel",
+    category: "Other Professional",
     keywords: [
-      "teacher",
-      "educator",
-      "instructor",
-      "tutor",
-      "classroom teacher",
-    ],
-    titlePatterns: [/\bteacher\b/i, /\beducator\b/i, /\binstructor\b/i],
-  },
-  {
-    roleType: "Professor",
-    category: "Education & Training",
-    keywords: [
-      "professor",
-      "assistant professor",
-      "associate professor",
-      "lecturer",
-      "faculty",
-    ],
-    titlePatterns: [/professor/i, /lecturer/i, /faculty/i],
-  },
-  {
-    roleType: "Instructional Design",
-    category: "Education & Training",
-    keywords: [
-      "instructional designer",
-      "learning designer",
-      "curriculum developer",
-      "e-learning developer",
+      "attorney",
+      "lawyer",
+      "legal counsel",
+      "in-house counsel",
+      "corporate counsel",
+      "general counsel",
+      "paralegal",
     ],
     titlePatterns: [
-      /instructional\s*design/i,
-      /learning\s*design/i,
-      /curriculum/i,
-      /e-learning/i,
+      /attorney/i,
+      /lawyer/i,
+      /(?:legal|corporate|general)\s*counsel/i,
+      /paralegal/i,
     ],
   },
   {
-    roleType: "Academic Administration",
-    category: "Education & Training",
+    roleType: "Human Resources",
+    category: "Other Professional",
     keywords: [
-      "academic administrator",
-      "dean",
-      "provost",
-      "registrar",
-      "academic affairs",
-    ],
-    titlePatterns: [/academic\s*admin/i, /\bdean\b/i, /provost/i, /registrar/i],
-  },
-
-  // =====================================================
-  // CREATIVE & MEDIA
-  // =====================================================
-  {
-    roleType: "Copywriting",
-    category: "Creative & Media",
-    keywords: [
-      "copywriter",
-      "content writer",
-      "creative writer",
-      "advertising copywriter",
-      "copy editor",
-    ],
-    titlePatterns: [/copywriter/i, /content\s*writer/i, /creative\s*writer/i],
-  },
-  {
-    roleType: "Video Production",
-    category: "Creative & Media",
-    keywords: [
-      "video editor",
-      "video producer",
-      "videographer",
-      "post-production",
-      "video production",
+      "HR manager",
+      "human resources",
+      "recruiter",
+      "talent acquisition",
+      "people manager",
+      "HRBP",
     ],
     titlePatterns: [
-      /video\s*(?:editor|producer|production)/i,
-      /videographer/i,
-      /post-production/i,
+      /\bHR\s*(?:manager|director|business)/i,
+      /human\s*resources/i,
+      /recruiter/i,
+      /talent\s*acquisition/i,
     ],
   },
-  {
-    roleType: "Photography",
-    category: "Creative & Media",
-    keywords: [
-      "photographer",
-      "photo editor",
-      "commercial photographer",
-      "photography",
-    ],
-    titlePatterns: [/photograph/i, /photo\s*editor/i],
-  },
-  {
-    roleType: "Journalism",
-    category: "Creative & Media",
-    keywords: [
-      "journalist",
-      "reporter",
-      "news writer",
-      "editor",
-      "correspondent",
-    ],
-    titlePatterns: [/journalist/i, /reporter/i, /correspondent/i],
-  },
-  {
-    roleType: "Audio Production",
-    category: "Creative & Media",
-    keywords: [
-      "audio engineer",
-      "sound designer",
-      "podcast producer",
-      "music producer",
-      "audio producer",
-    ],
-    titlePatterns: [
-      /audio\s*(?:engineer|producer)/i,
-      /sound\s*design/i,
-      /podcast/i,
-      /music\s*producer/i,
-    ],
-  },
-
-  // =====================================================
-  // CUSTOMER SERVICE
-  // =====================================================
-  {
-    roleType: "Customer Service",
-    category: "Customer Service",
-    keywords: [
-      "customer service",
-      "customer support",
-      "service representative",
-      "call center",
-      "contact center",
-    ],
-    titlePatterns: [
-      /customer\s*(?:service|support)/i,
-      /service\s*rep/i,
-      /call\s*center/i,
-    ],
-  },
-  {
-    roleType: "Technical Support",
-    category: "Customer Service",
-    keywords: [
-      "technical support",
-      "tech support",
-      "support engineer",
-      "customer support engineer",
-      "TSE",
-    ],
-    titlePatterns: [
-      /technical\s*support/i,
-      /tech\s*support/i,
-      /support\s*engineer/i,
-    ],
-  },
-
-  // =====================================================
-  // CONSULTING
-  // =====================================================
-  {
-    roleType: "Management Consulting",
-    category: "Consulting",
-    keywords: [
-      "management consultant",
-      "strategy consultant",
-      "business consultant",
-      "consulting analyst",
-    ],
-    titlePatterns: [
-      /management\s*consultant/i,
-      /strategy\s*consultant/i,
-      /business\s*consultant/i,
-      /consulting\s*analyst/i,
-    ],
-  },
-  {
-    roleType: "IT Consulting",
-    category: "Consulting",
-    keywords: [
-      "IT consultant",
-      "technology consultant",
-      "digital consultant",
-      "technical consultant",
-    ],
-    titlePatterns: [
-      /\bIT\s*consultant/i,
-      /technology\s*consultant/i,
-      /digital\s*consultant/i,
-    ],
-  },
-  {
-    roleType: "Financial Consulting",
-    category: "Consulting",
-    keywords: [
-      "financial consultant",
-      "finance consultant",
-      "advisory",
-      "financial advisory",
-    ],
-    titlePatterns: [
-      /financial\s*(?:consultant|advisory)/i,
-      /finance\s*consultant/i,
-    ],
-  },
-
-  // =====================================================
-  // EXECUTIVE & LEADERSHIP
-  // =====================================================
   {
     roleType: "Executive Leadership",
-    category: "Executive & Leadership",
+    category: "Other Professional",
     keywords: [
       "CEO",
       "chief executive",
       "president",
       "managing director",
-      "executive director",
+      "CTO",
+      "CFO",
+      "COO",
+      "CMO",
     ],
     titlePatterns: [
       /\bCEO\b/i,
-      /chief\s*executive/i,
-      /\bpresident\b/i,
+      /chief\s*(?:executive|technology|financial|operating|marketing|product)\s*officer/i,
+      /\bCTO\b/i,
+      /\bCFO\b/i,
       /managing\s*director/i,
     ],
   },
   {
-    roleType: "Chief Technology Officer",
-    category: "Executive & Leadership",
+    roleType: "Teaching & Education",
+    category: "Other Professional",
     keywords: [
-      "CTO",
-      "chief technology officer",
-      "VP engineering",
-      "head of engineering",
+      "teacher",
+      "professor",
+      "instructor",
+      "lecturer",
+      "educator",
+      "tutor",
     ],
     titlePatterns: [
-      /\bCTO\b/i,
-      /chief\s*technology/i,
-      /\bVP\s*(?:of\s*)?engineering/i,
-      /head\s*of\s*engineering/i,
+      /\bteacher\b/i,
+      /professor/i,
+      /\binstructor\b/i,
+      /lecturer/i,
     ],
   },
   {
-    roleType: "Chief Financial Officer",
-    category: "Executive & Leadership",
-    keywords: [
-      "CFO",
-      "chief financial officer",
-      "VP finance",
-      "head of finance",
-    ],
-    titlePatterns: [
-      /\bCFO\b/i,
-      /chief\s*financial/i,
-      /\bVP\s*(?:of\s*)?finance/i,
-    ],
-  },
-  {
-    roleType: "Chief Operating Officer",
-    category: "Executive & Leadership",
-    keywords: [
-      "COO",
-      "chief operating officer",
-      "VP operations",
-      "head of operations",
-    ],
-    titlePatterns: [/\bCOO\b/i, /chief\s*operating/i],
-  },
-  {
-    roleType: "Chief Marketing Officer",
-    category: "Executive & Leadership",
-    keywords: [
-      "CMO",
-      "chief marketing officer",
-      "VP marketing",
-      "head of marketing",
-    ],
-    titlePatterns: [
-      /\bCMO\b/i,
-      /chief\s*marketing/i,
-      /\bVP\s*(?:of\s*)?marketing/i,
-    ],
-  },
-  {
-    roleType: "Chief Product Officer",
-    category: "Executive & Leadership",
-    keywords: ["CPO", "chief product officer", "VP product", "head of product"],
-    titlePatterns: [
-      /\bCPO\b/i,
-      /chief\s*product/i,
-      /\bVP\s*(?:of\s*)?product/i,
-      /head\s*of\s*product/i,
-    ],
-  },
-
-  // =====================================================
-  // ADMINISTRATIVE
-  // =====================================================
-  {
-    roleType: "Executive Assistant",
-    category: "Administrative",
+    roleType: "Administrative",
+    category: "Other Professional",
     keywords: [
       "executive assistant",
-      "EA",
-      "executive admin",
-      "chief of staff",
-    ],
-    titlePatterns: [/executive\s*assistant/i, /\bEA\b/i, /chief\s*of\s*staff/i],
-  },
-  {
-    roleType: "Administrative Assistant",
-    category: "Administrative",
-    keywords: [
       "administrative assistant",
-      "admin assistant",
-      "office administrator",
+      "office manager",
       "receptionist",
+      "office administrator",
     ],
     titlePatterns: [
-      /admin(?:istrative)?\s*assistant/i,
-      /office\s*admin/i,
+      /(?:executive|admin(?:istrative)?)\s*assistant/i,
+      /office\s*(?:manager|admin)/i,
       /receptionist/i,
     ],
   },
   {
-    roleType: "Office Management",
-    category: "Administrative",
+    roleType: "Customer Service",
+    category: "Other Professional",
     keywords: [
-      "office manager",
-      "facilities manager",
-      "workplace manager",
-      "office operations",
+      "customer service",
+      "customer support",
+      "call center",
+      "contact center",
+      "help desk",
     ],
     titlePatterns: [
-      /office\s*manager/i,
-      /facilities\s*manager/i,
-      /workplace\s*manager/i,
+      /customer\s*(?:service|support)/i,
+      /call\s*center/i,
+    ],
+  },
+  {
+    roleType: "Creative & Media",
+    category: "Other Professional",
+    keywords: [
+      "video editor",
+      "photographer",
+      "journalist",
+      "reporter",
+      "animator",
+      "motion designer",
+      "audio engineer",
+    ],
+    titlePatterns: [
+      /video\s*(?:editor|producer)/i,
+      /journalist/i,
+      /reporter/i,
+      /\banimator\b/i,
+      /motion\s*design/i,
     ],
   },
 ];

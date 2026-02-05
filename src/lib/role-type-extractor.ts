@@ -139,35 +139,34 @@ export class RoleTypeExtractor {
    * Fallback matching for common patterns not in the dictionary
    */
   private static fallbackMatch(title: string, industry: string): RoleTypeMatch | null {
-    // Common patterns
+    // Common patterns mapped to new functional categories
     const patterns: Array<{ pattern: RegExp; roleType: string; category: string }> = [
-      { pattern: /\bengineer\b/i, roleType: 'Software Engineering', category: 'Technology - Development' },
-      { pattern: /\bdeveloper\b/i, roleType: 'Software Engineering', category: 'Technology - Development' },
-      { pattern: /\banalyst\b/i, roleType: 'Data Analysis', category: 'Technology - Data & AI' },
-      { pattern: /\bmanager\b/i, roleType: 'Operations Management', category: 'Operations & Supply Chain' },
-      { pattern: /\bdirector\b/i, roleType: 'Executive Leadership', category: 'Executive & Leadership' },
-      { pattern: /\bconsultant\b/i, roleType: 'Management Consulting', category: 'Consulting' },
+      { pattern: /\bengineer\b/i, roleType: 'Software Engineering', category: 'Software Engineering' },
+      { pattern: /\bdeveloper\b/i, roleType: 'Software Engineering', category: 'Software Engineering' },
+      { pattern: /\banalyst\b/i, roleType: 'Data Analysis', category: 'Data & Analytics' },
+      { pattern: /\bmanager\b/i, roleType: 'Operations Management', category: 'Operations & Project Management' },
+      { pattern: /\bdirector\b/i, roleType: 'Executive Leadership', category: 'Other Professional' },
+      { pattern: /\bconsultant\b/i, roleType: 'Management Consulting', category: 'Consulting & Advisory' },
       { pattern: /\bdesigner\b/i, roleType: 'Product Design', category: 'Product & Design' },
       { pattern: /\bresearch/i, roleType: 'Scientific Research', category: 'Research & Science' },
       { pattern: /\bscientist\b/i, roleType: 'Scientific Research', category: 'Research & Science' },
       { pattern: /\bsales\b/i, roleType: 'Sales Representative', category: 'Sales & Business Development' },
-      { pattern: /\bmarketing\b/i, roleType: 'Digital Marketing', category: 'Marketing & Growth' },
-      { pattern: /\bfinance\b/i, roleType: 'Financial Analysis', category: 'Finance & Investment' },
-      { pattern: /\baccountant\b/i, roleType: 'Accounting', category: 'Finance & Investment' },
-      { pattern: /\bnurse\b/i, roleType: 'Nursing', category: 'Healthcare & Medical' },
-      { pattern: /\bteacher\b/i, roleType: 'Teaching', category: 'Education & Training' },
-      { pattern: /\blawyer\b|\battorney\b/i, roleType: 'Legal Counsel', category: 'Legal & Compliance' },
-      { pattern: /\bHR\b|\bhuman resources\b/i, roleType: 'HR Management', category: 'Human Resources' },
-      { pattern: /\brecruiter\b/i, roleType: 'Recruiting', category: 'Human Resources' },
-      { pattern: /\bwriter\b/i, roleType: 'Copywriting', category: 'Creative & Media' },
-      { pattern: /\beditor\b/i, roleType: 'Video Production', category: 'Creative & Media' },
-      { pattern: /\bsupport\b/i, roleType: 'Customer Service', category: 'Customer Service' },
+      { pattern: /\bmarketing\b/i, roleType: 'Digital Marketing', category: 'Marketing & Communications' },
+      { pattern: /\bfinance\b/i, roleType: 'Financial Analysis', category: 'Corporate Finance & Accounting' },
+      { pattern: /\baccountant\b/i, roleType: 'Accounting', category: 'Corporate Finance & Accounting' },
+      { pattern: /\bnurse\b/i, roleType: 'Nursing', category: 'Healthcare & Life Sciences' },
+      { pattern: /\bteacher\b/i, roleType: 'Teaching & Education', category: 'Other Professional' },
+      { pattern: /\blawyer\b|\battorney\b/i, roleType: 'Legal Counsel', category: 'Other Professional' },
+      { pattern: /\bHR\b|\bhuman resources\b/i, roleType: 'Human Resources', category: 'Other Professional' },
+      { pattern: /\brecruiter\b/i, roleType: 'Human Resources', category: 'Other Professional' },
+      { pattern: /\bwriter\b/i, roleType: 'Content Marketing', category: 'Marketing & Communications' },
+      { pattern: /\beditor\b/i, roleType: 'Creative & Media', category: 'Other Professional' },
+      { pattern: /\bsupport\b/i, roleType: 'Customer Service', category: 'Other Professional' },
     ];
 
     // Adjust based on industry context
     for (const { pattern, roleType, category } of patterns) {
       if (pattern.test(title)) {
-        // Adjust roleType based on industry if applicable
         let adjustedRoleType = roleType;
         let adjustedCategory = category;
 
@@ -176,29 +175,29 @@ export class RoleTypeExtractor {
           if (industry.includes('finance') || industry.includes('banking') || industry.includes('investment')) {
             if (/analyst/i.test(title)) {
               adjustedRoleType = 'Financial Analysis';
-              adjustedCategory = 'Finance & Investment';
+              adjustedCategory = 'Corporate Finance & Accounting';
             }
             if (/engineer/i.test(title)) {
               adjustedRoleType = 'Quantitative Research';
-              adjustedCategory = 'Finance & Investment';
+              adjustedCategory = 'Quantitative Finance';
             }
           }
           // Technology context
           if (industry.includes('technology') || industry.includes('software') || industry.includes('tech')) {
             if (/analyst/i.test(title)) {
               adjustedRoleType = 'Data Analysis';
-              adjustedCategory = 'Technology - Data & AI';
+              adjustedCategory = 'Data & Analytics';
             }
           }
           // Healthcare context
           if (industry.includes('healthcare') || industry.includes('medical') || industry.includes('health')) {
             if (/analyst/i.test(title)) {
-              adjustedRoleType = 'Healthcare Administration';
-              adjustedCategory = 'Healthcare & Medical';
+              adjustedRoleType = 'Clinical Research';
+              adjustedCategory = 'Healthcare & Life Sciences';
             }
             if (/research/i.test(title)) {
               adjustedRoleType = 'Clinical Research';
-              adjustedCategory = 'Healthcare & Medical';
+              adjustedCategory = 'Healthcare & Life Sciences';
             }
           }
         }
