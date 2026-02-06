@@ -356,6 +356,86 @@ export default function StatsPage() {
     });
   };
 
+  // Rebuild salary statistics from a set of jobs
+  const rebuildSalaryStats = (jobs: JobStatistic[]): SalaryStats | undefined => {
+    const jobsWithSalary = jobs.filter(j => j.salary && (j.salary.min || j.salary.max));
+    if (jobsWithSalary.length === 0) return undefined;
+
+    const salaryStats: SalaryStats = {
+      totalWithSalary: jobsWithSalary.length,
+      averageSalary: null,
+      medianSalary: null,
+      byIndustry: {},
+      bySeniority: {},
+      byLocation: {},
+      byCountry: {},
+      byCity: {},
+      byCurrency: {},
+      salaryRanges: { '0-30k': 0, '30-50k': 0, '50-75k': 0, '75-100k': 0, '100-150k': 0, '150k+': 0 },
+    };
+
+    const salaries: number[] = [];
+    const groups: Record<string, Record<string, number[]>> = {
+      industry: {}, seniority: {}, location: {}, country: {}, city: {},
+    };
+
+    jobsWithSalary.forEach(job => {
+      if (!job.salary) return;
+      const mid = job.salary.min !== null && job.salary.max !== null
+        ? (job.salary.min + job.salary.max) / 2
+        : (job.salary.min || job.salary.max || 0);
+      if (mid <= 0) return;
+
+      salaries.push(mid);
+      if (job.industry) { if (!groups.industry[job.industry]) groups.industry[job.industry] = []; groups.industry[job.industry].push(mid); }
+      if (job.seniority) { if (!groups.seniority[job.seniority]) groups.seniority[job.seniority] = []; groups.seniority[job.seniority].push(mid); }
+      if (job.location) { if (!groups.location[job.location]) groups.location[job.location] = []; groups.location[job.location].push(mid); }
+      if (job.country) { if (!groups.country[job.country]) groups.country[job.country] = []; groups.country[job.country].push(mid); }
+      const nc = normalizeCity(job.city);
+      if (nc) { if (!groups.city[nc]) groups.city[nc] = []; groups.city[nc].push(mid); }
+      if (job.salary.currency) salaryStats.byCurrency[job.salary.currency] = (salaryStats.byCurrency[job.salary.currency] || 0) + 1;
+
+      if (mid < 30000) salaryStats.salaryRanges['0-30k']++;
+      else if (mid < 50000) salaryStats.salaryRanges['30-50k']++;
+      else if (mid < 75000) salaryStats.salaryRanges['50-75k']++;
+      else if (mid < 100000) salaryStats.salaryRanges['75-100k']++;
+      else if (mid < 150000) salaryStats.salaryRanges['100-150k']++;
+      else salaryStats.salaryRanges['150k+']++;
+    });
+
+    if (salaries.length > 0) {
+      salaryStats.averageSalary = Math.round(salaries.reduce((a, b) => a + b, 0) / salaries.length);
+      const sorted = [...salaries].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      salaryStats.medianSalary = sorted.length % 2 === 0
+        ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+        : Math.round(sorted[mid]);
+    }
+
+    const calcGroup = (g: Record<string, number[]>) => {
+      const r: Record<string, { avg: number; median: number; count: number }> = {};
+      for (const [k, vals] of Object.entries(g)) {
+        if (vals.length === 0) continue;
+        const s = [...vals].sort((a, b) => a - b);
+        const m = Math.floor(s.length / 2);
+        r[k] = {
+          avg: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length),
+          median: s.length % 2 === 0 ? Math.round((s[m - 1] + s[m]) / 2) : Math.round(s[m]),
+          count: vals.length,
+        };
+      }
+      return r;
+    };
+
+    salaryStats.byIndustry = calcGroup(groups.industry);
+    salaryStats.bySeniority = calcGroup(groups.seniority);
+    salaryStats.byLocation = calcGroup(groups.location);
+    salaryStats.byCountry = calcGroup(groups.country);
+    salaryStats.byCity = calcGroup(groups.city);
+
+    return salaryStats;
+  };
+
   // Apply filters to statistics
   const getFilteredStatistics = (): MonthlyStatistics | null => {
     const stats = getActiveStatistics();
@@ -382,6 +462,8 @@ export default function StatsPage() {
       byAcademicDegree: {},
       byRoleType: {},
       byRoleCategory: {},
+      byHour: {},
+      byDayHour: {},
     };
 
     filteredJobs.forEach(job => {
@@ -403,35 +485,45 @@ export default function StatsPage() {
       });
       if (job.software) {
         job.software.forEach(soft => {
-          if (!filtered.bySoftware) filtered.bySoftware = {};
-          filtered.bySoftware[soft] = (filtered.bySoftware[soft] || 0) + 1;
+          filtered.bySoftware![soft] = (filtered.bySoftware![soft] || 0) + 1;
         });
       }
       if (job.programmingSkills) {
         job.programmingSkills.forEach(skill => {
-          if (!filtered.byProgrammingSkill) filtered.byProgrammingSkill = {};
-          filtered.byProgrammingSkill[skill] = (filtered.byProgrammingSkill[skill] || 0) + 1;
+          filtered.byProgrammingSkill![skill] = (filtered.byProgrammingSkill![skill] || 0) + 1;
         });
       }
       if (job.yearsExperience) {
-        if (!filtered.byYearsExperience) filtered.byYearsExperience = {};
-        filtered.byYearsExperience[job.yearsExperience] = (filtered.byYearsExperience[job.yearsExperience] || 0) + 1;
+        filtered.byYearsExperience![job.yearsExperience] = (filtered.byYearsExperience![job.yearsExperience] || 0) + 1;
       }
       if (job.academicDegrees) {
         job.academicDegrees.forEach(degree => {
-          if (!filtered.byAcademicDegree) filtered.byAcademicDegree = {};
-          filtered.byAcademicDegree[degree] = (filtered.byAcademicDegree[degree] || 0) + 1;
+          filtered.byAcademicDegree![degree] = (filtered.byAcademicDegree![degree] || 0) + 1;
         });
       }
       if (job.roleType) {
-        if (!filtered.byRoleType) filtered.byRoleType = {};
-        filtered.byRoleType[job.roleType] = (filtered.byRoleType[job.roleType] || 0) + 1;
+        filtered.byRoleType![job.roleType] = (filtered.byRoleType![job.roleType] || 0) + 1;
       }
       if (job.roleCategory) {
-        if (!filtered.byRoleCategory) filtered.byRoleCategory = {};
-        filtered.byRoleCategory[job.roleCategory] = (filtered.byRoleCategory[job.roleCategory] || 0) + 1;
+        filtered.byRoleCategory![job.roleCategory] = (filtered.byRoleCategory![job.roleCategory] || 0) + 1;
+      }
+
+      // Rebuild time data
+      if (job.postedDate) {
+        try {
+          const d = new Date(job.postedDate);
+          if (!isNaN(d.getTime())) {
+            const hour = String(d.getUTCHours()).padStart(2, '0');
+            filtered.byHour![hour] = (filtered.byHour![hour] || 0) + 1;
+            const dayHour = `${d.getUTCDay()}-${d.getUTCHours()}`;
+            filtered.byDayHour![dayHour] = (filtered.byDayHour![dayHour] || 0) + 1;
+          }
+        } catch { /* skip */ }
       }
     });
+
+    // Rebuild salary stats from filtered jobs
+    filtered.salaryStats = rebuildSalaryStats(filteredJobs);
 
     return filtered;
   };
@@ -820,22 +912,8 @@ export default function StatsPage() {
   const hasRoleTypeData = filteredStats?.byRoleType && Object.keys(filteredStats.byRoleType).length > 0;
   const hasRoleCategoryData = filteredStats?.byRoleCategory && Object.keys(filteredStats.byRoleCategory).length > 0;
 
-  // Get publication time analysis data
+  // Get publication time analysis data (10-minute resolution from jobs)
   const getPublicationTimeData = () => {
-    const stats = getFilteredStatistics();
-
-    // If we have aggregated byHour data from statistics, use it
-    if (stats?.byHour && Object.keys(stats.byHour).length > 0 && !hasActiveFilters) {
-      // Convert hourly data to time slots format (just hours since we store by hour)
-      return Object.entries(stats.byHour)
-        .map(([hour, count]) => ({
-          time: `${hour}:00`,
-          count
-        }))
-        .sort((a, b) => a.time.localeCompare(b.time));
-    }
-
-    // Fall back to computing from individual jobs (for current month or filtered data)
     const jobs = getFilteredJobs();
     const timeSlots: Record<string, number> = {};
 
@@ -851,10 +929,36 @@ export default function StatsPage() {
       timeSlots[timeKey] = (timeSlots[timeKey] || 0) + 1;
     });
 
-    // Convert to array and sort by time
-    return Object.entries(timeSlots)
-      .map(([time, count]) => ({ time, count }))
-      .sort((a, b) => a.time.localeCompare(b.time));
+    // If we have jobs, use 10-min resolution
+    if (Object.keys(timeSlots).length > 0) {
+      return Object.entries(timeSlots)
+        .map(([time, count]) => ({ time, count }))
+        .sort((a, b) => a.time.localeCompare(b.time));
+    }
+
+    // Fallback: if no jobs available (e.g. ALL mode with no current month jobs),
+    // use aggregated byHour data and distribute across 10-min slots
+    const stats = getActiveStatistics();
+    if (stats?.byHour && Object.keys(stats.byHour).length > 0) {
+      return Object.entries(stats.byHour)
+        .flatMap(([hour, count]) => {
+          const h = hour.padStart(2, '0');
+          // Distribute hourly count across 6 ten-minute slots
+          const perSlot = Math.round(count / 6);
+          const remainder = count - perSlot * 5;
+          return [
+            { time: `${h}:00`, count: remainder },
+            { time: `${h}:10`, count: perSlot },
+            { time: `${h}:20`, count: perSlot },
+            { time: `${h}:30`, count: perSlot },
+            { time: `${h}:40`, count: perSlot },
+            { time: `${h}:50`, count: perSlot },
+          ].filter(s => s.count > 0);
+        })
+        .sort((a, b) => a.time.localeCompare(b.time));
+    }
+
+    return [];
   };
 
   // Get jobs sorted by publish time (most recent first)
@@ -1213,7 +1317,7 @@ export default function StatsPage() {
             <div className="chart-container compact" style={{ height: 240 }}>
               <PostingHeatmap
                 jobs={filteredJobs}
-                byDayHour={!hasActiveFilters ? filteredStats?.byDayHour : undefined}
+                byDayHour={filteredStats?.byDayHour}
               />
             </div>
           </div>
