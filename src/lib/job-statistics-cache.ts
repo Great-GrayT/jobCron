@@ -1,9 +1,7 @@
 import { logger } from './logger';
 import { SalaryData } from './salary-extractor';
 
-/**
- * Normalize city names for consistent statistics
- */
+// normalize city names for stats
 function normalizeCity(cityName: string | null): string | null {
   if (!cityName) return null;
 
@@ -13,7 +11,6 @@ function normalizeCity(cityName: string | null): string | null {
     .replace(/^Greater\s+/i, '')
     .trim();
 
-  // Filter out non-city names
   if (/^England$/i.test(normalized) ||
       /^Scotland$/i.test(normalized) ||
       /^Wales$/i.test(normalized) ||
@@ -121,14 +118,7 @@ export interface SummaryData {
   };
 }
 
-/**
- * Job Statistics Cache with Monthly Archiving
- *
- * File structure in GitHub Gist:
- * - job-statistics-current.json: Current month's full data
- * - job-statistics-YYYY-MM.json: Archived months (statistics only)
- * - job-statistics-summary.json: Overall summary and metadata
- */
+// monthly job stats cache with github gist persistence
 export class JobStatisticsCache {
   private useGitHubGist: boolean;
   private gistId?: string;
@@ -136,7 +126,6 @@ export class JobStatisticsCache {
   private summaryData: SummaryData;
 
   constructor() {
-    // Use GitHub Gist if credentials are available
     this.useGitHubGist = !!(process.env.GITHUB_TOKEN && process.env.GIST_ID);
     this.gistId = process.env.GIST_ID;
 
@@ -146,7 +135,6 @@ export class JobStatisticsCache {
 
     logger.info(`Job Statistics Cache: ${storageType}`);
 
-    // Initialize with empty data
     const currentMonth = this.getCurrentMonthString();
     this.currentMonthData = {
       month: currentMonth,
@@ -170,9 +158,6 @@ export class JobStatisticsCache {
     };
   }
 
-  /**
-   * Get current month in YYYY-MM format
-   */
   private getCurrentMonthString(): string {
     const now = new Date();
     const year = now.getFullYear();
@@ -180,9 +165,6 @@ export class JobStatisticsCache {
     return `${year}-${month}`;
   }
 
-  /**
-   * Migrate old statistics data to new schema (add missing fields)
-   */
   private migrateStatistics(stats: any): MonthlyStatistics {
     return {
       ...stats,
@@ -205,9 +187,6 @@ export class JobStatisticsCache {
     };
   }
 
-  /**
-   * Create empty statistics object
-   */
   private createEmptyStatistics(): MonthlyStatistics {
     return {
       totalJobs: 0,

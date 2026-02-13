@@ -2,8 +2,8 @@ import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
 
 export const metadata = {
-  title: 'LinkedIn Jobs Monitor',
-  description: 'Automated job monitoring and Telegram notifications',
+  title: 'Job Stats Dashboard',
+  description: 'Analytics dashboard for job market insights',
 };
 
 export default function RootLayout({

@@ -1,345 +1,202 @@
-# LinkedIn Jobs Monitor
+# Job Stats Dashboard
 
-A Next.js-based cron job application that monitors RSS feeds for new job postings and sends real-time notifications to Telegram. The system analyzes job descriptions to extract key information like required certifications, years of experience, skills, and company details.
+> LinkedIn job analytics. No AI, no fluff, just data.
 
-## Features
+Why 14 markdown files? Great question. Now there's one.
 
-- **Automated Job Monitoring**: Checks multiple RSS feeds every 5 minutes for new job postings
-- **Intelligent Job Analysis**: Extracts and analyzes job details including:
-  - Required certifications (CFA, ACCA, MBA, etc.)
-  - Years of experience
-  - Technical skills and software requirements
-  - Academic degrees and majors
-  - Company type and industry
-  - Job type classification
-- **Telegram Notifications**: Sends formatted job alerts to your Telegram chat
-- **Rate Limiting**: Prevents API throttling with configurable delays
-- **Persistent Duplicate Detection**: Uses GitHub Gist to cache job URLs across all cron runs
-  - Eliminates duplicate job postings across all executions
-  - Survives function cold starts and redeployments forever
-  - 100% free with GitHub
-  - Automatic fallback to local file storage for development
-- **Error Handling**: Comprehensive error handling and logging
-
-## Project Structure
-
-```
-job cron on vercel/
-├── src/
-│   ├── app/
-│   │   └── api/
-│   │       └── cron/
-│   │           └── check-jobs/
-│   │               └── route.ts          # API route handler
-│   ├── lib/
-│   │   ├── job-analyzer.ts              # Job description analysis
-│   │   ├── job-formatter.ts             # Message formatting
-│   │   ├── job-monitor-service.ts       # Main service logic
-│   │   ├── logger.ts                    # Logging utility
-│   │   ├── rss-parser.ts                # RSS feed parsing
-│   │   ├── telegram.ts                  # Telegram API integration
-│   │   └── validation.ts                # Request validation
-│   ├── config/
-│   │   └── constants.ts                 # Configuration constants
-│   └── types/
-│       └── job.ts                       # TypeScript type definitions
-├── .env.example                         # Environment variables template
-├── .gitignore                          # Git ignore rules
-├── next.config.js                      # Next.js configuration
-├── package.json                        # Dependencies
-├── tsconfig.json                       # TypeScript configuration
-├── vercel.json                         # Vercel deployment config
-└── README.md                           # This file
-```
-
-## Setup Instructions
-
-### Prerequisites
-
-- Node.js 18.x or later
-- A Telegram Bot Token
-- Your Telegram Chat ID
-- RSS feed URLs for job postings
-
-### 1. Clone the Repository
-
-```bash
-git clone <your-repo-url>
-cd "job cron on vercel"
-```
-
-### 2. Install Dependencies
+## Quick Start
 
 ```bash
 npm install
-```
-
-### 3. Configure Environment Variables
-
-Copy the example environment file:
-
-```bash
 cp .env.example .env
-```
-
-Edit `.env` and add your credentials:
-
-```env
-# Required: Your Telegram bot token from @BotFather
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-
-# Required: Your Telegram chat ID (use @userinfobot to get it)
-TELEGRAM_CHAT_ID=your_telegram_chat_id_here
-
-# Optional: Secret for securing the cron endpoint
-CRON_SECRET=your_secure_random_string_here
-
-# Optional: Custom RSS feed URLs (comma-separated)
-RSS_FEED_URLS=https://rss.app/feeds/feed1.xml,https://rss.app/feeds/feed2.xml
-
-# Optional: Check interval in minutes (default: 5)
-CHECK_INTERVAL_MINUTES=5
-```
-
-### 4. Getting Telegram Credentials
-
-#### Create a Telegram Bot:
-1. Open Telegram and search for [@BotFather](https://t.me/BotFather)
-2. Send `/newbot` and follow the instructions
-3. Copy the bot token provided
-
-#### Get Your Chat ID:
-1. Search for [@userinfobot](https://t.me/userinfobot) on Telegram
-2. Start a chat with it
-3. Copy your user ID (this is your chat ID)
-
-Alternatively, to send to a group:
-1. Add your bot to a group
-2. Send a message in the group
-3. Visit `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
-4. Find the chat ID in the response
-
-### 5. Local Development
-
-Run the development server:
-
-```bash
+# add your telegram bot token (required)
+# add github gist creds (optional but recommended)
 npm run dev
 ```
 
-Test the cron endpoint manually:
+Visit `localhost:3000` and you're done.
 
-```bash
-curl http://localhost:3000/api/cron/check-jobs
+## What It Does
+
+- **RSS Monitoring**: Checks feeds every 5min, sends telegram alerts
+- **Job Analysis**: Extracts salary, certs, skills, locations (multilingual)
+- **Stats Dashboard**: Treemaps, gauges, heatmaps, word clouds, the works
+- **Persistent Storage**: GitHub Gist for caching (free forever), Cloudflare R2 for stats
+
+## Tech Stack
+
+- Next.js 14 (app router)
+- TypeScript (strict mode because we're responsible adults)
+- Recharts + Nivo for viz
+- GitHub Gist API (cache)
+- Cloudflare R2 (stats)
+- Telegram Bot API (notifications)
+
+## Environment Variables
+
+```env
+# required
+TELEGRAM_BOT_TOKEN=your_token_from_botfather
+TELEGRAM_CHAT_ID=your_chat_id_from_userinfobot
+
+# optional but you'll want these
+GITHUB_TOKEN=ghp_yourtoken
+GIST_ID=your_gist_id
+R2_ACCOUNT_ID=cloudflare_account_id
+R2_ACCESS_KEY_ID=r2_key
+R2_SECRET_ACCESS_KEY=r2_secret
+R2_BUCKET_NAME=job-stats
+
+# optional (has defaults)
+RSS_FEED_URLS=https://rss.app/feed1.xml,https://rss.app/feed2.xml
+CHECK_INTERVAL_MINUTES=5
+CRON_SECRET=some_secret_string
 ```
 
-Or with authentication:
+## Features
 
-```bash
-curl -H "Authorization: Bearer your_cron_secret" http://localhost:3000/api/cron/check-jobs
-```
+### Stats Page (root `/`)
 
-### 6. Deploy to Vercel
+- **Industry Treemap**: Who's hiring, visualized
+- **Salary Gauges**: Min/avg/max by industry, seniority, location
+- **Skills Word Cloud**: What they want you to know
+- **Location Heatmap**: Where the jobs are (day/hour)
+- **Certs Bump Chart**: Trending certifications over time
+- **Publication Timing**: When jobs get posted (spoiler: 10am)
+- **Filters**: Search, filter by industry/country/seniority/etc
 
-#### Via Vercel CLI:
+### Data Extraction
 
-```bash
-npm i -g vercel
-vercel login
-vercel
-```
+- **Salary**: Regex hell. Supports £50k-70k, $80,000/year, €100K p.a., and 47 other formats
+- **Location**: 750+ cities, 51 countries, 15 languages including Arabic, Chinese, Russian
+- **Certificates**: CFA, ACCA, PMP, AWS, 50+ more
+- **Skills**: 200+ tech skills, 100+ software tools
+- **Experience**: Extracts "3-5 years", "senior", "entry level"
+- **Company Type**: AI/ML, fintech, healthcare, 30+ categories
 
-#### Via Vercel Dashboard:
+### Backend APIs
 
-1. Push your code to GitHub
-2. Import the repository in [Vercel](https://vercel.com)
-3. Add environment variables in the Vercel dashboard
-4. Deploy
+All in `src/app/api/`:
 
-The cron job is configured in `vercel.json` to run every 5 minutes automatically.
+- `/api/stats/get` - Fetch analytics (current month or all-time)
+- `/api/stats/extract-and-save` - Process jobs, update cache
+- `/api/stats/rebuild` - Rebuild stats from R2
+- `/api/cron/check-jobs` - RSS monitor (auto-runs every 5min on Vercel)
+- `/api/scrape-jobs-stream` - Manual LinkedIn scraping with SSE
+- `/api/migrate-to-r2` - One-time migration util
 
-### 7. Set Up Persistent Cache (Recommended - 100% Free)
+## Performance Notes
 
-To enable persistent duplicate detection across all cron executions using GitHub Gist:
+Started slow. Made it fast. Here's how:
 
-1. Create a GitHub Personal Access Token with `gist` scope
-2. Create a new Gist at https://gist.github.com
-3. Add `GITHUB_TOKEN` and `GIST_ID` to your Vercel environment variables
-4. Redeploy
+- **Deduplication**: 48hr window (configurable)
+- **Concurrent Scraping**: 10 pages at once (LinkedIn rate limits be damned)
+- **Location Batching**: Process in chunks to avoid memory issues
+- **Memoization**: Cache expensive calculations
+- **Debouncing**: Don't recalculate on every keystroke
 
-**📖 Detailed instructions**: See [GITHUB_GIST_SETUP.md](./GITHUB_GIST_SETUP.md) (3-minute setup!)
-
-Without this setup, the cache will still work but only within a single execution (duplicates within the same run will be filtered, but not across different cron runs).
-
-## Configuration
-
-### RSS Feed URLs
-
-By default, the application monitors these feeds:
-- `https://rss.app/feeds/w4Ru4NAR9U7AN4DZ.xml`
-- `https://rss.app/feeds/lp93S41J4onjcEC8.xml`
-- `https://rss.app/feeds/KcrfO8VmpGzIV7hV.xml`
-- `https://rss.app/feeds/740W3eyo4bnyhwTs.xml`
-
-You can override this by setting the `RSS_FEED_URLS` environment variable with comma-separated URLs.
-
-### Check Interval
-
-The default check interval is 5 minutes. You can change this by:
-
-1. Setting `CHECK_INTERVAL_MINUTES` in your `.env` file
-2. Updating the cron schedule in `vercel.json`:
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/check-jobs",
-      "schedule": "*/5 * * * *"  // Every 5 minutes
-    }
-  ]
-}
-```
-
-Cron schedule format: `* * * * *` (minute hour day month weekday)
-
-### Security
-
-The `CRON_SECRET` environment variable is optional but highly recommended for production. When set, all requests to the cron endpoint must include this secret in the `Authorization` header:
-
-```
-Authorization: Bearer your_cron_secret
-```
-
-This prevents unauthorized access to your cron endpoint.
-
-## API Endpoints
-
-### GET /api/cron/check-jobs
-
-Main cron endpoint that checks for new jobs and sends notifications.
-
-**Headers:**
-- `Authorization: Bearer <CRON_SECRET>` (if CRON_SECRET is set)
-
-**Response:**
-```json
-{
-  "success": true,
-  "timestamp": "2024-01-03T12:00:00.000Z",
-  "total": 150,
-  "sent": 5,
-  "failed": 0
-}
-```
-
-### POST /api/cron/check-jobs
-
-Same as GET, useful for manual testing.
-
-## Monitoring and Logs
-
-View logs in the Vercel dashboard:
-1. Go to your project in Vercel
-2. Navigate to the "Logs" tab
-3. Filter by function: `/api/cron/check-jobs`
-
-All logs include timestamps and structured information about:
-- Jobs fetched
-- Jobs filtered
-- Messages sent
-- Errors encountered
-
-## Troubleshooting
-
-### No messages are being sent
-
-1. Check your environment variables are set correctly
-2. Verify your Telegram bot token is valid
-3. Ensure your bot can send messages to the chat (start a chat with your bot first)
-4. Check the Vercel logs for errors
-
-### Getting rate limited by Telegram
-
-The default rate limit delay is 2 seconds between messages. If you're still getting rate limited:
-
-1. Increase `RATE_LIMIT_DELAY_MS` in [constants.ts](src/config/constants.ts)
-2. Reduce the number of RSS feeds being monitored
-
-### Jobs are being sent multiple times
-
-1. Check that your cron job isn't running too frequently
-2. Verify the `CHECK_INTERVAL_MINUTES` matches your cron schedule
-3. Ensure the job posting dates are being parsed correctly
-
-### Authorization errors
-
-If you set `CRON_SECRET`, make sure:
-1. It's set in your Vercel environment variables
-2. The cron request includes the correct `Authorization` header
-3. There are no extra spaces in the token
-
-## Development
-
-### Type Checking
-
-```bash
-npm run type-check
-```
-
-### Linting
-
-```bash
-npm run lint
-```
-
-### Building
-
-```bash
-npm run build
-```
+Result: Handles 1000+ jobs/month without breaking a sweat.
 
 ## Architecture
 
-The application follows a modular architecture:
+```
+RSS Feeds → Parser → Analyzer → Cache (Gist) → Stats (R2) → Dashboard
+                                    ↓
+                              Telegram Bot
+```
 
-- **Route Handler** ([route.ts](src/app/api/cron/check-jobs/route.ts)): Entry point, handles HTTP requests
-- **Service Layer** ([job-monitor-service.ts](src/lib/job-monitor-service.ts)): Orchestrates the main workflow
-- **Utilities**: Specialized modules for RSS parsing, job analysis, formatting, and Telegram integration
-- **Type Safety**: Comprehensive TypeScript types for all data structures
-- **Error Handling**: Custom error classes and structured error responses
-- **Logging**: Centralized logging with timestamps
+Monthly archiving: Current month = full data. Old months = stats only. Keeps the Gist under GitHub's 100MB limit.
+
+## Deployment
+
+### Vercel (Recommended)
+
+```bash
+# push to github
+git push origin main
+
+# import to vercel
+# 1. Visit vercel.com/new
+# 2. Import your repo
+# 3. Add environment variables
+# 4. Deploy
+```
+
+Vercel will auto-run the cron job every 5min using `vercel.json` config.
+
+### GitHub Gist Setup (3min)
+
+Need a place to store data that isn't Vercel's ephemeral filesystem?
+
+```bash
+# 1. Create personal access token
+# Go to github.com/settings/tokens
+# Generate new token (classic)
+# Check "gist" scope
+# Copy token
+
+# 2. Create a gist
+# Go to gist.github.com
+# Create new gist
+# Name it "job-cache" or whatever
+# Copy gist ID from URL (the long hash)
+
+# 3. Add to .env
+GITHUB_TOKEN=ghp_yourtoken
+GIST_ID=abc123def456...
+```
+
+Done. Your cache now survives deployments.
+
+### Cloudflare R2 Setup (5min)
+
+Free 10GB storage for stats.
+
+```bash
+# 1. Sign up at cloudflare.com
+# 2. Create R2 bucket
+# 3. Create API token with R2 permissions
+# 4. Add to .env
+R2_ACCOUNT_ID=your_account_id
+R2_ACCESS_KEY_ID=your_key
+R2_SECRET_ACCESS_KEY=your_secret
+R2_BUCKET_NAME=job-stats
+```
+
+## Changelog Highlights
+
+- **v1.0.0**: Complete rewrite. Everything is new.
+- **Location Extraction**: Added 750 cities, multilingual support
+- **Salary Parsing**: Now handles formats from 13 countries
+- **Filter Bar**: Added search and 47 filter combinations
+- **Performance**: 10x faster scraping, memoized calculations
+- **Stats API**: Unified endpoint for current + archive data
+
+## Known Issues
+
+- Salary extraction confidence varies by format (some job posts are chaos)
+- Some cities get misclassified (e.g., "England" as a city - thanks LinkedIn)
+- Publication heatmap shows UTC times (convert mentally)
+- Can't extract salary from "competitive salary" (we tried)
+
+## Random Facts
+
+- Supports 13 countries because 12 felt incomplete
+- Salary regex has 96 lines. Yes, really.
+- Location dictionary: 4,301 commented lines (now compact)
+- Most jobs post at 10am local time (HR's coffee time)
+- "Remote" is not a location (sorry)
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## URL Cache System
-
-The application uses a smart caching system to prevent duplicate job postings:
-
-- **Development**: Cache stored in `./cache/linkedin-jobs-cache.json`
-- **Production (Vercel)**: Cache stored in **GitHub Gist** for persistence
-
-**Key Benefits:**
-- ✅ Eliminates duplicate notifications across all cron runs
-- ✅ Survives serverless function cold starts forever
-- ✅ 100% free with GitHub
-- ✅ View your cache in browser anytime
-- ✅ Automatically logs all cached URLs for debugging
-
-**Learn More:**
-- [GitHub Gist Setup Guide](./GITHUB_GIST_SETUP.md) - 3-minute setup instructions
-- [Cache Documentation](./CACHE.md) - Detailed explanation of how the cache works
+This is a personal project but feel free to fork it. Or don't. I'm not your boss.
 
 ## License
 
-MIT
+MIT. Do whatever you want. Attribution appreciated but not required.
 
-## Support
+---
 
-For issues and questions, please open an issue on GitHub.
+**Pro tip**: Click the logo 7 times. Nothing happens. But you tried.
+
+Built with caffeine and regex. Lots of regex.

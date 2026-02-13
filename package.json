@@ -1,7 +1,7 @@
 {
-  "name": "linkedin-job-monitor",
+  "name": "job-stats-dashboard",
   "version": "1.0.0",
-  "description": "A Next.js cron job that monitors RSS feeds for job postings and sends notifications to Telegram",
+  "description": "Job market analytics dashboard",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

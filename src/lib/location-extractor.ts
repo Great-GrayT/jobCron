@@ -16,10 +16,7 @@ export interface LocationData {
   region: Region | null;
 }
 
-/**
- * Normalize city names for consistent statistics
- * Removes common prefixes/suffixes and filters invalid city values
- */
+// normalize city names, remove prefixes/suffixes
 export function normalizeCity(cityName: string | null): string | null {
   if (!cityName) return null;
 
@@ -29,7 +26,6 @@ export function normalizeCity(cityName: string | null): string | null {
     .replace(/^Greater\s+/i, '')
     .trim();
 
-  // Filter out values that are actually countries/regions, not cities
   if (/^England$/i.test(normalized) ||
       /^Scotland$/i.test(normalized) ||
       /^Wales$/i.test(normalized) ||
@@ -40,30 +36,21 @@ export function normalizeCity(cityName: string | null): string | null {
   return normalized;
 }
 
-// Invalid location indicators
 const INVALID_LOCATION_PATTERNS = [
   /^null$/i, /^unknown$/i, /^n\/a$/i, /^na$/i, /^not specified$/i,
   /^various$/i, /^remote$/i, /^anywhere$/i, /^global$/i, /^worldwide$/i,
   /^multiple$/i, /^hybrid$/i, /^flexible$/i, /^\s*$/,
 ];
 
-/**
- * Location Extractor
- * Extracts country and city from location strings using comprehensive multilingual dictionary
- * Supports: English, Arabic, Chinese, German, French, Spanish, Portuguese, Russian,
- * Japanese, Korean, Hindi, Turkish, Persian/Farsi, Hebrew, and many more languages
- */
+// extracts location from job data (multilingual support)
 export class LocationExtractor {
-  /**
-   * Extract location from title, link, RSS location field, or description (in that order)
-   */
   static extractLocation(
     title: string,
     link: string,
     location: string | undefined | null,
     description: string
   ): LocationData {
-    // 1. Try to extract from location field first (most reliable)
+    // try location field first (most reliable)
     if (location && this.isValidLocation(location)) {
       const extracted = this.parseLocationString(location);
       if (extracted.country || extracted.city) {
@@ -71,7 +58,6 @@ export class LocationExtractor {
       }
     }
 
-    // 2. Try to extract from title
     if (title) {
       const extracted = this.parseLocationString(title);
       if (extracted.country || extracted.city) {
@@ -79,7 +65,6 @@ export class LocationExtractor {
       }
     }
 
-    // 3. Try to extract from link (LinkedIn URLs often have location)
     if (link) {
       const extracted = this.extractFromLink(link);
       if (extracted.country || extracted.city) {
@@ -87,17 +72,12 @@ export class LocationExtractor {
       }
     }
 
-    // 4. If all else fails, try description
     return this.extractFromDescription(description);
   }
 
-  /**
-   * Check if location string is valid (not null, unknown, etc.)
-   */
   private static isValidLocation(location: string): boolean {
     const trimmed = location.trim();
 
-    // Check against invalid patterns
     for (const pattern of INVALID_LOCATION_PATTERNS) {
       if (pattern.test(trimmed)) {
         return false;
@@ -107,10 +87,6 @@ export class LocationExtractor {
     return trimmed.length > 0;
   }
 
-  /**
-   * Parse a location string to extract country and city
-   * Supports multilingual input
-   */
   private static parseLocationString(locationStr: string): LocationData {
     const result: LocationData = {
       country: null,

@@ -248,6 +248,7 @@ export function SearchFilterPanel({
             <button
               className="filter-badge-remove"
               onClick={() => removeFilter(category, value)}
+              aria-label={`Remove ${value} filter`}
             >
               <X size={12} />
             </button>
@@ -276,6 +277,7 @@ export function SearchFilterPanel({
             <button
               className="search-clear"
               onClick={() => setTextSearch('')}
+              aria-label="Clear search"
             >
               <X size={14} />
             </button>
