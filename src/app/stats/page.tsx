@@ -16,7 +16,6 @@ import {
 } from '@/components/charts';
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SearchFilterPanel } from "@/components/SearchFilterPanel";
-import "@/components/SearchFilterPanel.css";
 import "./stats.css";
 
 interface SalaryData {
@@ -177,6 +176,7 @@ export default function StatsPage() {
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [textSearch, setTextSearch] = useState<string>('');
+  const [debouncedTextSearch, setDebouncedTextSearch] = useState<string>('');
   const [hoveredJob, setHoveredJob] = useState<JobStatistic | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveringJobId, setHoveringJobId] = useState<string | null>(null);
@@ -187,6 +187,15 @@ export default function StatsPage() {
   useEffect(() => {
     loadStatistics();
   }, []);
+
+  // Debounce text search to avoid filtering on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedTextSearch(textSearch);
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timer);
+  }, [textSearch]);
 
   const loadStatistics = async () => {
     setLoading(true);
@@ -262,7 +271,7 @@ export default function StatsPage() {
     }));
   };
 
-  const hasActiveFilters = Object.values(activeFilters).some(arr => arr.length > 0) || selectedDate !== null || textSearch.length > 0;
+  const hasActiveFilters = Object.values(activeFilters).some(arr => arr.length > 0) || selectedDate !== null || debouncedTextSearch.length > 0;
 
   // Get active statistics
   const getActiveStatistics = (): MonthlyStatistics | null => {
@@ -294,8 +303,8 @@ export default function StatsPage() {
     return normalized;
   };
 
-  // Get available filter options from all jobs with counts
-  const getAvailableFilterOptions = () => {
+  // Get available filter options from all jobs with counts (MEMOIZED for performance)
+  const availableFilterOptions = useMemo(() => {
     if (!statsData) {
       return {
         industry: [],
@@ -392,15 +401,15 @@ export default function StatsPage() {
     });
 
     return result;
-  };
+  }, [statsData]); // Only recalculate when statsData changes
 
-  // Filter jobs based on active filters and text search
-  const getFilteredJobs = (): JobStatistic[] => {
+  // Filter jobs based on active filters and text search (MEMOIZED for performance)
+  const filteredJobs = useMemo(() => {
     if (!statsData) return [];
     return statsData.currentMonth.jobs.filter(job => {
-      // Text search filter (searches title, company, description)
-      if (textSearch) {
-        const searchLower = textSearch.toLowerCase();
+      // Text search filter (searches title, company, description, keywords)
+      if (debouncedTextSearch) {
+        const searchLower = debouncedTextSearch.toLowerCase();
         const matchesSearch =
           job.title.toLowerCase().includes(searchLower) ||
           job.company.toLowerCase().includes(searchLower) ||
@@ -468,7 +477,7 @@ export default function StatsPage() {
       }
       return true;
     });
-  };
+  }, [statsData, debouncedTextSearch, activeFilters, selectedDate]); // Recalculate when filters change
 
   // Rebuild salary statistics from a set of jobs
   const rebuildSalaryStats = (jobs: JobStatistic[]): SalaryStats | undefined => {
@@ -550,12 +559,10 @@ export default function StatsPage() {
     return salaryStats;
   };
 
-  // Apply filters to statistics
-  const getFilteredStatistics = (): MonthlyStatistics | null => {
+  // Apply filters to statistics (MEMOIZED - this is expensive!)
+  const filteredStatistics = useMemo((): MonthlyStatistics | null => {
     const stats = getActiveStatistics();
     if (!stats || !hasActiveFilters) return stats;
-
-    const filteredJobs = getFilteredJobs();
 
     // Rebuild statistics from filtered jobs
     const filtered: MonthlyStatistics = {
@@ -640,7 +647,7 @@ export default function StatsPage() {
     filtered.salaryStats = rebuildSalaryStats(filteredJobs);
 
     return filtered;
-  };
+  }, [filteredJobs, hasActiveFilters, useAggregated, statsData]); // Memoize based on dependencies
 
   // Helper function to check if value should be filtered out
   const shouldFilterOut = (value: string): boolean => {
@@ -655,7 +662,7 @@ export default function StatsPage() {
 
   // Chart data functions
   const getIndustryChartData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats) return [];
     return Object.entries(stats.byIndustry)
       .filter(([name]) => !shouldFilterOut(name))
@@ -665,7 +672,7 @@ export default function StatsPage() {
   };
 
   const getSeniorityChartData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats) return [];
     return Object.entries(stats.bySeniority)
       .filter(([name]) => !shouldFilterOut(name))
@@ -673,7 +680,7 @@ export default function StatsPage() {
   };
 
   const getDateChartData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats) return [];
     const entries = Object.entries(stats.byDate)
       .sort(([a], [b]) => a.localeCompare(b));
@@ -688,7 +695,7 @@ export default function StatsPage() {
   };
 
   const getCertificateChartData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats) return [];
     return Object.entries(stats.byCertificate)
       .filter(([name]) => !shouldFilterOut(name))
@@ -698,7 +705,7 @@ export default function StatsPage() {
   };
 
   const getTopKeywords = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats) return [];
     return Object.entries(stats.byKeyword)
       .filter(([name]) => !shouldFilterOut(name))
@@ -707,7 +714,7 @@ export default function StatsPage() {
   };
 
   const getLocationChartData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats) return [];
     return Object.entries(stats.byLocation)
       .filter(([name]) => !shouldFilterOut(name))
@@ -717,7 +724,7 @@ export default function StatsPage() {
   };
 
   const getCompanyChartData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats) return [];
     return Object.entries(stats.byCompany)
       .filter(([name]) => !shouldFilterOut(name))
@@ -728,7 +735,7 @@ export default function StatsPage() {
 
   // Geographic data helpers
   const getRegionData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats || !stats.byRegion) return [];
     return Object.entries(stats.byRegion)
       .filter(([name]) => !shouldFilterOut(name))
@@ -737,7 +744,7 @@ export default function StatsPage() {
   };
 
   const getCountryData = (limit?: number) => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats || !stats.byCountry) return [];
     const sorted = Object.entries(stats.byCountry)
       .filter(([name]) => !shouldFilterOut(name))
@@ -747,7 +754,7 @@ export default function StatsPage() {
   };
 
   const getCityData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats || !stats.byCity) return [];
     return Object.entries(stats.byCity)
       .filter(([name]) => !shouldFilterOut(name))
@@ -776,7 +783,7 @@ export default function StatsPage() {
   };
 
   const getSalaryRangeChartData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats?.salaryStats) return [];
     const ranges = stats.salaryStats.salaryRanges;
     return [
@@ -790,7 +797,7 @@ export default function StatsPage() {
   };
 
   const getSalaryByIndustryData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats?.salaryStats) return [];
     return Object.entries(stats.salaryStats.byIndustry)
       .map(([name, data]) => ({ name, avg: data.avg, median: data.median, count: data.count }))
@@ -799,7 +806,7 @@ export default function StatsPage() {
   };
 
   const getSalaryBySeniorityData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats?.salaryStats) return [];
     return Object.entries(stats.salaryStats.bySeniority)
       .map(([name, data]) => ({ name, avg: data.avg, median: data.median, count: data.count }))
@@ -814,7 +821,7 @@ export default function StatsPage() {
     if (!statsData) return [];
 
     const insights: Array<{type: string; priority: string; title: string; description: string}> = [];
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
 
     if (!stats) return insights;
 
@@ -890,7 +897,7 @@ export default function StatsPage() {
 
   // Company velocity data
   const getCompanyVelocityData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats) return [];
     return Object.entries(stats.byCompany)
       .sort(([, a], [, b]) => b - a)
@@ -929,7 +936,7 @@ export default function StatsPage() {
 
   // Software data helpers
   const getSoftwareData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats || !stats.bySoftware) return [];
     return Object.entries(stats.bySoftware)
       .filter(([name]) => !shouldFilterOut(name))
@@ -940,7 +947,7 @@ export default function StatsPage() {
 
   // Programming skills data helpers
   const getProgrammingSkillsData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats || !stats.byProgrammingSkill) return [];
     return Object.entries(stats.byProgrammingSkill)
       .filter(([name]) => !shouldFilterOut(name))
@@ -951,7 +958,7 @@ export default function StatsPage() {
 
   // Years of experience data helpers
   const getYearsExperienceData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats || !stats.byYearsExperience) return [];
 
     // Helper to extract numeric value for sorting
@@ -988,7 +995,7 @@ export default function StatsPage() {
 
   // Academic degrees data helpers
   const getAcademicDegreesData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats || !stats.byAcademicDegree) return [];
     return Object.entries(stats.byAcademicDegree)
       .filter(([name]) => !shouldFilterOut(name))
@@ -998,7 +1005,7 @@ export default function StatsPage() {
 
   // Role type data helpers
   const getRoleTypeData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats || !stats.byRoleType) return [];
     return Object.entries(stats.byRoleType)
       .filter(([name]) => !shouldFilterOut(name))
@@ -1008,7 +1015,7 @@ export default function StatsPage() {
   };
 
   const getRoleCategoryData = () => {
-    const stats = getFilteredStatistics();
+    const stats = filteredStatistics;
     if (!stats || !stats.byRoleCategory) return [];
     return Object.entries(stats.byRoleCategory)
       .filter(([name]) => !shouldFilterOut(name))
@@ -1016,8 +1023,7 @@ export default function StatsPage() {
       .map(([name, value]) => ({ name, value }));
   };
 
-  const filteredStats = getFilteredStatistics();
-  const filteredJobs = getFilteredJobs();
+  const filteredStats = filteredStatistics;
   const hasSalaryData = filteredStats?.salaryStats && filteredStats.salaryStats.totalWithSalary > 0;
   const hasSoftwareData = filteredStats?.bySoftware && Object.keys(filteredStats.bySoftware).length > 0;
   const hasProgrammingData = filteredStats?.byProgrammingSkill && Object.keys(filteredStats.byProgrammingSkill).length > 0;
@@ -1028,7 +1034,7 @@ export default function StatsPage() {
 
   // Get publication time analysis data (10-minute resolution from jobs)
   const getPublicationTimeData = () => {
-    const jobs = getFilteredJobs();
+    const jobs = filteredJobs;
     const timeSlots: Record<string, number> = {};
 
     jobs.forEach(job => {
@@ -1077,8 +1083,8 @@ export default function StatsPage() {
 
   // Get jobs sorted by publish time (most recent first)
   const getSortedJobs = () => {
-    return getFilteredJobs()
-      .sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime())
+    return filteredJobs
+      .sort((a: JobStatistic, b: JobStatistic) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime())
       .slice(0, 100);
   };
 
@@ -1178,7 +1184,7 @@ export default function StatsPage() {
         <SearchFilterPanel
           activeFilters={activeFilters}
           setActiveFilters={setActiveFilters}
-          availableOptions={getAvailableFilterOptions()}
+          availableOptions={availableFilterOptions}
           textSearch={textSearch}
           setTextSearch={setTextSearch}
         />
@@ -1747,7 +1753,7 @@ export default function StatsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {getSortedJobs().map((job) => (
+                  {getSortedJobs().map((job: JobStatistic) => (
                     <tr
                       key={job.id}
                       onClick={() => window.open(job.url, '_blank')}

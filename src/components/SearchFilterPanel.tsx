@@ -1,7 +1,28 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Search, X, ChevronDown, Filter, Trash2 } from "lucide-react";
+import {
+  Search,
+  X,
+  ChevronDown,
+  Filter,
+  Trash2,
+  Building2,
+  TrendingUp,
+  Briefcase,
+  Award,
+  Key,
+  Code,
+  Zap,
+  Globe,
+  MapPin,
+  Map,
+  Navigation,
+  UserCircle,
+  Folder,
+  Clock,
+  GraduationCap
+} from "lucide-react";
 
 interface ActiveFilters {
   industry: string[];
@@ -29,7 +50,7 @@ interface FilterOption {
 interface FilterCategory {
   key: keyof ActiveFilters;
   label: string;
-  icon: string;
+  icon: React.ElementType;
 }
 
 interface SearchFilterPanelProps {
@@ -41,21 +62,21 @@ interface SearchFilterPanelProps {
 }
 
 const FILTER_CATEGORIES: FilterCategory[] = [
-  { key: 'industry', label: 'Industry', icon: '🏢' },
-  { key: 'seniority', label: 'Seniority', icon: '📊' },
-  { key: 'company', label: 'Company', icon: '🏛️' },
-  { key: 'certificate', label: 'Certificates', icon: '🎓' },
-  { key: 'keyword', label: 'Keywords', icon: '🔑' },
-  { key: 'software', label: 'Software', icon: '💻' },
-  { key: 'programmingSkill', label: 'Languages', icon: '⚡' },
-  { key: 'country', label: 'Country', icon: '🌍' },
-  { key: 'city', label: 'City', icon: '📍' },
-  { key: 'region', label: 'Region', icon: '🗺️' },
-  { key: 'location', label: 'Location', icon: '📌' },
-  { key: 'roleType', label: 'Role Type', icon: '👔' },
-  { key: 'roleCategory', label: 'Category', icon: '📂' },
-  { key: 'yearsExperience', label: 'Experience', icon: '⏱️' },
-  { key: 'academicDegree', label: 'Degree', icon: '🎓' },
+  { key: 'industry', label: 'Industry', icon: Building2 },
+  { key: 'seniority', label: 'Seniority', icon: TrendingUp },
+  { key: 'company', label: 'Company', icon: Briefcase },
+  { key: 'certificate', label: 'Certificates', icon: Award },
+  { key: 'keyword', label: 'Keywords', icon: Key },
+  { key: 'software', label: 'Software', icon: Code },
+  { key: 'programmingSkill', label: 'Languages', icon: Zap },
+  { key: 'country', label: 'Country', icon: Globe },
+  { key: 'city', label: 'City', icon: MapPin },
+  { key: 'region', label: 'Region', icon: Map },
+  { key: 'location', label: 'Location', icon: Navigation },
+  { key: 'roleType', label: 'Role Type', icon: UserCircle },
+  { key: 'roleCategory', label: 'Category', icon: Folder },
+  { key: 'yearsExperience', label: 'Experience', icon: Clock },
+  { key: 'academicDegree', label: 'Degree', icon: GraduationCap },
 ];
 
 export function SearchFilterPanel({
@@ -127,16 +148,23 @@ export function SearchFilterPanel({
     setTextSearch('');
   };
 
-  // Get filtered options for a dropdown
+  // Get filtered options for a dropdown (LIMITED to prevent UI freeze)
   const getFilteredOptions = (category: keyof ActiveFilters): FilterOption[] => {
     const search = dropdownSearches[category]?.toLowerCase() || '';
     const options = availableOptions[category] || [];
 
-    if (!search) return options;
+    // Limit to prevent rendering too many DOM elements
+    const MAX_OPTIONS = 150;
 
-    return options.filter(opt =>
-      opt.value.toLowerCase().includes(search)
-    );
+    let filtered = options;
+    if (search) {
+      filtered = options.filter(opt =>
+        opt.value.toLowerCase().includes(search)
+      );
+    }
+
+    // Only return top N options to prevent UI freeze
+    return filtered.slice(0, MAX_OPTIONS);
   };
 
   // Render a single filter dropdown
@@ -144,6 +172,7 @@ export function SearchFilterPanel({
     const isOpen = openDropdown === category.key;
     const filteredOptions = getFilteredOptions(category.key);
     const selectedCount = activeFilters[category.key].length;
+    const IconComponent = category.icon;
 
     return (
       <div key={category.key} className="filter-dropdown-container">
@@ -151,7 +180,7 @@ export function SearchFilterPanel({
           className={`filter-dropdown-trigger ${selectedCount > 0 ? 'active' : ''}`}
           onClick={() => setOpenDropdown(isOpen ? null : category.key)}
         >
-          <span className="filter-icon">{category.icon}</span>
+          <IconComponent size={14} className="filter-icon" />
           <span className="filter-label">{category.label}</span>
           {selectedCount > 0 && (
             <span className="filter-count">{selectedCount}</span>
@@ -211,9 +240,10 @@ export function SearchFilterPanel({
     (Object.keys(activeFilters) as Array<keyof ActiveFilters>).forEach((category) => {
       activeFilters[category].forEach((value) => {
         const categoryInfo = FILTER_CATEGORIES.find(c => c.key === category);
+        const IconComponent = categoryInfo?.icon;
         badges.push(
           <div key={`${category}-${value}`} className="filter-badge">
-            <span className="filter-badge-icon">{categoryInfo?.icon}</span>
+            {IconComponent && <IconComponent size={12} className="filter-badge-icon" />}
             <span className="filter-badge-text">{value}</span>
             <button
               className="filter-badge-remove"
