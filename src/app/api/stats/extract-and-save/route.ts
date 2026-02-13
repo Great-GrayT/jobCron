@@ -107,11 +107,16 @@ export async function GET(request: NextRequest) {
           url: rssJob.link,
         });
 
-        // Extract salary information
-        const salary = SalaryExtractor.extractSalary(
+        // Extract salary information and normalize to annual
+        let salary = SalaryExtractor.extractSalary(
           rssJob.title,
           rssJob.description || ''
         );
+
+        // Normalize to annual values to ensure consistency
+        if (salary) {
+          salary = SalaryExtractor.normalizeToAnnual(salary);
+        }
 
         // Create job statistic object
         const jobStat: JobStatistic = {

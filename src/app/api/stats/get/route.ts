@@ -131,11 +131,16 @@ export async function GET(request: NextRequest) {
             url: rssJob.link,
           });
 
-          // Extract salary
-          const salary = SalaryExtractor.extractSalary(
+          // Extract salary and normalize to annual
+          let salary = SalaryExtractor.extractSalary(
             rssJob.title,
             rssJob.description || ''
           );
+
+          // Normalize to annual values to ensure consistency
+          if (salary) {
+            salary = SalaryExtractor.normalizeToAnnual(salary);
+          }
 
           // Extract software
           const software: string[] = [];

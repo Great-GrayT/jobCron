@@ -15,6 +15,8 @@ import {
   CHART_COLORS,
 } from '@/components/charts';
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SearchFilterPanel } from "@/components/SearchFilterPanel";
+import "@/components/SearchFilterPanel.css";
 import "./stats.css";
 
 interface SalaryData {
@@ -174,6 +176,7 @@ export default function StatsPage() {
     roleCategory: [],
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [textSearch, setTextSearch] = useState<string>('');
   const [hoveredJob, setHoveredJob] = useState<JobStatistic | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveringJobId, setHoveringJobId] = useState<string | null>(null);
@@ -259,7 +262,7 @@ export default function StatsPage() {
     }));
   };
 
-  const hasActiveFilters = Object.values(activeFilters).some(arr => arr.length > 0) || selectedDate !== null;
+  const hasActiveFilters = Object.values(activeFilters).some(arr => arr.length > 0) || selectedDate !== null || textSearch.length > 0;
 
   // Get active statistics
   const getActiveStatistics = (): MonthlyStatistics | null => {
@@ -291,10 +294,121 @@ export default function StatsPage() {
     return normalized;
   };
 
-  // Filter jobs based on active filters
+  // Get available filter options from all jobs with counts
+  const getAvailableFilterOptions = () => {
+    if (!statsData) {
+      return {
+        industry: [],
+        certificate: [],
+        seniority: [],
+        location: [],
+        company: [],
+        keyword: [],
+        country: [],
+        city: [],
+        software: [],
+        programmingSkill: [],
+        yearsExperience: [],
+        academicDegree: [],
+        region: [],
+        roleType: [],
+        roleCategory: [],
+      };
+    }
+
+    const counts: Record<string, Record<string, number>> = {
+      industry: {},
+      certificate: {},
+      seniority: {},
+      location: {},
+      company: {},
+      keyword: {},
+      country: {},
+      city: {},
+      software: {},
+      programmingSkill: {},
+      yearsExperience: {},
+      academicDegree: {},
+      region: {},
+      roleType: {},
+      roleCategory: {},
+    };
+
+    // Count occurrences
+    statsData.currentMonth.jobs.forEach(job => {
+      if (job.industry) counts.industry[job.industry] = (counts.industry[job.industry] || 0) + 1;
+      if (job.seniority) counts.seniority[job.seniority] = (counts.seniority[job.seniority] || 0) + 1;
+      if (job.location) counts.location[job.location] = (counts.location[job.location] || 0) + 1;
+      if (job.company) counts.company[job.company] = (counts.company[job.company] || 0) + 1;
+      if (job.country) counts.country[job.country] = (counts.country[job.country] || 0) + 1;
+      if (job.region) counts.region[job.region] = (counts.region[job.region] || 0) + 1;
+      if (job.yearsExperience) counts.yearsExperience[job.yearsExperience] = (counts.yearsExperience[job.yearsExperience] || 0) + 1;
+      if (job.roleType) counts.roleType[job.roleType] = (counts.roleType[job.roleType] || 0) + 1;
+      if (job.roleCategory) counts.roleCategory[job.roleCategory] = (counts.roleCategory[job.roleCategory] || 0) + 1;
+
+      const normCity = normalizeCity(job.city);
+      if (normCity) counts.city[normCity] = (counts.city[normCity] || 0) + 1;
+
+      job.certificates?.forEach(cert => {
+        counts.certificate[cert] = (counts.certificate[cert] || 0) + 1;
+      });
+      job.keywords?.forEach(kw => {
+        counts.keyword[kw] = (counts.keyword[kw] || 0) + 1;
+      });
+      job.software?.forEach(sw => {
+        counts.software[sw] = (counts.software[sw] || 0) + 1;
+      });
+      job.programmingSkills?.forEach(skill => {
+        counts.programmingSkill[skill] = (counts.programmingSkill[skill] || 0) + 1;
+      });
+      job.academicDegrees?.forEach(deg => {
+        counts.academicDegree[deg] = (counts.academicDegree[deg] || 0) + 1;
+      });
+    });
+
+    // Convert to sorted arrays with counts
+    const result: Record<keyof ActiveFilters, Array<{ value: string; count: number }>> = {
+      industry: [],
+      certificate: [],
+      seniority: [],
+      location: [],
+      company: [],
+      keyword: [],
+      country: [],
+      city: [],
+      software: [],
+      programmingSkill: [],
+      yearsExperience: [],
+      academicDegree: [],
+      region: [],
+      roleType: [],
+      roleCategory: [],
+    };
+
+    (Object.keys(counts) as Array<keyof ActiveFilters>).forEach(key => {
+      result[key] = Object.entries(counts[key])
+        .map(([value, count]) => ({ value, count }))
+        .sort((a, b) => b.count - a.count); // Sort by count descending
+    });
+
+    return result;
+  };
+
+  // Filter jobs based on active filters and text search
   const getFilteredJobs = (): JobStatistic[] => {
     if (!statsData) return [];
     return statsData.currentMonth.jobs.filter(job => {
+      // Text search filter (searches title, company, description)
+      if (textSearch) {
+        const searchLower = textSearch.toLowerCase();
+        const matchesSearch =
+          job.title.toLowerCase().includes(searchLower) ||
+          job.company.toLowerCase().includes(searchLower) ||
+          job.description.toLowerCase().includes(searchLower) ||
+          job.keywords.some(k => k.toLowerCase().includes(searchLower));
+        if (!matchesSearch) return false;
+      }
+
       if (activeFilters.industry.length > 0 && !activeFilters.industry.includes(job.industry)) return false;
       if (activeFilters.certificate.length > 0 && !job.certificates.some(c => activeFilters.certificate.includes(c))) return false;
       if (activeFilters.seniority.length > 0 && !activeFilters.seniority.includes(job.seniority)) return false;
@@ -1057,6 +1171,17 @@ export default function StatsPage() {
           <Loader2 size={32} className="spin" />
           <p>LOADING MARKET DATA...</p>
         </div>
+      )}
+
+      {/* Search and Filter Panel */}
+      {!loading && statsData && (
+        <SearchFilterPanel
+          activeFilters={activeFilters}
+          setActiveFilters={setActiveFilters}
+          availableOptions={getAvailableFilterOptions()}
+          textSearch={textSearch}
+          setTextSearch={setTextSearch}
+        />
       )}
 
       {/* Main Content */}
