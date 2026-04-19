@@ -4,8 +4,7 @@
    Font: Computer/Terminal Style
    ======================================== */
 
-/* Import computer-style fonts */
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Share+Tech+Mono&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap");
+/* Arimo is loaded via next/font/google in layout.tsx — no @import needed */
 
 /* Import component styles */
 @import "../components/SearchFilterPanel.css";
@@ -54,11 +53,11 @@
   --terminal-scanline: rgba(59, 130, 246, 0.02);
   --terminal-grid-opacity: 0.03;
 
-  /* Computer Font Stack */
-  --font-mono:
-    "JetBrains Mono", "IBM Plex Mono", "Share Tech Mono", "Courier New",
-    monospace;
-  --font-display: "IBM Plex Mono", "JetBrains Mono", monospace;
+  /* Font Stack */
+  --font-sans: var(--font-arimo), "Arimo", sans-serif;
+  --font-mono: var(--font-arimo), "Arimo", sans-serif;
+  --font-display: var(--font-arimo), "Arimo", sans-serif;
+  --font-code: "JetBrains Mono", "IBM Plex Mono", "Courier New", monospace;
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -313,7 +312,7 @@ a:hover::after {
 }
 
 code {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   background: var(--color-bg-tertiary);
   padding: 0.125rem 0.375rem;
   border-radius: var(--radius-sm);
