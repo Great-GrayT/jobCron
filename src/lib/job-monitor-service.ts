@@ -36,15 +36,18 @@ const GOAT_SENIORITY = new Set(["Mid", "Entry"]);
 const GOAT_INDUSTRY = new Set(["Finance"]);
 
 // UK location terms required for all GOAT channel posts
-const GOAT_UK_TERMS = ["united kingdom", "london", "uk", "england", "scotland", "wales"];
+// "uk" uses word-boundary regex to avoid matching "uk.indeed.com" etc.
+const GOAT_UK_SUBSTRINGS = ["united kingdom", "london", "england", "scotland", "wales"];
+const GOAT_UK_WORD = /\buk\b/i;
 
 /**
  * Returns true if the job location contains UK/London keywords.
- * Checks job.location, job.title, and job.description for UK terms.
+ * Only checks job.location to avoid false positives from URLs in descriptions.
  */
 function isUKLocation(job: JobItem): boolean {
-  const searchText = `${job.location || ""} ${job.title} ${job.description}`.toLowerCase();
-  return GOAT_UK_TERMS.some((term) => searchText.includes(term));
+  const locationText = (job.location || "").toLowerCase();
+  if (GOAT_UK_WORD.test(locationText)) return true;
+  return GOAT_UK_SUBSTRINGS.some((term) => locationText.includes(term));
 }
 
 /**
@@ -75,7 +78,11 @@ function isGoatEligible(job: JobItem): boolean {
     url: job.link,
   });
 
-  // CFA/CIMA bypass: skip industry/category checks if either certification is detected
+  if (!GOAT_SENIORITY.has(metadata.seniority)) {
+    return false;
+  }
+
+  // CFA/CIMA bypass: skip industry/category checks only
   const hasBypassCert = metadata.certificates.some((cert) => {
     const c = cert.toLowerCase();
     return c.includes("cfa") || c.includes("cima");
@@ -84,9 +91,6 @@ function isGoatEligible(job: JobItem): boolean {
     return true;
   }
 
-  if (!GOAT_SENIORITY.has(metadata.seniority)) {
-    return false;
-  }
   if (!GOAT_INDUSTRY.has(metadata.industry)) {
     return false;
   }
