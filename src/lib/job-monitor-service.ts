@@ -37,27 +37,33 @@ const GOAT_INDUSTRY = new Set(["Finance"]);
 
 // UK location terms required for all GOAT channel posts
 // "uk" uses word-boundary regex to avoid matching "uk.indeed.com" etc.
-const GOAT_UK_SUBSTRINGS = ["united kingdom", "london", "england", "scotland", "wales"];
+const GOAT_UK_SUBSTRINGS = ["united kingdom", "london", "england", "scotland", "wales", "manchester", "birmingham", "edinburgh", "glasgow", "leeds", "bristol", "liverpool", "sheffield", "newcastle", "cardiff"];
 const GOAT_UK_WORD = /\buk\b/i;
 
+// VIP companies that pass through with just UK + Finance checks
+const GOAT_VIP_COMPANIES = ["marriott", "marriot", "lloyds", "natwest", "metro"];
+
 /**
- * Returns true if the job location contains UK/London keywords.
- * Only checks job.location to avoid false positives from URLs in descriptions.
+ * Returns true if the job location OR title contains UK keywords.
  */
 function isUKLocation(job: JobItem): boolean {
   const locationText = (job.location || "").toLowerCase();
-  if (GOAT_UK_WORD.test(locationText)) return true;
-  return GOAT_UK_SUBSTRINGS.some((term) => locationText.includes(term));
+  const titleText = (job.title || "").toLowerCase();
+  const combined = `${locationText} ${titleText}`;
+  if (GOAT_UK_WORD.test(combined)) return true;
+  return GOAT_UK_SUBSTRINGS.some((term) => combined.includes(term));
 }
 
 /**
  * Returns true if the job meets the GOAT channel criteria:
- * - MUST be UK/London location (always required)
- * - If CFA certification is present: location check is sufficient
- * - Otherwise: seniority in GOAT_SENIORITY AND industry in GOAT_INDUSTRY AND category in GOAT_CATEGORIES
+ * 1. UK location or title — mandatory
+ * 2. Finance industry — mandatory
+ * 3. Path A: title or company contains a VIP company name
+ *    OR
+ *    Path B: seniority is Mid/Entry AND (has CFA/CIMA cert OR category in GOAT_CATEGORIES)
  */
 function isGoatEligible(job: JobItem): boolean {
-  // UK/London location is mandatory for all GOAT posts
+  // UK location/title is mandatory
   if (!isUKLocation(job)) {
     return false;
   }
@@ -78,11 +84,23 @@ function isGoatEligible(job: JobItem): boolean {
     url: job.link,
   });
 
+  // Finance industry is mandatory for all paths
+  if (!GOAT_INDUSTRY.has(metadata.industry)) {
+    return false;
+  }
+
+  // Path A: VIP company match in title or company name
+  const titleAndCompany = `${(job.title || "").toLowerCase()} ${companyLower}`;
+  if (GOAT_VIP_COMPANIES.some((name) => titleAndCompany.includes(name))) {
+    return true;
+  }
+
+  // Path B: seniority must be Mid or Entry
   if (!GOAT_SENIORITY.has(metadata.seniority)) {
     return false;
   }
 
-  // CFA/CIMA bypass: skip industry/category checks only
+  // Path B-1: CFA or CIMA certificate
   const hasBypassCert = metadata.certificates.some((cert) => {
     const c = cert.toLowerCase();
     return c.includes("cfa") || c.includes("cima");
@@ -91,10 +109,7 @@ function isGoatEligible(job: JobItem): boolean {
     return true;
   }
 
-  if (!GOAT_INDUSTRY.has(metadata.industry)) {
-    return false;
-  }
-
+  // Path B-2: category in GOAT_CATEGORIES
   const roleTypeMatch = RoleTypeExtractor.extractRoleType(
     details.position,
     metadata.keywords,
