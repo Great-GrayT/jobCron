@@ -73,6 +73,38 @@ export async function GET(request: NextRequest) {
         let finalPosition = jobDetails.position;
         let extractedLocation = jobDetails.location !== 'N/A' ? jobDetails.location : null;
 
+        // Step 2b: If company is still unknown, try matching well-known companies from title or URL
+        if (finalCompany === 'Unknown Company') {
+          const searchText = `${rssJob.title} ${rssJob.link}`.toLowerCase();
+          const KNOWN_COMPANIES: Array<{ name: string; patterns: string[] }> = [
+            { name: 'PwC', patterns: ['pwc'] },
+            { name: 'Lloyds', patterns: ['lloyds'] },
+            { name: 'NatWest', patterns: ['natwest'] },
+            { name: 'Santander', patterns: ['santander'] },
+            { name: 'Nationwide', patterns: ['nationwide'] },
+            { name: 'HSBC', patterns: ['hsbc'] },
+            { name: 'Metro Bank', patterns: ['metrobank', 'metro bank'] },
+            { name: 'JPMorgan', patterns: ['jpmorgan', 'jp morgan'] },
+            { name: 'Goldman Sachs', patterns: ['goldmansachs', 'goldman sachs'] },
+            { name: 'Barclays', patterns: ['barclay'] },
+            { name: 'BNP', patterns: ['bnp'] },
+            { name: 'Mercer', patterns: ['mercer'] },
+            { name: 'Morgan Stanley', patterns: ['morgan stanley', 'morganstanley'] },
+            { name: 'Citi', patterns: ['citi'] },
+            { name: 'Deutsche Bank', patterns: ['deutschebank', 'deutsche bank'] },
+            { name: 'Bank of America', patterns: ['bank of america', 'bofa'] },
+            { name: 'FTI', patterns: ['fti'] },
+            { name: 'PGIM', patterns: ['pgim'] },
+            { name: 'KPMG', patterns: ['kpmg', 'kmpg'] },
+          ];
+          for (const { name, patterns } of KNOWN_COMPANIES) {
+            if (patterns.some(p => searchText.includes(p))) {
+              finalCompany = name;
+              break;
+            }
+          }
+        }
+
         // Step 3: Extract location properly - try job-analyzer result first, then LocationExtractor
         let locationData = { country: null as string | null, city: null as string | null, region: null as 'Europe' | 'America' | 'Middle East' | 'Asia' | 'Africa' | 'Oceania' | null };
 
@@ -118,6 +150,11 @@ export async function GET(request: NextRequest) {
           salary = SalaryExtractor.normalizeToAnnual(salary);
         }
 
+        // For Indeed jobs, rewrite the tracking param so the direct link works
+        const jobUrl = rssJob.link.toLowerCase().includes('indeed')
+          ? rssJob.link.replace('from=social_other', 'from=jobsearch-empty-whatwhere')
+          : rssJob.link;
+
         // Create job statistic object
         const jobStat: JobStatistic = {
           id: metadata.id,
@@ -127,7 +164,7 @@ export async function GET(request: NextRequest) {
           country: locationData.country,
           city: locationData.city,
           region: locationData.region,
-          url: rssJob.link,
+          url: jobUrl,
           postedDate: rssJob.pubDate,
           extractedDate: new Date().toISOString(),
           keywords: metadata.keywords,
