@@ -3,88 +3,10 @@ import { getR2Storage } from "@/lib/r2-storage";
 import { JobMetadata } from "@/lib/job-statistics-r2";
 import { extractJobDetails } from "@/lib/job-analyzer";
 import { logger } from "@/lib/logger";
+import { getCompanyFromUrl } from "@/lib/company-location-lookup";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
-
-const KNOWN_COMPANIES: Array<{ name: string; patterns: string[] }> = [
-  // Big 4 & Consulting
-  { name: 'PwC', patterns: ['pwc', 'pricewaterhousecoopers', 'price waterhouse'] },
-  { name: 'Deloitte', patterns: ['deloitte'] },
-  { name: 'EY', patterns: ['ernst & young', 'ernst and young', ' ey '] },
-  { name: 'KPMG', patterns: ['kpmg', 'kmpg'] },
-  { name: 'Accenture', patterns: ['accenture'] },
-  { name: 'McKinsey', patterns: ['mckinsey'] },
-  { name: 'BCG', patterns: ['boston consulting', ' bcg '] },
-  { name: 'Oliver Wyman', patterns: ['oliver wyman'] },
-  { name: 'Alvarez & Marsal', patterns: ['alvarez', 'marsal'] },
-  { name: 'FTI Consulting', patterns: ['fti consulting', 'fticonsulting'] },
-  { name: 'Mercer', patterns: ['mercer'] },
-  { name: 'Aon', patterns: ['/aon/', 'aon plc', 'aon uk', 'aon.com'] },
-  { name: 'WTW', patterns: ['willis towers watson', 'wtw'] },
-  { name: 'Marsh', patterns: ['marsh mclennan', 'marsh & mclennan'] },
-  // UK Retail & Commercial Banks
-  { name: 'Lloyds', patterns: ['lloyds'] },
-  { name: 'NatWest', patterns: ['natwest'] },
-  { name: 'Santander', patterns: ['santander'] },
-  { name: 'Nationwide', patterns: ['nationwide'] },
-  { name: 'HSBC', patterns: ['hsbc'] },
-  { name: 'Metro Bank', patterns: ['metrobank', 'metro bank'] },
-  { name: 'TSB', patterns: ['/tsb/', 'tsb bank', 'tsb.co.uk'] },
-  { name: 'Virgin Money', patterns: ['virgin money'] },
-  { name: 'Starling', patterns: ['starling bank'] },
-  { name: 'Monzo', patterns: ['monzo'] },
-  { name: 'Revolut', patterns: ['revolut'] },
-  // Global Investment Banks
-  { name: 'JPMorgan', patterns: ['jpmorgan', 'jp morgan', 'j.p. morgan', 'jpm ', 'chase bank', 'jpmc'] },
-  { name: 'Goldman Sachs', patterns: ['goldmansachs', 'goldman sachs'] },
-  { name: 'Morgan Stanley', patterns: ['morgan stanley', 'morganstanley'] },
-  { name: 'Barclays', patterns: ['barclay'] },
-  { name: 'BNP Paribas', patterns: ['bnp paribas', 'bnpparibas', ' bnp '] },
-  { name: 'Citi', patterns: ['citibank', 'citigroup', 'citi.com', '/citi/'] },
-  { name: 'Deutsche Bank', patterns: ['deutschebank', 'deutsche bank'] },
-  { name: 'Bank of America', patterns: ['bank of america', 'bofa', 'bankofamerica'] },
-  { name: 'UBS', patterns: [' ubs ', 'ubs.com', '/ubs/'] },
-  { name: 'Nomura', patterns: ['nomura'] },
-  { name: 'Macquarie', patterns: ['macquarie'] },
-  { name: 'Investec', patterns: ['investec'] },
-  { name: 'Societe Generale', patterns: ['societe generale', 'société générale', 'socgen'] },
-  { name: 'ING', patterns: [' ing ', 'ing bank', 'ing.com'] },
-  { name: 'RBC', patterns: ['royal bank of canada', ' rbc '] },
-  { name: 'Wells Fargo', patterns: ['wells fargo'] },
-  { name: 'Mizuho', patterns: ['mizuho'] },
-  { name: 'MUFG', patterns: ['mufg', 'mitsubishi ufj'] },
-  { name: 'Standard Chartered', patterns: ['standard chartered'] },
-  // Asset Management
-  { name: 'BlackRock', patterns: ['blackrock'] },
-  { name: 'Vanguard', patterns: ['vanguard'] },
-  { name: 'Fidelity', patterns: ['fidelity'] },
-  { name: 'State Street', patterns: ['state street'] },
-  { name: 'Northern Trust', patterns: ['northern trust'] },
-  { name: 'Schroders', patterns: ['schroders', 'schroder'] },
-  { name: 'M&G', patterns: ['m&g', 'm&g investments', 'm and g'] },
-  { name: 'Aviva', patterns: ['aviva'] },
-  { name: 'Legal & General', patterns: ['legal & general', 'legal and general', 'legalandgeneral'] },
-  { name: 'Prudential', patterns: ['prudential'] },
-  { name: 'PGIM', patterns: ['pgim'] },
-  { name: 'abrdn', patterns: ['abrdn', 'aberdeen asset', 'aberdeenstandard'] },
-  { name: 'Invesco', patterns: ['invesco'] },
-  { name: 'Jupiter', patterns: ['jupiter asset', 'jupiteram'] },
-  { name: 'Amundi', patterns: ['amundi'] },
-  { name: 'Franklin Templeton', patterns: ['franklin templeton', 'franklintempleton'] },
-  { name: 'T. Rowe Price', patterns: ['t. rowe price', 't rowe price', 'troweprice'] },
-  { name: 'Hargreaves Lansdown', patterns: ['hargreaves lansdown', 'hl.co.uk'] },
-  { name: "St. James's Place", patterns: ["st. james's place", 'st james place', 'sjp'] },
-  // Insurance & Reinsurance
-  { name: 'Zurich', patterns: ['zurich insurance', 'zurich.com'] },
-  { name: 'Allianz', patterns: ['allianz'] },
-  { name: 'AXA', patterns: [' axa ', 'axa insurance', 'axa.co.uk'] },
-  { name: 'Swiss Re', patterns: ['swiss re', 'swissre'] },
-  { name: 'Munich Re', patterns: ['munich re', 'munichre'] },
-  { name: 'RSA', patterns: ['rsa insurance', 'rsa group'] },
-  { name: 'Hiscox', patterns: ['hiscox'] },
-  { name: 'Beazley', patterns: ['beazley'] },
-];
 
 function isUnknown(company: string | undefined | null): boolean {
   if (!company) return true;
@@ -99,15 +21,7 @@ function detectCompany(title: string, url: string): string | null {
     return jobDetails.company;
   }
 
-  // Fall back to KNOWN_COMPANIES pattern matching
-  const searchText = `${title} ${url}`.toLowerCase();
-  for (const { name, patterns } of KNOWN_COMPANIES) {
-    if (patterns.some(p => searchText.includes(p))) {
-      return name;
-    }
-  }
-
-  return null;
+  return getCompanyFromUrl(url, title);
 }
 
 async function recalculateMonthStats(

@@ -16,6 +16,7 @@ import { LocationExtractor } from "./location-extractor";
 import { JobMetadataExtractor } from "./job-metadata-extractor";
 import { RoleTypeExtractor } from "./role-type-extractor";
 import { extractJobDetails } from "./job-analyzer";
+import { getCompanyFromUrl, getCountryFromUrlTLD, resolvePostedDate } from "./company-location-lookup";
 
 // Categories that qualify a job for the GOAT channel
 const GOAT_CATEGORIES = new Set([
@@ -44,14 +45,15 @@ const GOAT_UK_WORD = /\buk\b/i;
 const GOAT_VIP_COMPANIES = ["marriott", "marriot", "lloyds", "natwest", "metro"];
 
 /**
- * Returns true if the job location OR title contains UK keywords.
+ * Returns true if the job location, title, or URL TLD indicates a UK location.
  */
 function isUKLocation(job: JobItem): boolean {
   const locationText = (job.location || "").toLowerCase();
   const titleText = (job.title || "").toLowerCase();
   const combined = `${locationText} ${titleText}`;
   if (GOAT_UK_WORD.test(combined)) return true;
-  return GOAT_UK_SUBSTRINGS.some((term) => combined.includes(term));
+  if (GOAT_UK_SUBSTRINGS.some((term) => combined.includes(term))) return true;
+  return getCountryFromUrlTLD(job.link) === "United Kingdom";
 }
 
 /**
@@ -75,7 +77,7 @@ function isGoatEligible(job: JobItem): boolean {
   }
 
   const details = extractJobDetails(job.title);
-  const company = details.company !== "N/A" ? details.company : (job.company || "");
+  const company = details.company !== "N/A" ? details.company : (job.company || getCompanyFromUrl(job.link, job.title) || "");
 
   const metadata = JobMetadataExtractor.extractAllMetadata({
     title: details.position,
@@ -347,7 +349,7 @@ export async function checkAndSendJobs(): Promise<CronJobResult> {
         const normalizedUrl = job.link.toLowerCase().trim();
         // Use pubDate as the timestamp for 48-hour expiry calculation
         // This ensures URLs expire based on when the job was posted, not when we cached it
-        urlCache.add(normalizedUrl, job.pubDate);
+        urlCache.add(normalizedUrl, resolvePostedDate(job.pubDate));
         logger.info(
           `✓ Added to cache after successful send: ${normalizedUrl} (pubDate: ${job.pubDate})`,
         );
