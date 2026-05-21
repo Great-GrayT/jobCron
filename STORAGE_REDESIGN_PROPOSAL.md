@@ -255,7 +255,73 @@ Each phase ships independently and leaves the system in a working state.
 
 ---
 
-## 10. Open questions for review
+## 10. What becomes dead code
+
+A core motivation for this redesign is _less code_, not more. Most of the storage / loading / one-off-maintenance plumbing exists only because today's design needs it. Once Parquet + DuckDB-WASM is in place, the following can be deleted outright.
+
+### Files to delete entirely
+
+| Path                                                                                    | Why it goes                                                                                                                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [src/lib/job-statistics-cache.ts](src/lib/job-statistics-cache.ts)                      | The legacy Gist backend. The new design is R2-only; Gist is no longer a supported storage target.                                                                                                                                                                                                                                    |
+| [src/lib/job-statistics-r2.ts](src/lib/job-statistics-r2.ts)                            | The NDJSON-metadata/descriptions cache class. Replaced by a much smaller `JobStatisticsCacheParquet` whose only job is "merge new rows into today's Parquet file." The split-job / combine-job / pending-batch / per-field-counter logic disappears because aggregation lives in the pre-rolled `aggregate.json` and in SQL queries. |
+| [src/lib/stats-storage.ts](src/lib/stats-storage.ts)                                    | The R2-vs-Gist adapter. With one backend, there's nothing to adapt. Callers import the Parquet cache directly.                                                                                                                                                                                                                       |
+| [src/app/api/migrate-to-r2/route.ts](src/app/api/migrate-to-r2/route.ts)                | One-shot Gist → R2 migration. Already-run, target backend removed.                                                                                                                                                                                                                                                                   |
+| [src/app/api/stats/jobs/route.ts](src/app/api/stats/jobs/route.ts)                      | The "send the whole month's metadata to the client" endpoint. The client now reads Parquet directly via DuckDB-WASM.                                                                                                                                                                                                                 |
+| [src/app/api/stats/description/route.ts](src/app/api/stats/description/route.ts)        | "Send descriptions for a date" endpoint. Replaced by `SELECT description FROM jobs WHERE id = ?` on the client.                                                                                                                                                                                                                      |
+| [src/app/api/stats/cleanup/route.ts](src/app/api/stats/cleanup/route.ts)                | One-off deduplication of the NDJSON layout. The new layout is Parquet, so the routine doesn't apply.                                                                                                                                                                                                                                 |
+| [src/app/api/stats/rebuild/route.ts](src/app/api/stats/rebuild/route.ts)                | Rebuilds the URL index and per-field counters from NDJSON metadata. The Parquet-era equivalent is a 5-line SQL `COPY` — not worth a route.                                                                                                                                                                                           |
+| [src/app/api/stats/clear-index/route.ts](src/app/api/stats/clear-index/route.ts)        | NDJSON-era URL-index reset. Becomes trivial against Parquet (`DELETE FROM url-index`-equivalent).                                                                                                                                                                                                                                    |
+| [src/app/api/stats/fix-locations/route.ts](src/app/api/stats/fix-locations/route.ts)    | One-shot backfill against the old NDJSON metadata layout. Either run once during migration, or rewrite as a SQL `UPDATE` and discard the route.                                                                                                                                                                                      |
+| [src/app/api/stats/fix-company-names/route.ts](src/app/api/stats/fix-company-names/route.ts) | Same — one-shot NDJSON backfill.                                                                                                                                                                                                                                                                                                  |
+| [src/app/api/stats/fix-seniority/route.ts](src/app/api/stats/fix-seniority/route.ts)    | Same.                                                                                                                                                                                                                                                                                                                                |
+| [src/app/api/stats/fix-indeed-urls/route.ts](src/app/api/stats/fix-indeed-urls/route.ts) | Same.                                                                                                                                                                                                                                                                                                                                |
+| [src/app/api/stats/fix-data/route.ts](src/app/api/stats/fix-data/route.ts)              | Same — bulk re-extraction routine against the old layout.                                                                                                                                                                                                                                                                            |
+| [src/app/api/stats/extract-and-save/route.ts](src/app/api/stats/extract-and-save/route.ts) | Duplicate of the cron-triggered scrape path that uses the old cache. Redundant once the cron writes Parquet.                                                                                                                                                                                                                       |
+| [src/app/api/stats/get/route.ts](src/app/api/stats/get/route.ts)                        | Another duplicate ingest path tied to the old cache. Redundant; the canonical ingest is the cron route.                                                                                                                                                                                                                              |
+
+That is **3 lib modules + 13 API routes** removed outright.
+
+### Code paths inside surviving files that go away
+
+- **`r2-storage.ts`** — keep the class shell, but the NDJSON-specific helpers (`putNDJSONGzipped`, `getNDJSONGzipped`, the gzip imports, and the metadata/descriptions key conventions) are dead. The file shrinks to: `putJSON`, `getJSON`, `putParquet`, `getParquetUrl` (returns the public CDN URL DuckDB-WASM will fetch from), `list`, `delete`, `exists`, plus the manifest helpers.
+- **`r2-storage.ts:115`** — the pretty-print (`JSON.stringify(data, null, 2)`) goes; ~20% smaller manifests/aggregates for free.
+- **`r2-storage.ts` `Manifest` / `ManifestDay` / `ManifestMonth` types** — the day-level `metadata` + `descriptions` + `metadataBytes` + `descriptionsBytes` fields disappear in favor of a single Parquet file reference per day with a content hash.
+- **`load/route.ts`** — shrinks from "build a multi-MB aggregated payload server-side" to "return `stats/aggregate.json`." Loses the `getAllArchivesAggregated` path, the per-archive statistics inlining, the merge-statistics machinery.
+- **The entire `MonthlyStatistics` merge/aggregation layer** in `job-statistics-r2.ts` (`computeAggregatedStats`, `mergeStatistics`, `saveAggregatedStats`, `getAllArchivesAggregated`, the salary-merge helpers) becomes one SQL query that runs once per write.
+- **`stats/page.tsx`** — the `filteredJobs` `useMemo`, the `filteredStatistics` rebuild (~90 lines), every `getXxxChartData` helper (~150 lines combined), the `loadedJobsById` Map, `loadedDates` Set, `descriptionCache` Map, `loadDateMetadata`, `loadDescriptionsForDate`, the multi-step `loadStatistics` progress dance — all replaced by a thin `useQuery(sql)` hook over DuckDB. **Net deletion: ~400 lines from this file alone.**
+
+### Storage prefixes in R2 to retire (after migration)
+
+- `metadata/YYYY/MM/day-DD.ndjson.gz`
+- `descriptions/YYYY/MM/day-DD.ndjson.gz`
+- `stats/YYYY-MM.json` (per-month rolled stats — replaced by ad-hoc DuckDB queries + the global `aggregate.json`)
+- `aggregated-stats.json` (the pre-merged-across-months snapshot — same reason)
+
+### What stays untouched
+
+These are orthogonal to the storage redesign and should not be modified:
+
+- The cron scraping path: `job-monitor-service.ts`, `rss-parser.ts`, `linkedin-scraper.ts`, `job-analyzer.ts`, `job-metadata-extractor.ts`, `salary-extractor.ts`, `location-extractor.ts`, `role-type-extractor.ts`, all dictionaries.
+- The Telegram-notification flow: `telegram.ts`, `daily-cache.ts`, `tracking-url.ts`, `url-cache.ts`.
+- The applied-jobs feature: `applied-jobs-r2.ts` and the `/api/applied/*` routes (already a separate concern with its own storage shape).
+- All chart components, the theme system, and the search/filter panel.
+- The `/api/cron/check-jobs` route shape — it keeps calling `checkAndSendJobs()`, just with a Parquet-backed cache underneath.
+
+### Net effect on the codebase
+
+| | Before | After |
+|---|---|---|
+| `src/lib` storage modules | 3 (`job-statistics-cache`, `job-statistics-r2`, `stats-storage`) plus `r2-storage` | 1 (`job-statistics-parquet`) plus a slimmed `r2-storage` |
+| `/api/stats/*` routes | 13 | 2 (`load` — slimmed; `compact` — new, weekly) |
+| Lines in `stats/page.tsx` data layer | ~700 | ~300 |
+| Storage formats in R2 | NDJSON.gz × 2 trees + 4 JSON snapshots | Parquet + 2 small JSON files |
+
+The redesign deletes more code than it adds.
+
+---
+
+## 11. Open questions for review
 
 1. Are we comfortable enabling public read access to the R2 bucket via CORS, given the data is already effectively public through the current API?
 2. Is the 1–2 s DuckDB-WASM cold-start on first interaction acceptable, or do we want a server-side query fallback for very simple filter cases?
