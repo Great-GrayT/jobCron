@@ -82,9 +82,10 @@ export async function GET(request: NextRequest) {
         totalJobs: totalJobs,
         statistics: aggregated,
         monthsIncluded: archives.length + 1, // +1 for current month
-        archives: archives.map((a: { month: string; jobCount: number }) => ({
+        archives: archives.map((a) => ({
           month: a.month,
           jobCount: a.jobCount,
+          statistics: a.statistics,
         })),
       },
       stats: {

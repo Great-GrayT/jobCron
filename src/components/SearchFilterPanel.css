@@ -365,6 +365,15 @@
   color: var(--color-error);
 }
 
+.search-description-hint {
+  width: 100%;
+  font-size: 10px;
+  color: var(--color-text-muted, #4a5568);
+  padding: 2px 4px 0;
+  letter-spacing: 0.04em;
+  font-family: var(--font-mono, monospace);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .search-filter-header {

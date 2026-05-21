@@ -887,3 +887,199 @@
 .loading-circle-fg {
   stroke: var(--terminal-accent);
 }
+
+/* ========================================
+   FULL-PAGE LOADING SCREEN
+   ======================================== */
+
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--terminal-bg, #0a0e1a);
+  z-index: 9999;
+}
+
+.loading-screen-card {
+  width: 480px;
+  max-width: 90vw;
+  border: 1px solid var(--terminal-accent, #00d4ff);
+  border-radius: 4px;
+  padding: 32px;
+  background: var(--color-bg-secondary, #0d1220);
+  box-shadow: 0 0 40px rgba(0, 212, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.loading-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.loading-brand-icon {
+  color: var(--terminal-accent, #00d4ff);
+  opacity: 0.9;
+}
+
+.loading-brand-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--terminal-accent, #00d4ff);
+  letter-spacing: 0.12em;
+  font-family: var(--font-mono, monospace);
+}
+
+.loading-brand-sub {
+  font-size: 9px;
+  color: var(--color-text-muted, #4a5568);
+  letter-spacing: 0.1em;
+  font-family: var(--font-mono, monospace);
+  margin-top: 2px;
+}
+
+.loading-stage {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: var(--terminal-text, #e2e8f0);
+  min-height: 18px;
+}
+
+.loading-prompt {
+  color: var(--terminal-accent, #00d4ff);
+  margin-right: 4px;
+}
+
+.loading-stage-text {
+  color: var(--terminal-text, #e2e8f0);
+}
+
+.loading-cursor {
+  color: var(--terminal-accent, #00d4ff);
+  animation: blink-cursor 1s step-end infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.loading-bar-track {
+  height: 4px;
+  background: var(--color-bg-tertiary, #1a2332);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  background: var(--terminal-accent, #00d4ff);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.4s ease;
+}
+
+.loading-bar-footer {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: var(--color-text-muted, #4a5568);
+}
+
+.loading-pct {
+  color: var(--terminal-accent, #00d4ff);
+}
+
+.loading-steps-hint {
+  color: var(--color-text-muted, #4a5568);
+}
+
+/* ========================================
+   SLIM JOBS-LOADING STRIP
+   ======================================== */
+
+.jobs-loading-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: var(--color-bg-secondary, #0d1220);
+  border-bottom: 1px solid var(--terminal-border, #1a2332);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+}
+
+.jobs-loading-label {
+  color: var(--color-text-muted, #4a5568);
+  white-space: nowrap;
+  letter-spacing: 0.08em;
+}
+
+.jobs-loading-bar-track {
+  flex: 1;
+  height: 3px;
+  background: var(--color-bg-tertiary, #1a2332);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.jobs-loading-bar-fill {
+  height: 100%;
+  background: var(--terminal-green, #06ffa5);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.4s ease;
+}
+
+.jobs-loading-pct {
+  color: var(--terminal-green, #06ffa5);
+  white-space: nowrap;
+}
+
+/* Jobs table loading row */
+.jobs-loading-row td {
+  text-align: center;
+  color: var(--color-text-muted, #4a5568);
+  font-style: italic;
+  padding: 24px;
+  font-size: 11px;
+}
+
+/* Spinner inside panel header */
+.panel-header-spinner {
+  margin-left: 6px;
+  color: var(--terminal-accent, #00d4ff);
+  opacity: 0.7;
+}
+
+/* Description loading spinner inside popup */
+.popup-desc-loading {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-text-muted, #4a5568);
+  font-size: 11px;
+}
+
+/* View mode select dropdown */
+.view-mode-select {
+  background: var(--color-bg-tertiary, #1a2332);
+  border: 1px solid var(--terminal-border, #1a2332);
+  color: var(--terminal-text, #e2e8f0);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  padding: 4px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.view-mode-select:focus {
+  outline: none;
+  border-color: var(--terminal-accent, #00d4ff);
+}

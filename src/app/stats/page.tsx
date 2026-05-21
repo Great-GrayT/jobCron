@@ -121,7 +121,7 @@ interface StatsData {
     totalJobs: number;
     statistics: MonthlyStatistics;
     monthsIncluded: number;
-    archives: Array<{ month: string; jobCount: number }>;
+    archives: Array<{ month: string; jobCount: number; statistics: MonthlyStatistics }>;
   };
 }
 
@@ -155,7 +155,7 @@ export default function StatsPage() {
   const [statsData, setStatsData] = useState<StatsData | null>(null);
   const [updateResult, setUpdateResult] = useState<ExtractResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [useAggregated, setUseAggregated] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<string>('all');
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
     industry: [],
     certificate: [],
@@ -182,6 +182,15 @@ export default function StatsPage() {
   const [isMouseOverPopup, setIsMouseOverPopup] = useState<boolean>(false);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
+  const loadingBarRef = useRef<HTMLDivElement>(null);
+  const jobsBarRef = useRef<HTMLDivElement>(null);
+  const [jobsLoading, setJobsLoading] = useState<boolean>(false);
+  const [loadedDates, setLoadedDates] = useState<Set<string>>(new Set());
+  const [loadedJobsById, setLoadedJobsById] = useState<Map<string, JobStatistic>>(new Map());
+  const [descriptionCache, setDescriptionCache] = useState<Map<string, string>>(new Map());
+  const [loadingDescriptionsDate, setLoadingDescriptionsDate] = useState<string | null>(null);
+  const [loadingStep, setLoadingStep] = useState<string>('INITIALIZING...');
+  const [loadingProgress, setLoadingProgress] = useState<number>(0);
 
   useEffect(() => {
     loadStatistics();
@@ -196,13 +205,57 @@ export default function StatsPage() {
     return () => clearTimeout(timer);
   }, [textSearch]);
 
+  // Sync loading bar widths imperatively (avoids inline-style linter warnings)
+  useEffect(() => {
+    if (loadingBarRef.current) loadingBarRef.current.style.width = `${loadingProgress}%`;
+    if (jobsBarRef.current) jobsBarRef.current.style.width = `${loadingProgress}%`;
+  }, [loadingProgress]);
+
+  // Background metadata load — fires whenever statsData changes (e.g. after LOAD DATA)
+  useEffect(() => {
+    if (!statsData) return;
+    setJobsLoading(true);
+    setLoadingStep('LOADING JOB RECORDS...');
+    setLoadingProgress(85);
+    const currentMonth = statsData.currentMonth.month;
+    fetch(`/api/stats/jobs?month=${currentMonth}&all=true`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.jobs)) {
+          const map = new Map<string, JobStatistic>();
+          for (const job of data.jobs) {
+            map.set(job.id, { ...job, description: '' });
+          }
+          setLoadedJobsById(map);
+          setLoadedDates(new Set(data.jobs.map((j: JobStatistic) => j.extractedDate.split('T')[0])));
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setJobsLoading(false);
+        setLoadingStep('READY');
+        setLoadingProgress(100);
+      });
+  }, [statsData]);
+
   const loadStatistics = async () => {
     setLoading(true);
+    setLoadedJobsById(new Map());
+    setLoadedDates(new Set());
+    setDescriptionCache(new Map());
     setError(null);
+    setLoadingStep('CONNECTING TO DATA LAYER...');
+    setLoadingProgress(8);
     try {
       const response = await fetch('/api/stats/load');
+      setLoadingStep('LOADING MARKET STATISTICS...');
+      setLoadingProgress(20);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
+      setLoadingStep('PROCESSING STATISTICS...');
+      setLoadingProgress(60);
+      setLoadingStep('BUILDING CHART DATA...');
+      setLoadingProgress(80);
       setStatsData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -272,13 +325,15 @@ export default function StatsPage() {
 
   const hasActiveFilters = Object.values(activeFilters).some(arr => arr.length > 0) || selectedDate !== null || debouncedTextSearch.length > 0;
 
-  // Get active statistics
+  // Get active statistics based on current viewMode
   const getActiveStatistics = (): MonthlyStatistics | null => {
     if (!statsData) return null;
-    if (useAggregated && statsData.aggregated) {
-      return statsData.aggregated.statistics;
+    if (viewMode === 'current') return statsData.currentMonth.statistics;
+    if (viewMode !== 'all') {
+      const archive = statsData.aggregated?.archives.find(a => a.month === viewMode);
+      return archive?.statistics || null;
     }
-    return statsData.currentMonth.statistics;
+    return statsData.aggregated?.statistics || null;
   };
 
   // Normalize city names
@@ -313,8 +368,10 @@ export default function StatsPage() {
     };
     if (!statsData) return empty;
 
-    const stats = useAggregated && statsData.aggregated
+    const stats = viewMode === 'all' && statsData.aggregated
       ? statsData.aggregated.statistics
+      : viewMode !== 'all' && viewMode !== 'current'
+      ? (statsData.aggregated?.archives.find(a => a.month === viewMode)?.statistics || statsData.currentMonth.statistics)
       : statsData.currentMonth.statistics;
     if (!stats) return empty;
 
@@ -340,15 +397,18 @@ export default function StatsPage() {
       roleType: toSortedArray(stats.byRoleType),
       roleCategory: toSortedArray(stats.byRoleCategory),
     };
-  }, [statsData, useAggregated]);
+  }, [statsData, viewMode]);
 
   // Filter jobs based on active filters and text search (MEMOIZED for performance)
-  // jobs are no longer sent by the load endpoint — filteredJobs is empty unless
-  // a future paginated job-listing endpoint populates statsData.currentMonth.jobs.
   const filteredJobs = useMemo(() => {
     if (!statsData) return [];
-    const jobs = (statsData.currentMonth as any).jobs as JobStatistic[] | undefined;
-    if (!jobs?.length) return [];
+    // Archive months have no individual job records
+    if (viewMode !== 'all' && viewMode !== 'current') return [];
+    const jobs = Array.from(loadedJobsById.values()).map(job => ({
+      ...job,
+      description: descriptionCache.get(job.id) ?? job.description,
+    }));
+    if (!jobs.length) return [];
     return jobs.filter(job => {
       // Text search filter (searches title, company, description, keywords)
       if (debouncedTextSearch) {
@@ -420,7 +480,7 @@ export default function StatsPage() {
       }
       return true;
     });
-  }, [statsData, debouncedTextSearch, activeFilters, selectedDate]); // Recalculate when filters change
+  }, [loadedJobsById, descriptionCache, debouncedTextSearch, activeFilters, selectedDate, viewMode]);
 
   // Rebuild salary statistics from a set of jobs
   const rebuildSalaryStats = (jobs: JobStatistic[]): SalaryStats | undefined => {
@@ -590,7 +650,7 @@ export default function StatsPage() {
     filtered.salaryStats = rebuildSalaryStats(filteredJobs);
 
     return filtered;
-  }, [filteredJobs, hasActiveFilters, useAggregated, statsData]); // Memoize based on dependencies
+  }, [filteredJobs, hasActiveFilters, viewMode, statsData]);
 
   // Helper function to check if value should be filtered out
   const shouldFilterOut = (value: string): boolean => {
@@ -627,7 +687,7 @@ export default function StatsPage() {
     if (!stats) return [];
     const entries = Object.entries(stats.byDate)
       .sort(([a], [b]) => a.localeCompare(b));
-    const limit = useAggregated ? 30 : 14;
+    const limit = viewMode === 'all' ? 30 : 14;
     return entries
       .slice(-limit)
       .map(([date, count]) => ({
@@ -852,12 +912,58 @@ export default function StatsPage() {
       }));
   };
 
+  // Fetch metadata for a single date if not already loaded
+  const loadDateMetadata = async (date: string) => {
+    if (loadedDates.has(date)) return;
+    const month = date.substring(0, 7);
+    try {
+      const r = await fetch(`/api/stats/jobs?month=${month}&date=${date}`);
+      const data = await r.json();
+      if (data.success && Array.isArray(data.jobs)) {
+        setLoadedJobsById(prev => {
+          const next = new Map(prev);
+          for (const job of data.jobs) {
+            if (!next.has(job.id)) next.set(job.id, { ...job, description: '' });
+          }
+          return next;
+        });
+        setLoadedDates(prev => new Set([...prev, date]));
+      }
+    } catch { /* non-fatal */ }
+  };
+
+  // Fetch descriptions for a date on demand and merge into descriptionCache
+  const loadDescriptionsForDate = async (date: string) => {
+    setLoadingDescriptionsDate(date);
+    try {
+      const r = await fetch(`/api/stats/description?date=${date}`);
+      const data = await r.json();
+      if (data.success && Array.isArray(data.descriptions)) {
+        setDescriptionCache(prev => {
+          const next = new Map(prev);
+          for (const { id, description } of data.descriptions) {
+            next.set(id, description);
+          }
+          return next;
+        });
+      }
+    } catch { /* non-fatal */ }
+    finally {
+      setLoadingDescriptionsDate(null);
+    }
+  };
+
   // Handler for date click on POSTING VELOCITY chart
   const handleDateClick = (data: any) => {
     if (!data || !data.activePayload || !data.activePayload[0]) return;
     const clickedDate = data.activePayload[0].payload.rawDate;
     if (!clickedDate) return;
-    setSelectedDate(selectedDate === clickedDate ? null : clickedDate);
+    const newDate = selectedDate === clickedDate ? null : clickedDate;
+    setSelectedDate(newDate);
+    if (newDate) {
+      loadDateMetadata(newDate);
+      if (debouncedTextSearch) loadDescriptionsForDate(newDate);
+    }
   };
 
   // Handler for country/city clicks
@@ -975,49 +1081,28 @@ export default function StatsPage() {
   const hasRoleTypeData = filteredStats?.byRoleType && Object.keys(filteredStats.byRoleType).length > 0;
   const hasRoleCategoryData = filteredStats?.byRoleCategory && Object.keys(filteredStats.byRoleCategory).length > 0;
 
-  // Get publication time analysis data (10-minute resolution from jobs)
+  // Get publication time analysis data
+  // Priority 1: real 10-minute slots from loaded jobs (genuine sub-hour variation)
+  // Priority 2: pre-computed byHour stats as honest hourly bars (no synthetic splitting)
   const getPublicationTimeData = () => {
-    const jobs = filteredJobs;
-    const timeSlots: Record<string, number> = {};
-
-    jobs.forEach(job => {
-      const date = new Date(job.postedDate);
-      const hours = date.getUTCHours();
-      const minutes = date.getUTCMinutes();
-
-      // Round to nearest 10-minute slot
-      const roundedMinutes = Math.floor(minutes / 10) * 10;
-      const timeKey = `${String(hours).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`;
-
-      timeSlots[timeKey] = (timeSlots[timeKey] || 0) + 1;
-    });
-
-    // If we have jobs, use 10-min resolution
-    if (Object.keys(timeSlots).length > 0) {
+    if (filteredJobs.length > 0) {
+      const timeSlots: Record<string, number> = {};
+      filteredJobs.forEach(job => {
+        const date = new Date(job.postedDate);
+        const hours = date.getUTCHours();
+        const roundedMinutes = Math.floor(date.getUTCMinutes() / 10) * 10;
+        const timeKey = `${String(hours).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`;
+        timeSlots[timeKey] = (timeSlots[timeKey] || 0) + 1;
+      });
       return Object.entries(timeSlots)
         .map(([time, count]) => ({ time, count }))
         .sort((a, b) => a.time.localeCompare(b.time));
     }
 
-    // Fallback: if no jobs available (e.g. ALL mode with no current month jobs),
-    // use aggregated byHour data and distribute across 10-min slots
-    const stats = getActiveStatistics();
-    if (stats?.byHour && Object.keys(stats.byHour).length > 0) {
-      return Object.entries(stats.byHour)
-        .flatMap(([hour, count]) => {
-          const h = hour.padStart(2, '0');
-          // Distribute hourly count across 6 ten-minute slots
-          const perSlot = Math.round(count / 6);
-          const remainder = count - perSlot * 5;
-          return [
-            { time: `${h}:00`, count: remainder },
-            { time: `${h}:10`, count: perSlot },
-            { time: `${h}:20`, count: perSlot },
-            { time: `${h}:30`, count: perSlot },
-            { time: `${h}:40`, count: perSlot },
-            { time: `${h}:50`, count: perSlot },
-          ].filter(s => s.count > 0);
-        })
+    const byHour = filteredStats?.byHour;
+    if (byHour && Object.keys(byHour).length > 0) {
+      return Object.entries(byHour)
+        .map(([hour, count]) => ({ time: `${hour.padStart(2, '0')}:00`, count }))
         .sort((a, b) => a.time.localeCompare(b.time));
     }
 
@@ -1116,9 +1201,30 @@ export default function StatsPage() {
 
       {/* Loading State */}
       {loading && (
-        <div className="terminal-loading">
-          <Loader2 size={32} className="spin" />
-          <p>LOADING MARKET DATA...</p>
+        <div className="loading-screen">
+          <div className="loading-screen-card">
+            <div className="loading-brand">
+              <div className="loading-brand-icon"><BarChart3 size={28} /></div>
+              <div>
+                <div className="loading-brand-title">JOB MARKET ANALYTICS</div>
+                <div className="loading-brand-sub">RECRUITMENT INTELLIGENCE TERMINAL</div>
+              </div>
+            </div>
+            <div className="loading-stage">
+              <span className="loading-prompt">&gt; </span>
+              <span className="loading-stage-text">{loadingStep}</span>
+              <span className="loading-cursor">█</span>
+            </div>
+            <div className="loading-bar-track">
+              <div className="loading-bar-fill" ref={loadingBarRef} />
+            </div>
+            <div className="loading-bar-footer">
+              <span className="loading-pct">{loadingProgress}%</span>
+              <span className="loading-steps-hint">
+                STAGE {loadingProgress < 20 ? 1 : loadingProgress < 80 ? 2 : 3} / 3
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1130,7 +1236,20 @@ export default function StatsPage() {
           availableOptions={availableFilterOptions}
           textSearch={textSearch}
           setTextSearch={setTextSearch}
+          selectedDate={selectedDate}
+          loadingDescriptions={loadingDescriptionsDate !== null}
         />
+      )}
+
+      {/* Slim jobs-loading strip */}
+      {!loading && jobsLoading && (
+        <div className="jobs-loading-strip">
+          <span className="jobs-loading-label">{loadingStep}</span>
+          <div className="jobs-loading-bar-track">
+            <div className="jobs-loading-bar-fill" ref={jobsBarRef} />
+          </div>
+          <span className="jobs-loading-pct">{loadingProgress}%</span>
+        </div>
       )}
 
       {/* Main Content */}
@@ -1176,18 +1295,21 @@ export default function StatsPage() {
               <div className="metric-compact">
                 <div className="metric-compact-label">VIEW</div>
                 <div className="metric-compact-toggle">
-                  <button
-                    onClick={() => setUseAggregated(true)}
-                    className={useAggregated ? 'active' : ''}
+                  <select
+                    value={viewMode}
+                    aria-label="View mode"
+                    onChange={(e) => {
+                      setViewMode(e.target.value);
+                      setSelectedDate(null);
+                    }}
+                    className="view-mode-select"
                   >
-                    ALL
-                  </button>
-                  <button
-                    onClick={() => setUseAggregated(false)}
-                    className={!useAggregated ? 'active' : ''}
-                  >
-                    CURRENT
-                  </button>
+                    <option value="all">ALL</option>
+                    <option value="current">CURRENT</option>
+                    {statsData.summary.availableArchives.map(month => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -1681,6 +1803,7 @@ export default function StatsPage() {
             <div className="panel-header">
               <Briefcase size={14} />
               <span>RECENT JOBS (TOP 100)</span>
+              {jobsLoading && <Loader2 size={12} className="spin panel-header-spinner" />}
             </div>
             <div className="jobs-table-container">
               <table className="jobs-table-full">
@@ -1696,6 +1819,11 @@ export default function StatsPage() {
                   </tr>
                 </thead>
                 <tbody>
+                  {jobsLoading && filteredJobs.length === 0 && (
+                    <tr className="jobs-loading-row">
+                      <td colSpan={7}>Loading jobs...</td>
+                    </tr>
+                  )}
                   {getSortedJobs().map((job: JobStatistic) => (
                     <tr
                       key={job.id}
@@ -1710,11 +1838,15 @@ export default function StatsPage() {
 
                           // Show popup after 3 seconds
                           hoverTimerRef.current = setTimeout(() => {
+                            const dateKey = job.extractedDate.split('T')[0];
                             setHoveredJob(job);
                             setPopupPosition({
                               x: window.innerWidth / 2 - 200,
                               y: window.innerHeight / 2 - 250
                             });
+                            if (!descriptionCache.has(job.id)) {
+                              loadDescriptionsForDate(dateKey);
+                            }
                           }, 3000);
                         }}
                         onMouseLeave={(e) => {
@@ -2176,11 +2308,17 @@ export default function StatsPage() {
           <div
             className="job-popup-content"
             onWheel={(e) => {
-              // Stop propagation to prevent main page from scrolling
               e.stopPropagation();
             }}
           >
-            <div dangerouslySetInnerHTML={{ __html: hoveredJob.description }} />
+            {loadingDescriptionsDate === hoveredJob.extractedDate.split('T')[0] && !descriptionCache.has(hoveredJob.id) ? (
+              <div className="popup-desc-loading">
+                <Loader2 size={24} className="spin" />
+                <p>Loading description...</p>
+              </div>
+            ) : (
+              <div dangerouslySetInnerHTML={{ __html: descriptionCache.get(hoveredJob.id) || hoveredJob.description || '' }} />
+            )}
           </div>
         </div>
       )}

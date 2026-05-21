@@ -711,42 +711,44 @@ export class JobStatisticsCacheR2 {
   }
 
   /**
-   * Load all jobs for a specific month
+   * Load all jobs for a specific month (metadata only, no descriptions).
+   * options.date  → load only that specific date
+   * options.days  → load only the last N days
+   * no options    → load all days (default)
    */
-  async loadJobsForMonth(month: string): Promise<JobStatistic[]> {
+  async loadJobsForMonth(
+    month: string,
+    options: { days?: number; date?: string } = {}
+  ): Promise<JobStatistic[]> {
     if (!this.manifest?.months[month]) {
       return [];
     }
 
     const monthData = this.manifest.months[month];
-    const jobs: JobStatistic[] = [];
+    let daysToLoad = monthData.days;
 
-    // Load each day's data in parallel
-    const dayPromises = monthData.days.map(async (day) => {
-      const [metadata, descriptions] = await Promise.all([
-        this.r2.getNDJSONGzipped<JobMetadata>(day.metadata),
-        this.r2.getNDJSONGzipped<JobDescription>(day.descriptions),
-      ]);
+    if (options.date) {
+      daysToLoad = daysToLoad.filter(d => d.date === options.date);
+    } else if (options.days) {
+      daysToLoad = daysToLoad.slice(-options.days);
+    }
 
-      // Create description lookup
-      const descMap = new Map(descriptions.map(d => [d.id, d]));
-
-      // Combine
-      return metadata.map(m => {
-        const desc = descMap.get(m.id);
-        return this.combineJob(m, desc || { id: m.id, description: '' });
-      });
+    const dayPromises = daysToLoad.map(async (day) => {
+      const metadata = await this.r2.getNDJSONGzipped<JobMetadata>(day.metadata);
+      return metadata.map(m => this.combineJob(m, { id: m.id, description: '' }));
     });
 
     const dayResults = await Promise.all(dayPromises);
+    const jobs: JobStatistic[] = [];
     for (const dayJobs of dayResults) {
       jobs.push(...dayJobs);
     }
 
-    // Add pending jobs for this month
-    for (const [dateKey, pendingJobs] of this.pendingJobs.entries()) {
-      if (dateKey.startsWith(month)) {
-        jobs.push(...pendingJobs);
+    if (!options.date && !options.days) {
+      for (const [dateKey, pendingJobs] of this.pendingJobs.entries()) {
+        if (dateKey.startsWith(month)) {
+          jobs.push(...pendingJobs);
+        }
       }
     }
 
@@ -754,7 +756,22 @@ export class JobStatisticsCacheR2 {
   }
 
   /**
-   * Load jobs for a specific date range
+   * Load descriptions for a specific date on demand.
+   * Returns a Map<jobId, description>. Returns empty Map on 404 or error.
+   */
+  async loadDescriptionsForDate(dateKey: string): Promise<Map<string, string>> {
+    const [year, month, day] = dateKey.split('-');
+    const descriptionsKey = `descriptions/${year}/${month}/day-${day}.ndjson.gz`;
+    try {
+      const descriptions = await this.r2.getNDJSONGzipped<JobDescription>(descriptionsKey);
+      return new Map(descriptions.map(d => [d.id, d.description]));
+    } catch {
+      return new Map();
+    }
+  }
+
+  /**
+   * Load jobs for a specific date range (metadata only, no descriptions).
    */
   async loadJobsForDateRange(startDate: string, endDate: string): Promise<JobStatistic[]> {
     if (!this.manifest) await this.load();
@@ -767,15 +784,9 @@ export class JobStatisticsCacheR2 {
       for (const day of monthData.days) {
         const dayDate = new Date(day.date);
         if (dayDate >= start && dayDate <= end) {
-          const [metadata, descriptions] = await Promise.all([
-            this.r2.getNDJSONGzipped<JobMetadata>(day.metadata),
-            this.r2.getNDJSONGzipped<JobDescription>(day.descriptions),
-          ]);
-
-          const descMap = new Map(descriptions.map(d => [d.id, d]));
+          const metadata = await this.r2.getNDJSONGzipped<JobMetadata>(day.metadata);
           for (const m of metadata) {
-            const desc = descMap.get(m.id);
-            jobs.push(this.combineJob(m, desc || { id: m.id, description: '' }));
+            jobs.push(this.combineJob(m, { id: m.id, description: '' }));
           }
         }
       }

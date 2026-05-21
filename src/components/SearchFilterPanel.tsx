@@ -59,6 +59,8 @@ interface SearchFilterPanelProps {
   availableOptions: Record<keyof ActiveFilters, FilterOption[]>;
   textSearch: string;
   setTextSearch: (search: string) => void;
+  selectedDate?: string | null;
+  loadingDescriptions?: boolean;
 }
 
 const FILTER_CATEGORIES: FilterCategory[] = [
@@ -85,6 +87,8 @@ export function SearchFilterPanel({
   availableOptions,
   textSearch,
   setTextSearch,
+  selectedDate,
+  loadingDescriptions,
 }: SearchFilterPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<keyof ActiveFilters | null>(null);
@@ -246,7 +250,9 @@ export function SearchFilterPanel({
             {IconComponent && <IconComponent size={12} className="filter-badge-icon" />}
             <span className="filter-badge-text">{value}</span>
             <button
+              type="button"
               className="filter-badge-remove"
+              aria-label={`Remove ${value} filter`}
               onClick={() => removeFilter(category, value)}
             >
               <X size={12} />
@@ -274,13 +280,25 @@ export function SearchFilterPanel({
           />
           {textSearch && (
             <button
+              type="button"
               className="search-clear"
+              aria-label="Clear search"
               onClick={() => setTextSearch('')}
             >
               <X size={14} />
             </button>
           )}
         </div>
+
+        {textSearch && (
+          <div className="search-description-hint">
+            {!selectedDate
+              ? 'Select a date on the velocity chart to also search descriptions'
+              : loadingDescriptions
+              ? '⟳ Loading descriptions…'
+              : 'Searching metadata + descriptions'}
+          </div>
+        )}
 
         <button
           className={`filter-toggle-btn ${isExpanded ? 'active' : ''}`}
