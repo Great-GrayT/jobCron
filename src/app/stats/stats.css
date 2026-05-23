@@ -137,6 +137,162 @@
   color: #dc2626;
 }
 
+.duckdb-status-wrap {
+  position: relative;
+}
+
+.duckdb-status[disabled] {
+  cursor: default;
+}
+
+.duckdb-status:not([disabled]) {
+  cursor: pointer;
+  border: 0;
+}
+
+.duckdb-status-chevron {
+  margin-left: 0.25rem;
+  opacity: 0.7;
+}
+
+.duckdb-diagnostics {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.4rem;
+  min-width: 32rem;
+  max-width: 48rem;
+  max-height: 70vh;
+  overflow: auto;
+  padding: 1rem;
+  background: var(--terminal-bg-secondary, #1a1a1a);
+  border: 1px solid var(--terminal-border, #333);
+  border-radius: 0.4rem;
+  font-size: 0.78rem;
+  z-index: 100;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.duckdb-diagnostics-error {
+  color: #dc2626;
+}
+
+.duckdb-diagnostics-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.duckdb-diagnostics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.duckdb-diagnostics-title {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  color: var(--terminal-text-muted, #888);
+}
+
+.duckdb-diagnostics-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.duckdb-diagnostics-table td,
+.duckdb-diagnostics-table th {
+  padding: 0.2rem 0.5rem;
+  border-bottom: 1px solid var(--terminal-border, #333);
+  text-align: left;
+}
+
+.duckdb-diagnostics-table th {
+  font-weight: normal;
+  color: var(--terminal-text-muted, #888);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.duckdb-diagnostics-findings {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.duckdb-finding {
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.3rem;
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.duckdb-finding.error {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.duckdb-finding.warn {
+  background: rgba(234, 179, 8, 0.1);
+}
+
+.duckdb-finding-headline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.duckdb-finding-badge {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.2rem;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.duckdb-finding-badge.error {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+.duckdb-finding-badge.warn {
+  background: rgba(234, 179, 8, 0.25);
+  color: #fde68a;
+}
+
+.duckdb-finding-month {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--terminal-text-secondary, #aaa);
+}
+
+.duckdb-finding-category {
+  font-size: 0.7rem;
+  color: var(--terminal-text-muted, #888);
+}
+
+.duckdb-finding-remedy {
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--terminal-text-secondary, #aaa);
+  font-style: italic;
+}
+
+.duckdb-row-drift {
+  background: rgba(234, 179, 8, 0.08);
+}
+
+.duckdb-diagnostics-details-summary {
+  cursor: pointer;
+  color: var(--terminal-text-muted, #888);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 /* Alerts */
 .terminal-alert {
   padding: 0.6rem 1rem;
