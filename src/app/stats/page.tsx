@@ -16,6 +16,7 @@ import {
 } from '@/components/charts';
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SearchFilterPanel } from "@/components/SearchFilterPanel";
+import { DuckDBEngineStatus } from "@/components/DuckDBEngineStatus";
 import "./stats.css";
 
 interface SalaryData {
@@ -1184,6 +1185,9 @@ export default function StatsPage() {
               <span>FILTERS ACTIVE</span>
             </div>
           )}
+          <div className="status-item status-item-trailing">
+            <DuckDBEngineStatus />
+          </div>
         </div>
       )}
 
