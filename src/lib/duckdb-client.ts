@@ -75,11 +75,17 @@ function manifestKey(parquet: ParquetManifest | null): string {
 }
 
 /**
- * Register every Parquet file referenced by the manifest as a virtual file
- * inside DuckDB, then create or refresh the `jobs` view over the union.
+ * (Re)create the `jobs` view over every Parquet URL in the manifest.
  *
  * Idempotent: if the manifest fingerprint hasn't changed since the last
- * registration we skip the work and return immediately.
+ * call we skip the view recreation entirely.
+ *
+ * Implementation detail: we used to call `db.registerFileURL(name, url, HTTP)`
+ * and then `read_parquet('<name>')`, but the virtual-name lookup wasn't being
+ * resolved by DuckDB-WASM's worker (it tried to open the name as a literal
+ * file path and 404'd). Passing the URL directly to `read_parquet` bypasses
+ * the registration layer entirely — the bundled httpfs extension handles
+ * range fetches natively. Same behavior, fewer moving parts.
  */
 async function registerParquetFiles(
   db: AsyncDuckDB,
@@ -87,7 +93,7 @@ async function registerParquetFiles(
 ): Promise<string[]> {
   const key = manifestKey(parquet);
   if (key === registeredManifestKey) {
-    return collectVirtualNames(parquet);
+    return collectUrls(parquet);
   }
 
   if (!parquet) {
@@ -95,30 +101,21 @@ async function registerParquetFiles(
     return [];
   }
 
-  // Register each file as a remote URL. DuckDB-WASM will range-fetch as needed.
-  // The httpfs extension is bundled into the WASM build.
+  const allRefs = [
+    ...Object.values(parquet.monthly),
+    ...Object.values(parquet.daily),
+  ];
+
   const conn = await db.connect();
   try {
-    const virtualNames = collectVirtualNames(parquet);
-    const allRefs = [
-      ...Object.values(parquet.monthly),
-      ...Object.values(parquet.daily),
-    ];
-    for (const ref of allRefs) {
-      const name = virtualNameFor(ref.key);
-      // registerFileURL takes (name, url, protocol, directIO).
-      // duckdb.DuckDBDataProtocol.HTTP = 4.
-      await db.registerFileURL(name, ref.url, 4 as any, false);
-    }
-
     if (allRefs.length === 0) {
       await conn.query(`DROP VIEW IF EXISTS jobs`);
     } else {
-      // Each parquet_scan() call is a separate scan; UNION ALL stitches the
-      // partitions into one logical table. Predicate pushdown still works
-      // because DuckDB pushes WHERE clauses through UNION ALL into each scan.
-      const reads = virtualNames
-        .map(n => `SELECT * FROM read_parquet('${n}')`)
+      // UNION ALL stitches per-file scans into one logical table. DuckDB
+      // pushes WHERE clauses through UNION ALL into each scan, so predicate
+      // pushdown still works.
+      const reads = allRefs
+        .map(ref => `SELECT * FROM read_parquet('${escapeForSql(ref.url)}')`)
         .join(' UNION ALL ');
       await conn.query(`CREATE OR REPLACE VIEW jobs AS ${reads}`);
     }
@@ -127,21 +124,24 @@ async function registerParquetFiles(
   }
 
   registeredManifestKey = key;
-  return collectVirtualNames(parquet);
+  return collectUrls(parquet);
 }
 
-function virtualNameFor(key: string): string {
-  // DuckDB uses the registered name verbatim in SQL strings, so keep it
-  // simple alphanumeric — strip path separators.
-  return key.replace(/[/.-]/g, '_');
+/**
+ * Escape a string for safe inclusion inside a SQL single-quoted literal.
+ * Our R2 URLs only ever contain `[a-zA-Z0-9./:_-]`, but escape defensively
+ * in case a custom domain or query string sneaks in later.
+ */
+function escapeForSql(value: string): string {
+  return value.replace(/'/g, "''");
 }
 
-function collectVirtualNames(parquet: ParquetManifest | null): string[] {
+function collectUrls(parquet: ParquetManifest | null): string[] {
   if (!parquet) return [];
-  const names: string[] = [];
-  for (const ref of Object.values(parquet.monthly)) names.push(virtualNameFor(ref.key));
-  for (const ref of Object.values(parquet.daily)) names.push(virtualNameFor(ref.key));
-  return names;
+  const urls: string[] = [];
+  for (const ref of Object.values(parquet.monthly)) urls.push(ref.url);
+  for (const ref of Object.values(parquet.daily)) urls.push(ref.url);
+  return urls;
 }
 
 export interface QueryResult<T = Record<string, unknown>> {
