@@ -164,7 +164,10 @@ export async function writeDailyParquet(
     updatedAt: new Date().toISOString(),
   };
 
-  // Splice into manifest. Capture previous key for deletion.
+  // Splice into manifest. Capture previous key for deletion — but only if
+  // the previous key DIFFERS from the new one. When data is unchanged the
+  // hash is identical and the key matches; reporting that as "replaced"
+  // would cause the caller to delete the file we just wrote.
   if (!manifest.parquet) {
     manifest.parquet = {
       version: PARQUET_MANIFEST_VERSION,
@@ -177,7 +180,8 @@ export async function writeDailyParquet(
   manifest.parquet.daily[date] = ref;
   manifest.parquet.updatedAt = new Date().toISOString();
 
-  return { date, ref, replacedKey: previous?.key ?? null };
+  const replacedKey = previous?.key && previous.key !== ref.key ? previous.key : null;
+  return { date, ref, replacedKey };
 }
 
 /**
@@ -218,17 +222,20 @@ export async function compactMonthlyParquet(
     };
   }
 
-  // Collect daily files in this month to drop.
+  // Collect daily files in this month to drop. Same "key !== new key" guard
+  // as writeDailyParquet — never schedule a delete for a key we just wrote.
   const deletedKeys: string[] = [];
   for (const [date, dailyRef] of Object.entries(manifest.parquet.daily)) {
     if (date.startsWith(`${month}-`)) {
-      deletedKeys.push(dailyRef.key);
+      if (dailyRef.key !== ref.key) deletedKeys.push(dailyRef.key);
       delete manifest.parquet.daily[date];
     }
   }
   // Replace any previous monthly file for the same month.
   const previousMonthly = manifest.parquet.monthly[month] ?? null;
-  if (previousMonthly) deletedKeys.push(previousMonthly.key);
+  if (previousMonthly && previousMonthly.key !== ref.key) {
+    deletedKeys.push(previousMonthly.key);
+  }
 
   manifest.parquet.monthly[month] = ref;
   manifest.parquet.updatedAt = new Date().toISOString();
