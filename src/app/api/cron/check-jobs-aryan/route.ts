@@ -43,6 +43,9 @@ export async function GET(request: NextRequest) {
       cacheKey: "url-rss-aryan",
       label: "aryan",
       appliedNamespace: "aryan",
+      // Aryan GOAT: no industry/category gates — any UK Mid/Entry (or VIP) passes.
+      goatRequireIndustry: false,
+      goatRequireCategory: false,
     };
 
     logger.info("Aryan cron job started");

@@ -25,6 +25,10 @@ export interface JobMonitorConfig {
   cacheKey: string;
   label: string;
   appliedNamespace: AppliedNamespace;
+  /** When false, jobs of any industry can qualify for GOAT (main pipeline keeps Finance-only). */
+  goatRequireIndustry: boolean;
+  /** When false, the Path-B category check is skipped — Mid/Entry alone passes. */
+  goatRequireCategory: boolean;
 }
 
 const DEFAULT_CONFIG: JobMonitorConfig = {
@@ -36,6 +40,8 @@ const DEFAULT_CONFIG: JobMonitorConfig = {
   cacheKey: "url-rss",
   label: "main",
   appliedNamespace: "default",
+  goatRequireIndustry: true,
+  goatRequireCategory: true,
 };
 import { LocationExtractor } from "./location-extractor";
 import { JobMetadataExtractor } from "./job-metadata-extractor";
@@ -81,15 +87,22 @@ function isUKLocation(job: JobItem): boolean {
   return getCountryFromUrlTLD(job.link) === "United Kingdom";
 }
 
+interface GoatRules {
+  requireIndustry: boolean;
+  requireCategory: boolean;
+}
+
 /**
  * Returns true if the job meets the GOAT channel criteria:
  * 1. UK location or title — mandatory
- * 2. Finance industry — mandatory
+ * 2. Finance industry — mandatory unless rules.requireIndustry is false
  * 3. Path A: title or company contains a VIP company name
  *    OR
- *    Path B: seniority is Mid/Entry AND (has CFA/CIMA cert OR category in GOAT_CATEGORIES)
+ *    Path B: seniority is Mid/Entry AND
+ *            (has CFA/CIMA cert
+ *             OR category in GOAT_CATEGORIES  (skipped when rules.requireCategory is false))
  */
-function isGoatEligible(job: JobItem): boolean {
+function isGoatEligible(job: JobItem, rules: GoatRules): boolean {
   // UK location/title is mandatory
   if (!isUKLocation(job)) {
     return false;
@@ -111,8 +124,8 @@ function isGoatEligible(job: JobItem): boolean {
     url: job.link,
   });
 
-  // Finance industry is mandatory for all paths
-  if (!GOAT_INDUSTRY.has(metadata.industry)) {
+  // Finance industry — optional per rules
+  if (rules.requireIndustry && !GOAT_INDUSTRY.has(metadata.industry)) {
     return false;
   }
 
@@ -136,7 +149,11 @@ function isGoatEligible(job: JobItem): boolean {
     return true;
   }
 
-  // Path B-2: category in GOAT_CATEGORIES
+  // Path B-2: category check is optional — when off, Mid/Entry alone passes.
+  if (!rules.requireCategory) {
+    return true;
+  }
+
   const roleTypeMatch = RoleTypeExtractor.extractRoleType(
     details.position,
     metadata.keywords,
@@ -362,9 +379,13 @@ export async function checkAndSendJobs(
     }
 
     // Format messages and pre-compute GOAT eligibility for each job
+    const goatRules: GoatRules = {
+      requireIndustry: config.goatRequireIndustry,
+      requireCategory: config.goatRequireCategory,
+    };
     const jobMessages = newJobs.map((job) => ({
       message: formatJobMessage(job, { namespace: config.appliedNamespace }),
-      isGoat: isGoatEligible(job),
+      isGoat: isGoatEligible(job, goatRules),
     }));
     const messages = jobMessages.map((jm) => jm.message);
 
