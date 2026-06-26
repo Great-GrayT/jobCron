@@ -8,6 +8,7 @@ import {
   Search,
   BarChart3,
   CheckSquare,
+  LayoutDashboard,
   Zap,
   Clock,
   Database,
@@ -75,6 +76,10 @@ export default function Home() {
           <Link href="/applied" className="terminal-btn">
             <CheckSquare size={14} />
             APPLIED
+          </Link>
+          <Link href="/dashboard" className="terminal-btn">
+            <LayoutDashboard size={14} />
+            DASHBOARD
           </Link>
           <ThemeToggle />
         </div>

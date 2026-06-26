@@ -1,0 +1,114 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Loader2, Save, Trash2 } from "lucide-react";
+import { channels } from "@/lib/api/me";
+import type { Channel, ChannelKind } from "@/lib/api/types";
+
+export default function TelegramPage() {
+  const [list, setList] = useState<Channel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [kind, setKind] = useState<ChannelKind>("main");
+  const [botToken, setBotToken] = useState("");
+  const [chatId, setChatId] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      setList(await channels.list());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load channels");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    load();
+  }, []);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!botToken.trim() || !chatId.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await channels.upsert({ kind, botToken: botToken.trim(), chatId: chatId.trim(), active: true });
+      setBotToken("");
+      setChatId("");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save channel");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Remove this channel?")) return;
+    setList((prev) => prev.filter((c) => c.id !== id));
+    try {
+      await channels.remove(id);
+    } catch {
+      load();
+    }
+  };
+
+  return (
+    <section className="panel">
+      <h2>TELEGRAM CHANNELS</h2>
+      <p className="hint">
+        One <b>main</b> and one <b>goat</b> channel per account. The bot token is write-only — it&apos;s
+        encrypted server-side and only ever shown back masked.
+      </p>
+
+      {error && <div className="auth-error">{error}</div>}
+
+      <form className="toolbar" onSubmit={save}>
+        <div className="field">
+          <label htmlFor="kind">Kind</label>
+          <select id="kind" value={kind} onChange={(e) => setKind(e.target.value as ChannelKind)}>
+            <option value="main">main</option>
+            <option value="goat">goat</option>
+          </select>
+        </div>
+        <div className="field" style={{ flex: 2 }}>
+          <label htmlFor="token">Bot Token</label>
+          <input id="token" type="password" placeholder="123456:ABC…" value={botToken} onChange={(e) => setBotToken(e.target.value)} autoComplete="off" />
+        </div>
+        <div className="field" style={{ flex: 1 }}>
+          <label htmlFor="chat">Chat ID</label>
+          <input id="chat" value={chatId} onChange={(e) => setChatId(e.target.value)} placeholder="-1001…" />
+        </div>
+        <button className="btn" type="submit" disabled={saving}>
+          {saving ? <Loader2 className="spin" size={16} /> : <Save size={16} />} SAVE
+        </button>
+      </form>
+
+      {loading ? (
+        <div className="muted"><Loader2 className="spin" size={16} /> loading…</div>
+      ) : list.length === 0 ? (
+        <p className="muted">No channels configured.</p>
+      ) : (
+        <table className="dash-table">
+          <thead>
+            <tr><th>Kind</th><th>Token</th><th>Chat ID</th><th>Active</th><th></th></tr>
+          </thead>
+          <tbody>
+            {list.map((c) => (
+              <tr key={c.id}>
+                <td>{c.kind}</td>
+                <td className="muted">{c.botTokenMasked}</td>
+                <td>{c.chatId}</td>
+                <td>{c.active ? <span className="ok">yes</span> : "no"}</td>
+                <td><button className="btn danger sm" onClick={() => remove(c.id)}><Trash2 size={14} /></button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
