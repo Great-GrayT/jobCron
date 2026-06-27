@@ -3,14 +3,17 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { getToken } from "@/lib/api/client";
 import * as auth from "@/lib/api/auth";
-import type { User } from "@/lib/api/types";
+import type { User, ProfileInput, RegisterResponse } from "@/lib/api/types";
 
 interface AuthState {
   user: User | null;
   loading: boolean;
   authenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name?: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
+  register: (
+    body: { email: string; password: string; name?: string } & ProfileInput,
+  ) => Promise<RegisterResponse>;
+  updateProfile: (body: ProfileInput & { name?: string }) => Promise<User>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -49,14 +52,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [refresh]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const r = await auth.login({ email, password });
+  const login = useCallback(async (identifier: string, password: string) => {
+    const r = await auth.login({ identifier, password });
     setUser(r.user);
   }, []);
 
-  const register = useCallback(async (email: string, password: string, name?: string) => {
-    const r = await auth.register({ email, password, name });
-    setUser(r.user);
+  // Register does NOT establish a session — the user must verify their email.
+  const register = useCallback(
+    (body: { email: string; password: string; name?: string } & ProfileInput) => auth.register(body),
+    [],
+  );
+
+  const updateProfile = useCallback(async (body: ProfileInput & { name?: string }) => {
+    const { user } = await auth.updateProfile(body);
+    setUser(user);
+    return user;
   }, []);
 
   const logout = useCallback(() => {
@@ -66,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, authenticated: Boolean(user), login, register, logout, refresh }}
+      value={{ user, loading, authenticated: Boolean(user), login, register, updateProfile, logout, refresh }}
     >
       {children}
     </AuthContext.Provider>

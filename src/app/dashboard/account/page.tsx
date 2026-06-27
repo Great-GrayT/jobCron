@@ -1,26 +1,121 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { Loader2, Save, ShieldCheck, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { COUNTRY_NAMES, SPECIALITIES, UNIQUE_DIAL_CODES } from "@/lib/profile-options";
+import type { ProfileInput } from "@/lib/api/types";
 
 export default function AccountPage() {
-  const { user, logout } = useAuth();
+  const { user, updateProfile, logout } = useAuth();
+  const [form, setForm] = useState<ProfileInput & { name?: string }>({});
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    setForm({
+      username: user.username ?? "",
+      firstName: user.firstName ?? "",
+      lastName: user.lastName ?? "",
+      phoneDialCode: user.phoneDialCode ?? "",
+      phoneNumber: user.phoneNumber ?? "",
+      mobileDialCode: user.mobileDialCode ?? "",
+      mobileNumber: user.mobileNumber ?? "",
+      speciality: user.speciality ?? "",
+      country: user.country ?? "",
+      city: user.city ?? "",
+    });
+  }, [user]);
+
   if (!user) return null;
+  const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await updateProfile(form);
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <section className="panel">
       <h2>ACCOUNT</h2>
-      <div className="field">
-        <label>Email</label>
-        <input value={user.email} readOnly />
+
+      <div className="row" style={{ marginBottom: "1rem" }}>
+        {user.emailVerified ? (
+          <span className="ok"><ShieldCheck size={14} /> {user.email} — verified</span>
+        ) : (
+          <span style={{ color: "var(--color-warning)" }}><ShieldAlert size={14} /> {user.email} — not verified</span>
+        )}
+        <span className="muted">role: {user.role}</span>
       </div>
-      <div className="field">
-        <label>Name</label>
-        <input value={user.name ?? ""} readOnly placeholder="—" />
+
+      {error && <div className="auth-error">{error}</div>}
+
+      <div className="grid2">
+        <div className="field"><label>First name</label><input value={form.firstName ?? ""} onChange={(e) => set("firstName", e.target.value)} /></div>
+        <div className="field"><label>Last name</label><input value={form.lastName ?? ""} onChange={(e) => set("lastName", e.target.value)} /></div>
       </div>
+
       <div className="field">
-        <label>Role</label>
-        <input value={user.role} readOnly />
+        <label>Username</label>
+        <input value={form.username ?? ""} onChange={(e) => set("username", e.target.value)} />
       </div>
-      <button className="btn danger" onClick={logout}>LOG OUT</button>
+
+      <div className="grid2">
+        <div className="field">
+          <label>Phone</label>
+          <div className="phone-row">
+            <select aria-label="Phone dial code" value={form.phoneDialCode ?? ""} onChange={(e) => set("phoneDialCode", e.target.value)}>
+              <option value="">+</option>
+              {UNIQUE_DIAL_CODES.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <input inputMode="tel" value={form.phoneNumber ?? ""} onChange={(e) => set("phoneNumber", e.target.value)} />
+          </div>
+        </div>
+        <div className="field">
+          <label>Mobile</label>
+          <div className="phone-row">
+            <select aria-label="Mobile dial code" value={form.mobileDialCode ?? ""} onChange={(e) => set("mobileDialCode", e.target.value)}>
+              <option value="">+</option>
+              {UNIQUE_DIAL_CODES.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <input inputMode="tel" value={form.mobileNumber ?? ""} onChange={(e) => set("mobileNumber", e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="field">
+        <label>Speciality</label>
+        <input list="acc-spec" value={form.speciality ?? ""} onChange={(e) => set("speciality", e.target.value)} />
+        <datalist id="acc-spec">{SPECIALITIES.map((s) => <option key={s} value={s} />)}</datalist>
+      </div>
+
+      <div className="grid2">
+        <div className="field">
+          <label>Country</label>
+          <input list="acc-country" value={form.country ?? ""} onChange={(e) => set("country", e.target.value)} />
+          <datalist id="acc-country">{COUNTRY_NAMES.map((c) => <option key={c} value={c} />)}</datalist>
+        </div>
+        <div className="field"><label>City</label><input value={form.city ?? ""} onChange={(e) => set("city", e.target.value)} /></div>
+      </div>
+
+      <div className="row" style={{ marginTop: "1rem" }}>
+        <button className="btn" onClick={save} disabled={busy}>
+          {busy ? <Loader2 className="spin" size={16} /> : <Save size={16} />} SAVE
+          {saved && <span className="ok"> ✓</span>}
+        </button>
+        <button className="btn danger" onClick={logout}>LOG OUT</button>
+      </div>
     </section>
   );
 }

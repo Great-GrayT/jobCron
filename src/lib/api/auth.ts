@@ -1,26 +1,40 @@
 import { api, API_BASE, setToken, clearToken } from "./client";
-import type { AuthResponse, User } from "./types";
+import type { AuthResponse, User, ProfileInput, RegisterResponse } from "./types";
 
-export function register(body: { email: string; password: string; name?: string }) {
-  return api
-    .post<AuthResponse>("/api/auth/register", body, { auth: false })
-    .then((r) => {
-      setToken(r.token);
-      return r;
-    });
+/**
+ * Register an account. Does NOT log the user in — the server emails a
+ * verification link and login is blocked until the email is confirmed.
+ */
+export function register(body: { email: string; password: string; name?: string } & ProfileInput) {
+  return api.post<RegisterResponse>("/api/auth/register", body, { auth: false });
 }
 
-export function login(body: { email: string; password: string }) {
-  return api
-    .post<AuthResponse>("/api/auth/login", body, { auth: false })
-    .then((r) => {
-      setToken(r.token);
-      return r;
-    });
+/** Log in with an email or username. Stores the JWT on success. */
+export function login(body: { identifier: string; password: string }) {
+  return api.post<AuthResponse>("/api/auth/login", body, { auth: false }).then((r) => {
+    setToken(r.token);
+    return r;
+  });
 }
 
 export function me() {
   return api.get<{ user: User }>("/api/auth/me");
+}
+
+export function updateProfile(body: ProfileInput & { name?: string }) {
+  return api.patch<{ user: User }>("/api/auth/me", body);
+}
+
+export function resendVerification(email: string) {
+  return api.post<{ ok: boolean }>("/api/auth/resend-verification", { email }, { auth: false });
+}
+
+export function forgotPassword(identifier: string) {
+  return api.post<{ ok: boolean }>("/api/auth/forgot-password", { identifier }, { auth: false });
+}
+
+export function resetPassword(token: string, password: string) {
+  return api.post<{ ok: boolean }>("/api/auth/reset-password", { token, password }, { auth: false });
 }
 
 export function logout() {

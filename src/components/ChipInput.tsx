@@ -15,10 +15,32 @@ export function ChipInput({
 }) {
   const [draft, setDraft] = useState("");
 
+  // Add one or many comma-separated values, de-duped.
+  const add = (raw: string) => {
+    const parts = raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!parts.length) return;
+    const merged = [...value];
+    for (const p of parts) if (!merged.includes(p)) merged.push(p);
+    onChange(merged);
+  };
+
   const commit = () => {
-    const v = draft.trim();
-    if (v && !value.includes(v)) onChange([...value, v]);
+    add(draft);
     setDraft("");
+  };
+
+  // Split on every comma as the user types or pastes "a, b, c".
+  const handleChange = (text: string) => {
+    if (text.includes(",")) {
+      const lastComma = text.lastIndexOf(",");
+      add(text.slice(0, lastComma));
+      setDraft(text.slice(lastComma + 1).trimStart());
+    } else {
+      setDraft(text);
+    }
   };
 
   return (
@@ -26,7 +48,7 @@ export function ChipInput({
       {value.map((v) => (
         <span key={v} className="chip">
           {v}
-          <button type="button" onClick={() => onChange(value.filter((x) => x !== v))}>
+          <button type="button" title={`Remove ${v}`} aria-label={`Remove ${v}`} onClick={() => onChange(value.filter((x) => x !== v))}>
             <X size={12} />
           </button>
         </span>
@@ -34,9 +56,9 @@ export function ChipInput({
       <input
         value={draft}
         placeholder={placeholder}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => handleChange(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === ",") {
+          if (e.key === "Enter") {
             e.preventDefault();
             commit();
           } else if (e.key === "Backspace" && !draft && value.length) {

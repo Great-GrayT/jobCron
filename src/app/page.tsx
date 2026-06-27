@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Briefcase,
   Radio,
-  Search,
   BarChart3,
   CheckSquare,
   LayoutDashboard,
@@ -17,10 +16,8 @@ import {
   Settings,
   Globe,
   Github,
-  ArrowUpRight,
   Activity,
   Server,
-  Cpu,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import "./home.css";
@@ -61,14 +58,6 @@ export default function Home() {
           <span className="terminal-subtitle">Command Center</span>
         </div>
         <div className="terminal-topbar-right">
-          <Link href="/rss" className="terminal-btn">
-            <Radio size={14} />
-            RSS
-          </Link>
-          <Link href="/scrape" className="terminal-btn">
-            <Search size={14} />
-            SCRAPE
-          </Link>
           <Link href="/stats" className="terminal-btn">
             <BarChart3 size={14} />
             STATS
@@ -148,42 +137,21 @@ export default function Home() {
         {/* Quick Actions */}
         <div className="terminal-panel">
           <div className="panel-header">
-            <Radio size={14} />
-            RSS MONITOR
+            <LayoutDashboard size={14} />
+            MY DASHBOARD
           </div>
           <div className="action-panel-content">
             <p className="action-description">
-              Automated job monitoring with smart deduplication and instant Telegram notifications.
+              Manage your own feeds, Telegram channels, GOAT filters, and cron schedules.
             </p>
             <ul className="feature-list-compact">
-              <li>5-minute check interval</li>
-              <li>Persistent GitHub Gist caching</li>
-              <li>48-hour deduplication window</li>
+              <li>Personal RSS feeds &amp; notifications</li>
+              <li>Telegram bot tokens (encrypted)</li>
+              <li>Per-user scrape &amp; check schedules</li>
             </ul>
-            <Link href="/rss" className="terminal-btn action-btn">
-              <Radio size={14} />
+            <Link href="/dashboard" className="terminal-btn action-btn">
+              <LayoutDashboard size={14} />
               OPEN DASHBOARD
-            </Link>
-          </div>
-        </div>
-
-        <div className="terminal-panel">
-          <div className="panel-header">
-            <Search size={14} />
-            LINKEDIN SCRAPER
-          </div>
-          <div className="action-panel-content">
-            <p className="action-description">
-              Manual job search with concurrent processing and Excel export via Telegram.
-            </p>
-            <ul className="feature-list-compact">
-              <li>Multi-keyword search</li>
-              <li>13 country support</li>
-              <li>Real-time progress streaming</li>
-            </ul>
-            <Link href="/scrape" className="terminal-btn action-btn">
-              <Search size={14} />
-              LAUNCH SCRAPER
             </Link>
           </div>
         </div>
@@ -230,33 +198,6 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="terminal-panel">
-          <div className="panel-header">
-            <Zap size={14} />
-            MANUAL TRIGGER
-          </div>
-          <div className="action-panel-content">
-            <p className="action-description">
-              Manually trigger RSS job check outside the automated schedule.
-            </p>
-            <ul className="feature-list-compact">
-              <li>Immediate RSS check</li>
-              <li>Returns JSON response</li>
-              <li>Opens in new tab</li>
-            </ul>
-            <a
-              href="/api/cron/check-jobs"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="terminal-btn action-btn"
-            >
-              <Zap size={14} />
-              TRIGGER NOW
-              <ArrowUpRight size={12} />
-            </a>
-          </div>
-        </div>
-
         {/* System Information */}
         <div className="terminal-panel">
           <div className="panel-header">
@@ -281,8 +222,8 @@ export default function Home() {
             <div className="system-info-item">
               <Database size={16} />
               <div className="system-info-content">
-                <span className="system-info-label">CACHE</span>
-                <span className="system-info-value">GitHub Gist</span>
+                <span className="system-info-label">DATA</span>
+                <span className="system-info-value">Server API</span>
               </div>
             </div>
             <div className="system-info-item">
@@ -295,40 +236,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* API Endpoints */}
-        <div className="terminal-panel span-2">
-          <div className="panel-header">
-            <Cpu size={14} />
-            API ENDPOINTS
-          </div>
-          <div className="endpoints-grid">
-            <div className="endpoint-row">
-              <span className="endpoint-method get">GET</span>
-              <code className="endpoint-path">/api/cron/check-jobs</code>
-              <span className="endpoint-desc">Automated RSS monitoring endpoint</span>
-            </div>
-            <div className="endpoint-row">
-              <span className="endpoint-method mixed">GET/POST</span>
-              <code className="endpoint-path">/api/scrape-jobs</code>
-              <span className="endpoint-desc">LinkedIn job scraper (non-streaming)</span>
-            </div>
-            <div className="endpoint-row">
-              <span className="endpoint-method get">GET</span>
-              <code className="endpoint-path">/api/scrape-jobs-stream</code>
-              <span className="endpoint-desc">LinkedIn scraper with SSE streaming</span>
-            </div>
-            <div className="endpoint-row">
-              <span className="endpoint-method get">GET</span>
-              <code className="endpoint-path">/api/stats</code>
-              <span className="endpoint-desc">Job statistics and analytics data</span>
-            </div>
-            <div className="endpoint-row">
-              <span className="endpoint-method get">GET</span>
-              <code className="endpoint-path">/api/applied</code>
-              <span className="endpoint-desc">Applied jobs tracking data</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Footer */}

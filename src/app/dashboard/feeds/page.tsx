@@ -32,16 +32,34 @@ export default function FeedsPage() {
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) return;
+    // Accept a comma-separated list of URLs — each becomes its own feed.
+    const urls = Array.from(
+      new Set(url.split(",").map((u) => u.trim()).filter(Boolean)),
+    );
+    if (!urls.length) return;
     setAdding(true);
     setError(null);
+    const failures: string[] = [];
     try {
-      await feeds.create({ url: url.trim(), name: name.trim() || undefined, notify, shareToStats });
-      setUrl("");
-      setName("");
+      for (const u of urls) {
+        try {
+          // name only applies when adding a single feed.
+          await feeds.create({
+            url: u,
+            name: urls.length === 1 ? name.trim() || undefined : undefined,
+            notify,
+            shareToStats,
+          });
+        } catch (err) {
+          failures.push(`${u} (${err instanceof Error ? err.message : "failed"})`);
+        }
+      }
+      if (failures.length) setError(`Failed: ${failures.join(", ")}`);
+      else {
+        setUrl("");
+        setName("");
+      }
       await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add feed");
     } finally {
       setAdding(false);
     }
@@ -80,8 +98,8 @@ export default function FeedsPage() {
 
       <form className="toolbar" onSubmit={add}>
         <div className="field" style={{ flex: 2 }}>
-          <label htmlFor="url">Feed URL</label>
-          <input id="url" type="url" required placeholder="https://rss.com/…" value={url} onChange={(e) => setUrl(e.target.value)} />
+          <label htmlFor="url">Feed URL(s) <span className="muted">— comma-separated for bulk add</span></label>
+          <input id="url" required placeholder="https://rss.com/a, https://rss.com/b" value={url} onChange={(e) => setUrl(e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1 }}>
           <label htmlFor="name">Name</label>

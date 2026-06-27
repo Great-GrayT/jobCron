@@ -4,23 +4,24 @@ import type { Channel, ChannelKind, Feed, GoatConfig, Schedule, ScheduleJob } fr
 // ---- feeds -------------------------------------------------------------------
 
 export const feeds = {
-  list: () => api.get<Feed[]>("/api/me/feeds"),
+  list: () => api.get<{ feeds: Feed[] }>("/api/me/feeds").then((r) => r.feeds),
   create: (body: { url: string; name?: string; notify?: boolean; shareToStats?: boolean }) =>
-    api.post<Feed>("/api/me/feeds", body),
+    api.post<{ feed: Feed }>("/api/me/feeds", body).then((r) => r.feed),
   update: (
     id: string,
     body: { name?: string; notify?: boolean; shareToStats?: boolean; active?: boolean },
-  ) => api.patch<Feed>(`/api/me/feeds/${id}`, body),
-  remove: (id: string) => api.delete<void>(`/api/me/feeds/${id}`),
+  ) => api.patch<{ feed: Feed }>(`/api/me/feeds/${id}`, body).then((r) => r.feed),
+  remove: (id: string) => api.delete<{ ok: boolean }>(`/api/me/feeds/${id}`).then(() => undefined),
 };
 
 // ---- telegram channels -------------------------------------------------------
 
 export const channels = {
-  list: () => api.get<Channel[]>("/api/me/channels"),
+  list: () => api.get<{ channels: Channel[] }>("/api/me/channels").then((r) => r.channels),
   upsert: (body: { kind: ChannelKind; botToken: string; chatId: string; active?: boolean }) =>
-    api.post<Channel>("/api/me/channels", body),
-  remove: (id: string) => api.delete<void>(`/api/me/channels/${id}`),
+    api.post<{ channel: Channel }>("/api/me/channels", body).then((r) => r.channel),
+  remove: (id: string) =>
+    api.delete<{ ok: boolean }>(`/api/me/channels/${id}`).then(() => undefined),
 };
 
 // ---- goat filters ------------------------------------------------------------
@@ -33,7 +34,7 @@ export const goat = {
 // ---- schedules ---------------------------------------------------------------
 
 export const schedules = {
-  list: () => api.get<Schedule[]>("/api/me/schedules"),
+  list: () => api.get<{ schedules: Schedule[] }>("/api/me/schedules").then((r) => r.schedules),
   create: (body: {
     job: ScheduleJob;
     intervalMinutes: number;
@@ -41,8 +42,9 @@ export const schedules = {
     scrapeSearch?: string;
     scrapeCountries?: string;
     scrapeTimeFilter?: number;
-  }) => api.post<Schedule>("/api/me/schedules", body),
+  }) => api.post<{ schedule: Schedule }>("/api/me/schedules", body).then((r) => r.schedule),
   update: (id: string, body: Partial<Omit<Schedule, "id">>) =>
-    api.patch<Schedule>(`/api/me/schedules/${id}`, body),
-  remove: (id: string) => api.delete<void>(`/api/me/schedules/${id}`),
+    api.patch<{ schedule: Schedule }>(`/api/me/schedules/${id}`, body).then((r) => r.schedule),
+  remove: (id: string) =>
+    api.delete<{ ok: boolean }>(`/api/me/schedules/${id}`).then(() => undefined),
 };

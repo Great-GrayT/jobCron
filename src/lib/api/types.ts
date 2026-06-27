@@ -3,13 +3,43 @@
 export interface User {
   id: string;
   email: string;
+  username: string | null;
   name: string | null;
   role: string;
+  firstName: string | null;
+  lastName: string | null;
+  phoneDialCode: string | null;
+  phoneNumber: string | null;
+  mobileDialCode: string | null;
+  mobileNumber: string | null;
+  speciality: string | null;
+  country: string | null;
+  city: string | null;
+  emailVerified: boolean;
 }
 
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+// Extended profile fields shared by register + profile update.
+export interface ProfileInput {
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneDialCode?: string;
+  phoneNumber?: string;
+  mobileDialCode?: string;
+  mobileNumber?: string;
+  speciality?: string;
+  country?: string;
+  city?: string;
+}
+
+export interface RegisterResponse {
+  user: User;
+  requiresVerification: boolean;
 }
 
 export interface Feed {

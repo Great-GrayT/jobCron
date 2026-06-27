@@ -34,6 +34,8 @@ import {
   Area,
 } from "recharts";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AuthGuard } from "@/components/AuthGuard";
+import { applied as appliedApi } from "@/lib/api/applied";
 import "./applied.css";
 
 interface AppliedJob {
@@ -104,56 +106,39 @@ const formatDelayCompact = (minutes: number | null): string => {
   }
 };
 
-type AppliedNamespace = "default" | "aryan";
-
-export default function AppliedJobsPage() {
+function AppliedJobsInner() {
   const [applications, setApplications] = useState<AppliedJob[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [namespace, setNamespace] = useState<AppliedNamespace>("default");
 
-  const fetchApplications = async (month?: string, ns: AppliedNamespace = namespace) => {
+  const fetchApplications = async (month?: string) => {
     setLoading(true);
     setError(null);
-
     try {
-      const params = new URLSearchParams();
-      if (month) params.set("month", month);
-      params.set("namespace", ns);
-      const url = `/api/applied?${params.toString()}`;
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.success) {
-        setApplications(data.data);
-        setStats(data.stats);
+      const res = await appliedApi.list(month);
+      if (res.success) {
+        setApplications(res.data);
+        setStats(res.stats);
       } else {
-        setError(data.error || "Failed to fetch applications");
+        setError("Failed to fetch applications");
       }
     } catch (err) {
-      setError("Failed to connect to server");
+      setError(err instanceof Error ? err.message : "Failed to connect to server");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchApplications(undefined, "default");
+    fetchApplications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleMonthChange = (month: string) => {
     setSelectedMonth(month);
-    fetchApplications(month || undefined, namespace);
-  };
-
-  const handleNamespaceChange = (ns: AppliedNamespace) => {
-    if (ns === namespace) return;
-    setNamespace(ns);
-    setSelectedMonth("");
-    fetchApplications(undefined, ns);
+    fetchApplications(month || undefined);
   };
 
   const formatDate = (dateString: string) => {
@@ -380,26 +365,8 @@ export default function AppliedJobsPage() {
           <span className="terminal-subtitle">JOB APPLICATION ANALYTICS</span>
         </div>
         <div className="terminal-topbar-right">
-          <div className="terminal-btn-group" style={{ display: "inline-flex", gap: 0, marginRight: 8 }}>
-            <button
-              onClick={() => handleNamespaceChange("default")}
-              disabled={loading}
-              className={`terminal-btn ${namespace === "default" ? "active" : ""}`}
-              title="Main pipeline applications"
-            >
-              <span>NORMAL</span>
-            </button>
-            <button
-              onClick={() => handleNamespaceChange("aryan")}
-              disabled={loading}
-              className={`terminal-btn ${namespace === "aryan" ? "active" : ""}`}
-              title="Aryan pipeline applications"
-            >
-              <span>ARYAN</span>
-            </button>
-          </div>
           <button
-            onClick={() => fetchApplications(selectedMonth || undefined, namespace)}
+            onClick={() => fetchApplications(selectedMonth || undefined)}
             disabled={loading}
             className={`terminal-btn ${loading ? "loading" : ""}`}
           >
@@ -425,10 +392,6 @@ export default function AppliedJobsPage() {
       {/* Status Bar */}
       {stats && (
         <div className="terminal-statusbar">
-          <div className="status-item highlight">
-            <Briefcase size={12} />
-            <span>DATASET: {namespace === "aryan" ? "ARYAN" : "NORMAL"}</span>
-          </div>
           <div className="status-item">
             <Target size={12} />
             <span>TOTAL: {stats.totalApplications}</span>
@@ -1172,5 +1135,13 @@ export default function AppliedJobsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AppliedJobsPage() {
+  return (
+    <AuthGuard>
+      <AppliedJobsInner />
+    </AuthGuard>
   );
 }
