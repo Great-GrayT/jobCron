@@ -42,6 +42,8 @@ export interface RegisterResponse {
   requiresVerification: boolean;
 }
 
+export type TestStatus = "success" | "fail" | null;
+
 export interface Feed {
   id: string;
   url: string;
@@ -49,6 +51,32 @@ export interface Feed {
   notify: boolean;
   shareToStats: boolean;
   active: boolean;
+  createdAt: string;
+  lastStatus?: TestStatus;
+  lastTestedAt?: string | null;
+  lastError?: string | null;
+}
+
+export type LogLevel = "success" | "error" | "warning" | "info";
+export interface LogLine {
+  level: LogLevel;
+  message: string;
+}
+export interface ActionResult {
+  ok: boolean;
+  logs: LogLine[];
+  data?: unknown;
+}
+
+export interface ScheduleRun {
+  id: string;
+  scheduleId: string;
+  job: string;
+  ok: boolean;
+  summary: string | null;
+  error: string | null;
+  durationMs: number;
+  trigger: string;
   createdAt: string;
 }
 
@@ -60,6 +88,9 @@ export interface Channel {
   botTokenMasked: string;
   chatId: string;
   active: boolean;
+  lastStatus?: TestStatus;
+  lastTestedAt?: string | null;
+  lastError?: string | null;
 }
 
 export interface GoatConfig {
@@ -84,4 +115,7 @@ export interface Schedule {
   scrapeSearch?: string | null;
   scrapeCountries?: string | null;
   scrapeTimeFilter?: number | null;
+  lastStatus?: TestStatus;
+  lastRunAt?: string | null;
+  lastError?: string | null;
 }

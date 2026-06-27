@@ -1,5 +1,30 @@
-import { api } from "./client";
-import type { Channel, ChannelKind, Feed, GoatConfig, Schedule, ScheduleJob } from "./types";
+import { api, ApiError } from "./client";
+import type {
+  ActionResult,
+  Channel,
+  ChannelKind,
+  Feed,
+  GoatConfig,
+  Schedule,
+  ScheduleJob,
+  ScheduleRun,
+} from "./types";
+
+// Test/send/run actions return {ok,logs} and use 422 for "ran but failed" — we
+// still want the logs in that case, so unwrap the ApiError body instead of throwing.
+async function action(path: string): Promise<ActionResult> {
+  try {
+    return await api.post<ActionResult>(path);
+  } catch (e) {
+    if (e instanceof ApiError && e.body && typeof e.body === "object" && "logs" in e.body) {
+      return e.body as ActionResult;
+    }
+    return {
+      ok: false,
+      logs: [{ level: "error", message: e instanceof Error ? e.message : "request failed" }],
+    };
+  }
+}
 
 // ---- feeds -------------------------------------------------------------------
 
@@ -12,6 +37,8 @@ export const feeds = {
     body: { name?: string; notify?: boolean; shareToStats?: boolean; active?: boolean },
   ) => api.patch<{ feed: Feed }>(`/api/me/feeds/${id}`, body).then((r) => r.feed),
   remove: (id: string) => api.delete<{ ok: boolean }>(`/api/me/feeds/${id}`).then(() => undefined),
+  test: (id: string) => action(`/api/me/feeds/${id}/test`),
+  send: (id: string) => action(`/api/me/feeds/${id}/send`),
 };
 
 // ---- telegram channels -------------------------------------------------------
@@ -22,6 +49,7 @@ export const channels = {
     api.post<{ channel: Channel }>("/api/me/channels", body).then((r) => r.channel),
   remove: (id: string) =>
     api.delete<{ ok: boolean }>(`/api/me/channels/${id}`).then(() => undefined),
+  test: (id: string) => action(`/api/me/channels/${id}/test`),
 };
 
 // ---- goat filters ------------------------------------------------------------
@@ -47,4 +75,7 @@ export const schedules = {
     api.patch<{ schedule: Schedule }>(`/api/me/schedules/${id}`, body).then((r) => r.schedule),
   remove: (id: string) =>
     api.delete<{ ok: boolean }>(`/api/me/schedules/${id}`).then(() => undefined),
+  run: (id: string) => action(`/api/me/schedules/${id}/run`),
+  runs: (id: string) =>
+    api.get<{ runs: ScheduleRun[] }>(`/api/me/schedules/${id}/runs`).then((r) => r.runs),
 };

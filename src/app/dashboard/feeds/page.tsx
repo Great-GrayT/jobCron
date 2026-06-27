@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Fragment, useEffect, useState } from "react";
+import { Loader2, Plus, Trash2, Plug, Send } from "lucide-react";
 import { feeds } from "@/lib/api/me";
-import type { Feed } from "@/lib/api/types";
+import type { Feed, LogLine } from "@/lib/api/types";
+import { StatusDot } from "@/components/StatusDot";
+import { LogPanel } from "@/components/LogPanel";
 
 export default function FeedsPage() {
   const [list, setList] = useState<Feed[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [logs, setLogs] = useState<Record<string, LogLine[]>>({});
   const [error, setError] = useState<string | null>(null);
 
   const [url, setUrl] = useState("");
@@ -87,6 +91,23 @@ export default function FeedsPage() {
     }
   };
 
+  const test = async (id: string) => {
+    setBusy(`test:${id}`);
+    const r = await feeds.test(id);
+    setLogs((p) => ({ ...p, [id]: r.logs }));
+    await load();
+    setBusy(null);
+  };
+
+  const send = async (id: string) => {
+    if (!confirm("Fetch this feed now, send new jobs to your Telegram, and save them?")) return;
+    setBusy(`send:${id}`);
+    const r = await feeds.send(id);
+    setLogs((p) => ({ ...p, [id]: r.logs }));
+    await load();
+    setBusy(null);
+  };
+
   return (
     <section className="panel">
       <h2>RSS FEEDS</h2>
@@ -119,20 +140,38 @@ export default function FeedsPage() {
       ) : (
         <table className="dash-table">
           <thead>
-            <tr><th>Name / URL</th><th>Notify</th><th>Share</th><th>Active</th><th></th></tr>
+            <tr><th></th><th>Name / URL</th><th>Notify</th><th>Share</th><th>Active</th><th></th></tr>
           </thead>
           <tbody>
             {list.map((f) => (
-              <tr key={f.id}>
-                <td>
-                  <div>{f.name || "—"}</div>
-                  <div className="muted" style={{ wordBreak: "break-all" }}>{f.url}</div>
-                </td>
-                <td><input type="checkbox" checked={f.notify} onChange={(e) => patch(f.id, { notify: e.target.checked })} /></td>
-                <td><input type="checkbox" checked={f.shareToStats} onChange={(e) => patch(f.id, { shareToStats: e.target.checked })} /></td>
-                <td><input type="checkbox" checked={f.active} onChange={(e) => patch(f.id, { active: e.target.checked })} /></td>
-                <td><button className="btn danger sm" onClick={() => remove(f.id)}><Trash2 size={14} /></button></td>
-              </tr>
+              <Fragment key={f.id}>
+                <tr>
+                  <td><StatusDot status={f.lastStatus ?? null} title="Last test/send" /></td>
+                  <td>
+                    <div>{f.name || "—"}</div>
+                    <div className="muted" style={{ wordBreak: "break-all" }}>{f.url}</div>
+                  </td>
+                  <td><input type="checkbox" aria-label="Notify" checked={f.notify} onChange={(e) => patch(f.id, { notify: e.target.checked })} /></td>
+                  <td><input type="checkbox" aria-label="Share to stats" checked={f.shareToStats} onChange={(e) => patch(f.id, { shareToStats: e.target.checked })} /></td>
+                  <td><input type="checkbox" aria-label="Active" checked={f.active} onChange={(e) => patch(f.id, { active: e.target.checked })} /></td>
+                  <td>
+                    <div className="cell-actions">
+                      <button type="button" className="btn ghost sm" onClick={() => test(f.id)} disabled={busy === `test:${f.id}`} title="Test feed fetch">
+                        {busy === `test:${f.id}` ? <Loader2 className="spin" size={14} /> : <Plug size={14} />} TEST
+                      </button>
+                      <button type="button" className="btn sm" onClick={() => send(f.id)} disabled={busy === `send:${f.id}`} title="Send to Telegram + save">
+                        {busy === `send:${f.id}` ? <Loader2 className="spin" size={14} /> : <Send size={14} />} SEND
+                      </button>
+                      <button type="button" className="btn danger sm" onClick={() => remove(f.id)} title="Remove feed"><Trash2 size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+                {logs[f.id] && (
+                  <tr>
+                    <td colSpan={6}><LogPanel logs={logs[f.id]} title="feed action log" /></td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>

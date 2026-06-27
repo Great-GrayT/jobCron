@@ -1264,3 +1264,20 @@
   outline: none;
   border-color: var(--terminal-accent, #00d4ff);
 }
+
+/* Stats scope toggle (TOTAL vs PERSONAL feeds) */
+.scope-toggle {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--terminal-border, #1a2332);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.scope-toggle .terminal-btn {
+  border: none;
+  border-radius: 0;
+}
+.scope-toggle .terminal-btn.active {
+  background: var(--terminal-accent, #00d4ff);
+  color: #04121a;
+}

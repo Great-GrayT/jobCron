@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Fragment, useEffect, useState } from "react";
+import { Loader2, Plus, Trash2, Play, History } from "lucide-react";
 import { schedules } from "@/lib/api/me";
-import type { Schedule, ScheduleJob } from "@/lib/api/types";
+import type { Schedule, ScheduleJob, LogLine, ScheduleRun } from "@/lib/api/types";
+import { StatusDot } from "@/components/StatusDot";
+import { LogPanel } from "@/components/LogPanel";
 
 const JOBS: ScheduleJob[] = ["check-jobs", "stats-ingest", "scrape"];
 
@@ -11,6 +13,10 @@ export default function SchedulesPage() {
   const [list, setList] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [logs, setLogs] = useState<Record<string, LogLine[]>>({});
+  const [history, setHistory] = useState<Record<string, ScheduleRun[]>>({});
+  const [openHistory, setOpenHistory] = useState<string | null>(null);
 
   const [job, setJob] = useState<ScheduleJob>("check-jobs");
   const [intervalMinutes, setInterval] = useState(15);
@@ -77,6 +83,33 @@ export default function SchedulesPage() {
     }
   };
 
+  const run = async (id: string) => {
+    setBusy(`run:${id}`);
+    const r = await schedules.run(id);
+    setLogs((p) => ({ ...p, [id]: r.logs }));
+    await load();
+    if (openHistory === id) loadHistory(id); // refresh open history
+    setBusy(null);
+  };
+
+  const loadHistory = async (id: string) => {
+    try {
+      const runs = await schedules.runs(id);
+      setHistory((p) => ({ ...p, [id]: runs }));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const toggleHistory = async (id: string) => {
+    if (openHistory === id) {
+      setOpenHistory(null);
+      return;
+    }
+    setOpenHistory(id);
+    await loadHistory(id);
+  };
+
   return (
     <section className="panel">
       <h2>SCHEDULES</h2>
@@ -123,29 +156,66 @@ export default function SchedulesPage() {
       ) : (
         <table className="dash-table">
           <thead>
-            <tr><th>Job</th><th>Interval</th><th>Scrape config</th><th>Enabled</th><th></th></tr>
+            <tr><th></th><th>Job</th><th>Interval</th><th>Scrape config</th><th>Enabled</th><th></th></tr>
           </thead>
           <tbody>
             {list.map((s) => (
-              <tr key={s.id}>
-                <td>{s.job}</td>
-                <td>
-                  <input
-                    type="number"
-                    min={5}
-                    value={s.intervalMinutes}
-                    style={{ width: 70 }}
-                    onChange={(e) => patch(s.id, { intervalMinutes: Math.max(5, Number(e.target.value)) })}
-                  />
-                </td>
-                <td className="muted">
-                  {s.job === "scrape"
-                    ? [s.scrapeSearch, s.scrapeCountries, s.scrapeTimeFilter ? `${s.scrapeTimeFilter}s` : null].filter(Boolean).join(" · ") || "—"
-                    : "—"}
-                </td>
-                <td><input type="checkbox" checked={s.enabled} onChange={(e) => patch(s.id, { enabled: e.target.checked })} /></td>
-                <td><button className="btn danger sm" onClick={() => remove(s.id)}><Trash2 size={14} /></button></td>
-              </tr>
+              <Fragment key={s.id}>
+                <tr>
+                  <td><StatusDot status={s.lastStatus ?? null} title="Last run" /></td>
+                  <td>{s.job}</td>
+                  <td>
+                    <input
+                      type="number"
+                      min={5}
+                      aria-label="Interval minutes"
+                      value={s.intervalMinutes}
+                      style={{ width: 70 }}
+                      onChange={(e) => patch(s.id, { intervalMinutes: Math.max(5, Number(e.target.value)) })}
+                    />
+                  </td>
+                  <td className="muted">
+                    {s.job === "scrape"
+                      ? [s.scrapeSearch, s.scrapeCountries, s.scrapeTimeFilter ? `${s.scrapeTimeFilter}s` : null].filter(Boolean).join(" · ") || "—"
+                      : "—"}
+                  </td>
+                  <td><input type="checkbox" aria-label="Enabled" checked={s.enabled} onChange={(e) => patch(s.id, { enabled: e.target.checked })} /></td>
+                  <td>
+                    <div className="cell-actions">
+                      <button type="button" className="btn sm" onClick={() => run(s.id)} disabled={busy === `run:${s.id}`} title="Run now">
+                        {busy === `run:${s.id}` ? <Loader2 className="spin" size={14} /> : <Play size={14} />} RUN
+                      </button>
+                      <button type="button" className="btn ghost sm" onClick={() => toggleHistory(s.id)} title="Run history">
+                        <History size={14} /> LOG
+                      </button>
+                      <button type="button" className="btn danger sm" onClick={() => remove(s.id)} title="Remove schedule"><Trash2 size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+                {logs[s.id] && (
+                  <tr><td colSpan={6}><LogPanel logs={logs[s.id]} title="run output" /></td></tr>
+                )}
+                {openHistory === s.id && (
+                  <tr>
+                    <td colSpan={6}>
+                      <div className="run-history">
+                        {(history[s.id] ?? []).length === 0 ? (
+                          <div className="run-row"><span className="muted">No runs recorded yet.</span></div>
+                        ) : (
+                          history[s.id].map((r) => (
+                            <div className="run-row" key={r.id}>
+                              <StatusDot status={r.ok ? "success" : "fail"} />
+                              <span className="run-when">{new Date(r.createdAt).toLocaleString()}</span>
+                              <span className="muted">{r.trigger} · {r.durationMs}ms</span>
+                              <span className="run-detail">{r.error ?? r.summary ?? "—"}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>

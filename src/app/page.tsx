@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 import {
   Briefcase,
   Radio,
   BarChart3,
   CheckSquare,
   LayoutDashboard,
+  LogIn,
+  UserPlus,
   Zap,
   Clock,
   Database,
@@ -25,6 +28,7 @@ import "./home.css";
 export default function Home() {
   const [logoClicks, setLogoClicks] = useState(0);
   const [glitchMode, setGlitchMode] = useState(false);
+  const { authenticated } = useAuth();
 
   // Easter egg: Multiple clicks on logo
   const handleLogoClick = () => {
@@ -58,18 +62,33 @@ export default function Home() {
           <span className="terminal-subtitle">Command Center</span>
         </div>
         <div className="terminal-topbar-right">
-          <Link href="/stats" className="terminal-btn">
-            <BarChart3 size={14} />
-            STATS
-          </Link>
-          <Link href="/applied" className="terminal-btn">
-            <CheckSquare size={14} />
-            APPLIED
-          </Link>
-          <Link href="/dashboard" className="terminal-btn">
-            <LayoutDashboard size={14} />
-            DASHBOARD
-          </Link>
+          {authenticated ? (
+            <>
+              <Link href="/stats" className="terminal-btn">
+                <BarChart3 size={14} />
+                STATS
+              </Link>
+              <Link href="/applied" className="terminal-btn">
+                <CheckSquare size={14} />
+                APPLIED
+              </Link>
+              <Link href="/dashboard" className="terminal-btn">
+                <LayoutDashboard size={14} />
+                DASHBOARD
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="terminal-btn">
+                <LogIn size={14} />
+                LOGIN
+              </Link>
+              <Link href="/register" className="terminal-btn">
+                <UserPlus size={14} />
+                SIGN UP
+              </Link>
+            </>
+          )}
           <ThemeToggle />
         </div>
       </header>
@@ -134,7 +153,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions — only for logged-in users (these routes are gated) */}
+        {authenticated && (
+        <>
         <div className="terminal-panel">
           <div className="panel-header">
             <LayoutDashboard size={14} />
@@ -197,6 +218,8 @@ export default function Home() {
             </Link>
           </div>
         </div>
+        </>
+        )}
 
         {/* System Information */}
         <div className="terminal-panel">

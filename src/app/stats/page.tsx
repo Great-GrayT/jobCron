@@ -69,6 +69,8 @@ export default function StatsPage() {
   const [jobs, setJobs] = useState<JobStatistic[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<string>('all');
+  // "public" = all shared feeds (default); "me" = only the user's own feeds.
+  const [scope, setScope] = useState<'public' | 'me'>('public');
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({ ...EMPTY_FILTERS });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [textSearch, setTextSearch] = useState<string>('');
@@ -114,9 +116,9 @@ export default function StatsPage() {
     setLoadingStep('CONNECTING TO DATA LAYER...');
     setLoadingProgress(15);
     const month = currentMonthStr();
-    const baseQ = { filters: EMPTY_FILTERS, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope: 'public' as const };
-    const allTimeQ = { filters: EMPTY_FILTERS, viewMode: 'all', selectedDate: null, scope: 'public' as const };
-    const monthQ = { filters: EMPTY_FILTERS, viewMode: 'current', selectedDate: null, scope: 'public' as const };
+    const baseQ = { filters: EMPTY_FILTERS, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope };
+    const allTimeQ = { filters: EMPTY_FILTERS, viewMode: 'all', selectedDate: null, scope };
+    const monthQ = { filters: EMPTY_FILTERS, viewMode: 'current', selectedDate: null, scope };
     setLoadingStep('LOADING MARKET STATISTICS...');
     setLoadingProgress(40);
     Promise.all([fetchStatistics(baseQ), fetchSummary(allTimeQ), fetchSummary(monthQ)])
@@ -147,7 +149,7 @@ export default function StatsPage() {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [viewMode, selectedDate, debouncedTextSearch, reloadKey]);
+  }, [viewMode, selectedDate, debouncedTextSearch, scope, reloadKey]);
 
   // Filtered load — aggregates + job rows for the active filter set.
   useEffect(() => {
@@ -155,7 +157,7 @@ export default function StatsPage() {
     setJobsLoading(true);
     setLoadingStep('LOADING JOB RECORDS...');
     setLoadingProgress(85);
-    const q = { filters: activeFilters, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope: 'public' as const };
+    const q = { filters: activeFilters, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope };
     Promise.all([
       fetchStatistics(q),
       fetchJobs(q, { pageSize: 200, withDescription: false }),
@@ -176,7 +178,7 @@ export default function StatsPage() {
         }
       });
     return () => { cancelled = true; };
-  }, [activeFilters, viewMode, selectedDate, debouncedTextSearch, reloadKey]);
+  }, [activeFilters, viewMode, selectedDate, debouncedTextSearch, scope, reloadKey]);
 
   // Filter management
   const toggleFilter = (category: keyof ActiveFilters, value: string) => {
@@ -737,6 +739,26 @@ export default function StatsPage() {
           <span className="terminal-subtitle">RECRUITMENT INTELLIGENCE TERMINAL</span>
         </div>
         <div className="terminal-topbar-right">
+          <div className="scope-toggle" role="group" aria-label="Stats scope">
+            <button
+              type="button"
+              onClick={() => setScope('public')}
+              className={`terminal-btn ${scope === 'public' ? 'active' : ''}`}
+              title="All shared feeds"
+            >
+              <Globe size={14} />
+              <span>TOTAL</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setScope('me')}
+              className={`terminal-btn ${scope === 'me' ? 'active' : ''}`}
+              title="Only feeds you use"
+            >
+              <Users size={14} />
+              <span>PERSONAL</span>
+            </button>
+          </div>
           <button
             onClick={loadStatistics}
             disabled={loading}

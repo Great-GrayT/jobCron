@@ -1,14 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, Save, Trash2 } from "lucide-react";
+import { Fragment, useEffect, useState } from "react";
+import { Loader2, Save, Trash2, Plug } from "lucide-react";
 import { channels } from "@/lib/api/me";
-import type { Channel, ChannelKind } from "@/lib/api/types";
+import type { Channel, ChannelKind, LogLine } from "@/lib/api/types";
+import { StatusDot } from "@/components/StatusDot";
+import { LogPanel } from "@/components/LogPanel";
 
 export default function TelegramPage() {
   const [list, setList] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [testing, setTesting] = useState<string | null>(null);
+  const [logs, setLogs] = useState<Record<string, LogLine[]>>({});
+
+  const test = async (id: string) => {
+    setTesting(id);
+    const r = await channels.test(id);
+    setLogs((p) => ({ ...p, [id]: r.logs }));
+    await load();
+    setTesting(null);
+  };
 
   const [kind, setKind] = useState<ChannelKind>("main");
   const [botToken, setBotToken] = useState("");
@@ -94,17 +106,32 @@ export default function TelegramPage() {
       ) : (
         <table className="dash-table">
           <thead>
-            <tr><th>Kind</th><th>Token</th><th>Chat ID</th><th>Active</th><th></th></tr>
+            <tr><th></th><th>Kind</th><th>Token</th><th>Chat ID</th><th>Active</th><th></th></tr>
           </thead>
           <tbody>
             {list.map((c) => (
-              <tr key={c.id}>
-                <td>{c.kind}</td>
-                <td className="muted">{c.botTokenMasked}</td>
-                <td>{c.chatId}</td>
-                <td>{c.active ? <span className="ok">yes</span> : "no"}</td>
-                <td><button className="btn danger sm" onClick={() => remove(c.id)}><Trash2 size={14} /></button></td>
-              </tr>
+              <Fragment key={c.id}>
+                <tr>
+                  <td><StatusDot status={c.lastStatus ?? null} title="Last test" /></td>
+                  <td>{c.kind}</td>
+                  <td className="muted">{c.botTokenMasked}</td>
+                  <td>{c.chatId}</td>
+                  <td>{c.active ? <span className="ok">yes</span> : "no"}</td>
+                  <td>
+                    <div className="cell-actions">
+                      <button className="btn ghost sm" onClick={() => test(c.id)} disabled={testing === c.id}>
+                        {testing === c.id ? <Loader2 className="spin" size={14} /> : <Plug size={14} />} TEST
+                      </button>
+                      <button className="btn danger sm" onClick={() => remove(c.id)}><Trash2 size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+                {logs[c.id] && (
+                  <tr>
+                    <td colSpan={6}><LogPanel logs={logs[c.id]} title={`${c.kind} test`} /></td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>

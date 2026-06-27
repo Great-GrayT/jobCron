@@ -1,6 +1,7 @@
 import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { RouteGuard } from '@/components/RouteGuard';
 import { Arimo } from 'next/font/google';
 
 const arimo = Arimo({
@@ -25,7 +26,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={arimo.variable}>
       <body>
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <RouteGuard>{children}</RouteGuard>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
