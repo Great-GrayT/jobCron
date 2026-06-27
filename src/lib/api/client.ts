@@ -89,6 +89,16 @@ export async function apiFetch<T = unknown>(
     throw new ApiError(401, "unauthorized");
   }
 
+  if (res.status === 429) {
+    const retry = res.headers.get("Retry-After");
+    throw new ApiError(
+      429,
+      retry
+        ? `Rate limit reached — wait ${retry}s and try again.`
+        : "Rate limit reached — wait a moment and try again.",
+    );
+  }
+
   const text = await res.text();
   let data: unknown = undefined;
   if (text) {

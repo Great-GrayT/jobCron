@@ -57,6 +57,8 @@
 .field input,
 .field select,
 .field textarea {
+  width: 100%;
+  box-sizing: border-box;
   background: var(--terminal-bg-secondary);
   border: 1px solid var(--terminal-border);
   border-radius: 6px;
@@ -188,7 +190,8 @@ table.dash-table th { color: var(--terminal-text-muted); font-weight: 600; font-
 
 /* ---- wide auth card + register form ---- */
 .auth-card.wide { max-width: 600px; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 0.75rem; margin-bottom: 0; }
+.grid2 > .field { margin-bottom: 1rem; }
 @media (max-width: 520px) { .grid2 { grid-template-columns: 1fr; } }
 
 .field.err input,
