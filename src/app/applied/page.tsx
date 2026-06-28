@@ -107,11 +107,17 @@ const formatDelayCompact = (minutes: number | null): string => {
 };
 
 function AppliedJobsInner() {
-  const [applications, setApplications] = useState<AppliedJob[]>([]);
+  const [allApplications, setAllApplications] = useState<AppliedJob[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
+
+  // Client-side filters (like the stats page) applied over the loaded set.
+  const [fq, setFq] = useState("");
+  const [fCompany, setFCompany] = useState("");
+  const [fIndustry, setFIndustry] = useState("");
+  const [fRole, setFRole] = useState("");
 
   const fetchApplications = async (month?: string) => {
     setLoading(true);
@@ -119,7 +125,7 @@ function AppliedJobsInner() {
     try {
       const res = await appliedApi.list(month);
       if (res.success) {
-        setApplications(res.data);
+        setAllApplications(res.data);
         setStats(res.stats);
       } else {
         setError("Failed to fetch applications");
@@ -130,6 +136,27 @@ function AppliedJobsInner() {
       setLoading(false);
     }
   };
+
+  // Filtered view feeds every chart + the table below (all read `applications`).
+  const applications = useMemo(() => {
+    const q = fq.trim().toLowerCase();
+    return allApplications.filter((a) => {
+      if (fCompany && a.company !== fCompany) return false;
+      if (fIndustry && (a.industry ?? "") !== fIndustry) return false;
+      if (fRole && (a.roleType ?? "") !== fRole) return false;
+      if (q) {
+        const hay = `${a.jobTitle} ${a.company} ${a.location}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [allApplications, fq, fCompany, fIndustry, fRole]);
+
+  const uniq = (vals: (string | undefined)[]) =>
+    Array.from(new Set(vals.filter((v): v is string => !!v))).sort();
+  const companyOptions = useMemo(() => uniq(allApplications.map((a) => a.company)), [allApplications]);
+  const industryOptions = useMemo(() => uniq(allApplications.map((a) => a.industry)), [allApplications]);
+  const roleOptions = useMemo(() => uniq(allApplications.map((a) => a.roleType)), [allApplications]);
 
   useEffect(() => {
     fetchApplications();
@@ -412,6 +439,34 @@ function AppliedJobsInner() {
               <Filter size={12} />
               <span>FILTER: {selectedMonth}</span>
             </div>
+          )}
+          {applications.length !== allApplications.length && (
+            <div className="status-item highlight">
+              <Filter size={12} />
+              <span>SHOWING: {applications.length}/{allApplications.length}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Filters */}
+      {!loading && allApplications.length > 0 && (
+        <div className="applied-filters">
+          <input className="af-input" placeholder="search title / company / location…" value={fq} onChange={(e) => setFq(e.target.value)} />
+          <select className="af-input" aria-label="Company" value={fCompany} onChange={(e) => setFCompany(e.target.value)}>
+            <option value="">All companies</option>
+            {companyOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select className="af-input" aria-label="Industry" value={fIndustry} onChange={(e) => setFIndustry(e.target.value)}>
+            <option value="">All industries</option>
+            {industryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select className="af-input" aria-label="Role type" value={fRole} onChange={(e) => setFRole(e.target.value)}>
+            <option value="">All roles</option>
+            {roleOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          {(fq || fCompany || fIndustry || fRole) && (
+            <button className="btn ghost sm" onClick={() => { setFq(""); setFCompany(""); setFIndustry(""); setFRole(""); }}>CLEAR</button>
           )}
         </div>
       )}

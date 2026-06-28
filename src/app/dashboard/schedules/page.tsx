@@ -6,6 +6,7 @@ import { schedules } from "@/lib/api/me";
 import type { Schedule, ScheduleJob, LogLine, ScheduleRun } from "@/lib/api/types";
 import { StatusDot } from "@/components/StatusDot";
 import { LogPanel } from "@/components/LogPanel";
+import { CronBuilder } from "@/components/CronBuilder";
 
 const JOBS: ScheduleJob[] = ["check-jobs", "stats-ingest", "scrape"];
 
@@ -20,6 +21,8 @@ export default function SchedulesPage() {
 
   const [job, setJob] = useState<ScheduleJob>("check-jobs");
   const [intervalMinutes, setInterval] = useState(15);
+  const [mode, setMode] = useState<"interval" | "cron">("interval");
+  const [cronExpr, setCronExpr] = useState("0 * * * *");
   const [scrapeSearch, setScrapeSearch] = useState("");
   const [scrapeCountries, setScrapeCountries] = useState("");
   const [scrapeTimeFilter, setScrapeTimeFilter] = useState(86400);
@@ -47,6 +50,7 @@ export default function SchedulesPage() {
       await schedules.create({
         job,
         intervalMinutes: Math.max(5, intervalMinutes),
+        cronExpr: mode === "cron" ? cronExpr.trim() : null,
         enabled: true,
         ...(job === "scrape"
           ? {
@@ -117,36 +121,48 @@ export default function SchedulesPage() {
 
       {error && <div className="auth-error">{error}</div>}
 
-      <form className="toolbar" onSubmit={add}>
-        <div className="field">
-          <label htmlFor="job">Job</label>
-          <select id="job" value={job} onChange={(e) => setJob(e.target.value as ScheduleJob)}>
-            {JOBS.map((j) => <option key={j} value={j}>{j}</option>)}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="iv">Interval (min)</label>
-          <input id="iv" type="number" min={5} value={intervalMinutes} onChange={(e) => setInterval(Number(e.target.value))} />
-        </div>
-        {job === "scrape" && (
-          <>
-            <div className="field" style={{ flex: 1 }}>
-              <label htmlFor="ss">Search</label>
-              <input id="ss" value={scrapeSearch} onChange={(e) => setScrapeSearch(e.target.value)} placeholder="terms" />
-            </div>
+      <form onSubmit={add}>
+        <div className="toolbar">
+          <div className="field">
+            <label htmlFor="job">Job</label>
+            <select id="job" value={job} onChange={(e) => setJob(e.target.value as ScheduleJob)}>
+              {JOBS.map((j) => <option key={j} value={j}>{j}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="mode">Trigger</label>
+            <select id="mode" value={mode} onChange={(e) => setMode(e.target.value as "interval" | "cron")}>
+              <option value="interval">Every N minutes</option>
+              <option value="cron">Cron expression</option>
+            </select>
+          </div>
+          {mode === "interval" && (
             <div className="field">
-              <label htmlFor="sc">Countries</label>
-              <input id="sc" value={scrapeCountries} onChange={(e) => setScrapeCountries(e.target.value)} placeholder="UK,US" />
+              <label htmlFor="iv">Interval (min)</label>
+              <input id="iv" type="number" min={5} value={intervalMinutes} onChange={(e) => setInterval(Number(e.target.value))} />
             </div>
-            <div className="field">
-              <label htmlFor="tf">Time window (s)</label>
-              <input id="tf" type="number" value={scrapeTimeFilter} onChange={(e) => setScrapeTimeFilter(Number(e.target.value))} />
-            </div>
-          </>
-        )}
-        <button className="btn" type="submit" disabled={adding}>
-          {adding ? <Loader2 className="spin" size={16} /> : <Plus size={16} />} ADD
-        </button>
+          )}
+          {job === "scrape" && (
+            <>
+              <div className="field" style={{ flex: 1 }}>
+                <label htmlFor="ss">Search</label>
+                <input id="ss" value={scrapeSearch} onChange={(e) => setScrapeSearch(e.target.value)} placeholder="terms" />
+              </div>
+              <div className="field">
+                <label htmlFor="sc">Countries</label>
+                <input id="sc" value={scrapeCountries} onChange={(e) => setScrapeCountries(e.target.value)} placeholder="UK,US" />
+              </div>
+              <div className="field">
+                <label htmlFor="tf">Time window (s)</label>
+                <input id="tf" type="number" value={scrapeTimeFilter} onChange={(e) => setScrapeTimeFilter(Number(e.target.value))} />
+              </div>
+            </>
+          )}
+          <button className="btn" type="submit" disabled={adding}>
+            {adding ? <Loader2 className="spin" size={16} /> : <Plus size={16} />} ADD
+          </button>
+        </div>
+        {mode === "cron" && <CronBuilder value={cronExpr} onChange={setCronExpr} />}
       </form>
 
       {loading ? (
@@ -165,14 +181,18 @@ export default function SchedulesPage() {
                   <td><StatusDot status={s.lastStatus ?? null} title="Last run" /></td>
                   <td>{s.job}</td>
                   <td>
-                    <input
-                      type="number"
-                      min={5}
-                      aria-label="Interval minutes"
-                      value={s.intervalMinutes}
-                      style={{ width: 70 }}
-                      onChange={(e) => patch(s.id, { intervalMinutes: Math.max(5, Number(e.target.value)) })}
-                    />
+                    {s.cronExpr ? (
+                      <code className="muted" title="cron expression">{s.cronExpr}</code>
+                    ) : (
+                      <input
+                        type="number"
+                        min={5}
+                        aria-label="Interval minutes"
+                        value={s.intervalMinutes}
+                        style={{ width: 70 }}
+                        onChange={(e) => patch(s.id, { intervalMinutes: Math.max(5, Number(e.target.value)) })}
+                      />
+                    )}
                   </td>
                   <td className="muted">
                     {s.job === "scrape"

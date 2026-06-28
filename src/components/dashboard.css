@@ -188,6 +188,64 @@ table.dash-table th { color: var(--terminal-text-muted); font-weight: 600; font-
 .muted { color: var(--terminal-text-muted); font-size: 0.8rem; }
 .ok { color: var(--color-success); }
 
+/* ---- avatar ---- */
+.avatar-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.avatar-img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--terminal-border);
+}
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--terminal-bg-secondary);
+  color: var(--terminal-accent);
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+.avatar-sm { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+
+/* ---- cron builder ---- */
+.cron-builder { border: 1px solid var(--terminal-border); border-radius: 8px; padding: 0.9rem; margin-top: 0.5rem; }
+.cron-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.cron-label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--terminal-text-secondary); margin: 0.7rem 0 0.35rem; }
+.cron-toggles { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.chip-toggle {
+  background: var(--terminal-bg-secondary);
+  border: 1px solid var(--terminal-border);
+  color: var(--terminal-text-secondary);
+  border-radius: 5px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.chip-toggle.on { background: var(--color-blue-primary); color: #fff; border-color: var(--color-blue-primary); }
+
+/* ---- nav message badge + admin link ---- */
+.nav-badge {
+  background: var(--color-error);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.6rem;
+  padding: 0 0.35rem;
+  margin-left: auto;
+}
+/* ---- message center ---- */
+.msg-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.msg-item { border: 1px solid var(--terminal-border); border-radius: 8px; padding: 0.7rem 0.8rem; background: var(--terminal-bg-panel); }
+.msg-item.unread { border-left: 3px solid var(--terminal-accent); }
+.msg-head { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8rem; margin-bottom: 0.3rem; }
+.msg-who { font-weight: 600; }
+.msg-when { color: var(--terminal-text-muted); margin-left: auto; font-size: 0.7rem; }
+.msg-body { font-size: 0.85rem; color: var(--terminal-text); white-space: pre-wrap; word-break: break-word; }
+.msg-subject { font-size: 0.8rem; color: var(--terminal-accent); }
+.tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; }
+.tab { padding: 0.4rem 0.8rem; border: 1px solid var(--terminal-border); border-radius: 6px; background: none; color: var(--terminal-text-secondary); cursor: pointer; font-size: 0.8rem; }
+.tab.active { background: var(--terminal-bg-secondary); color: var(--terminal-accent); }
+
 /* ---- status dot ---- */
 .status-dot {
   display: inline-block;

@@ -16,6 +16,9 @@ export interface User {
   country: string | null;
   city: string | null;
   emailVerified: boolean;
+  avatarUrl: string | null;
+  avatarData: string | null;
+  revokedPages: string[];
 }
 
 export interface AuthResponse {
@@ -35,6 +38,8 @@ export interface ProfileInput {
   speciality?: string;
   country?: string;
   city?: string;
+  avatarUrl?: string;
+  avatarData?: string;
 }
 
 export interface RegisterResponse {
@@ -115,7 +120,54 @@ export interface Schedule {
   scrapeSearch?: string | null;
   scrapeCountries?: string | null;
   scrapeTimeFilter?: number | null;
+  cronExpr?: string | null;
   lastStatus?: TestStatus;
   lastRunAt?: string | null;
   lastError?: string | null;
+}
+
+// ---- messaging ----
+export interface MessageUser {
+  id: string;
+  email: string;
+  username: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+}
+export interface Message {
+  id: string;
+  fromUserId: string;
+  toUserId: string | null;
+  toAdmin: boolean;
+  subject: string | null;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+  from: MessageUser;
+  to: MessageUser | null;
+}
+
+// ---- admin ----
+export interface AdminUser {
+  id: string;
+  email: string;
+  username: string | null;
+  name: string | null;
+  role: string;
+  emailVerified: boolean;
+  revokedPages: string[];
+  avatarUrl: string | null;
+  createdAt: string;
+  _count: { feeds: number; channels: number; schedules: number; appliedJobs: number };
+}
+export interface AdminUserDetail {
+  user: AdminUser & {
+    phoneDialCode: string | null; phoneNumber: string | null;
+    mobileDialCode: string | null; mobileNumber: string | null;
+    speciality: string | null; country: string | null; city: string | null;
+  };
+  feeds: Feed[];
+  channels: Channel[];
+  schedules: Schedule[];
+  applied: import("./applied").AppliedJob[];
 }

@@ -66,6 +66,7 @@ export const schedules = {
   create: (body: {
     job: ScheduleJob;
     intervalMinutes: number;
+    cronExpr?: string | null;
     enabled?: boolean;
     scrapeSearch?: string;
     scrapeCountries?: string;

@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   LogIn,
   UserPlus,
+  MessageSquare,
   Zap,
   Clock,
   Database,
@@ -75,6 +76,10 @@ export default function Home() {
               <Link href="/dashboard" className="terminal-btn">
                 <LayoutDashboard size={14} />
                 DASHBOARD
+              </Link>
+              <Link href="/messages" className="terminal-btn">
+                <MessageSquare size={14} />
+                MESSAGES
               </Link>
             </>
           ) : (
