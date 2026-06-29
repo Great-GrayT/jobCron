@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Loader2, Send, ArrowLeft, Inbox, Mail } from "lucide-react";
+import { Loader2, Send, Inbox, Mail } from "lucide-react";
 import { messages } from "@/lib/api/messages";
 import type { Message } from "@/lib/api/types";
 import { AuthGuard } from "@/components/AuthGuard";
+import { AdminShell } from "@/components/AdminShell";
+import { featuresMenu } from "@/components/navMenu";
+import { useAuth } from "@/context/AuthContext";
 import "@/components/dashboard.css";
 
 function MessagesInner() {
+  const { user } = useAuth();
   const [inbox, setInbox] = useState<Message[]>([]);
   const [sent, setSent] = useState<Message[]>([]);
   const [tab, setTab] = useState<"inbox" | "sent" | "compose">("inbox");
@@ -85,14 +88,9 @@ function MessagesInner() {
   );
 
   return (
-    <div className="dash">
-      <header className="dash-header">
-        <Link href="/" className="brand">◆ JOBCRON</Link>
-        <Link href="/" className="btn ghost sm"><ArrowLeft size={14} /> HOME</Link>
-      </header>
-      <div className="dash-body" style={{ display: "block" }}>
-        <section className="panel">
-          <h2>MESSAGES</h2>
+    <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Features", "Messages"]} title="Messages">
+      <div className="admin-card">
+        <div className="card-content">
           <div className="tabs">
             <button className={`tab ${tab === "inbox" ? "active" : ""}`} onClick={() => setTab("inbox")}><Inbox size={14} /> Inbox</button>
             <button className={`tab ${tab === "sent" ? "active" : ""}`} onClick={() => setTab("sent")}><Mail size={14} /> Sent</button>
@@ -120,14 +118,14 @@ function MessagesInner() {
                 <label>Message</label>
                 <textarea rows={5} value={body} onChange={(e) => setBody(e.target.value)} required />
               </div>
-              <button className="btn" type="submit" disabled={busy}>
-                {busy ? <Loader2 className="spin" size={16} /> : <Send size={16} />} SEND
+              <button className="button is-primary" type="submit" disabled={busy}>
+                {busy ? <Loader2 className="spin" size={16} /> : <Send size={16} />} Send
               </button>
             </form>
           )}
-        </section>
+        </div>
       </div>
-    </div>
+    </AdminShell>
   );
 }
 

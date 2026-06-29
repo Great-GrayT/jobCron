@@ -1281,3 +1281,31 @@
   background: var(--terminal-accent, #00d4ff);
   color: #04121a;
 }
+
+/* ============================================================
+   Admin One reskin overrides — render inside AdminShell main.
+   ============================================================ */
+.terminal-page {
+  min-height: 0;
+  background: transparent;
+  padding: 0;
+}
+.terminal-statusbar {
+  background: var(--terminal-bg-panel);
+  border: 1px solid var(--terminal-border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.25rem;
+}
+.terminal-panel {
+  background: var(--terminal-bg-panel);
+  border: 1px solid var(--terminal-border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+}
+.terminal-panel .panel-header {
+  border-bottom: 1px solid var(--terminal-border);
+  color: var(--terminal-text);
+  font-weight: 700;
+}
+.scope-toggle { display: inline-flex; gap: 0.4rem; }

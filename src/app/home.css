@@ -646,3 +646,75 @@
   background: var(--terminal-accent);
   color: var(--terminal-bg-header);
 }
+
+/* ============================================================
+   Admin One reskin overrides (landing)
+   ============================================================ */
+.terminal-page { font-family: var(--font-sans); }
+
+/* Top bar → clean white navbar */
+.terminal-topbar {
+  background: var(--terminal-bg-panel);
+  border-bottom: 1px solid var(--terminal-border);
+  box-shadow: var(--shadow-sm);
+  padding: 0.6rem 1.25rem;
+}
+.terminal-topbar-left { color: var(--terminal-text); }
+.terminal-title { color: var(--terminal-text); letter-spacing: 0.04em; font-weight: 800; }
+.terminal-logo { color: var(--terminal-accent); }
+
+/* Top-bar buttons → calm ghost buttons (template style) */
+.terminal-btn {
+  background: var(--terminal-bg-panel);
+  border: 1px solid var(--color-border-light);
+  color: var(--terminal-text);
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.terminal-btn:hover {
+  background: var(--color-blue-primary);
+  border-color: var(--color-blue-primary);
+  color: #fff;
+}
+
+/* Status bar strip */
+.terminal-statusbar {
+  background: var(--terminal-bg-panel);
+  border-bottom: 1px solid var(--terminal-border);
+}
+
+/* Grid → roomy tiles */
+.terminal-grid { gap: 1.25rem; padding: 1.5rem; }
+
+/* Panels → cards */
+.terminal-panel {
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.terminal-panel:hover { border-color: var(--terminal-border); }
+.panel-header {
+  background: transparent;
+  color: var(--terminal-text);
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  padding: 0.85rem 1rem;
+}
+
+/* Stat tiles */
+.stat-card-value { color: var(--terminal-text); }
+.stat-card-icon svg { color: var(--color-blue-primary); }
+
+/* Action button fills card width, primary */
+.action-btn {
+  background: var(--color-blue-primary);
+  border-color: var(--color-blue-primary);
+  color: #fff;
+}
+.action-btn:hover { background: var(--color-blue-secondary); border-color: var(--color-blue-secondary); color: #fff; }
+
+/* Footer */
+.terminal-footer { background: var(--terminal-bg-panel); }

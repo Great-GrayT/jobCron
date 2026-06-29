@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, ArrowLeft, Plug, Send, Play, ShieldCheck } from "lucide-react";
+import { Loader2, Plug, Send, Play, ShieldCheck } from "lucide-react";
 import { admin, GATED_PAGES } from "@/lib/api/admin";
 import type { AdminUser, AdminUserDetail, LogLine } from "@/lib/api/types";
 import { useAuth } from "@/context/AuthContext";
 import { AuthGuard } from "@/components/AuthGuard";
+import { AdminShell } from "@/components/AdminShell";
+import { featuresMenu } from "@/components/navMenu";
 import { StatusDot } from "@/components/StatusDot";
 import { LogPanel } from "@/components/LogPanel";
 import "@/components/dashboard.css";
@@ -62,12 +64,8 @@ function AdminInner() {
   }
 
   return (
-    <div className="dash">
-      <header className="dash-header">
-        <Link href="/" className="brand">◆ JOBCRON · ADMIN</Link>
-        <Link href="/" className="btn ghost sm"><ArrowLeft size={14} /> HOME</Link>
-      </header>
-      <div className="dash-body">
+    <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Admin", "Users"]} title="Admin">
+      <div className="admin-two-col">
         <div className="dash-nav" style={{ minWidth: 240 }}>
           <h2 style={{ fontSize: "0.8rem" }}>USERS</h2>
           {loading ? <Loader2 className="spin" size={16} /> : users.map((u) => (
@@ -167,7 +165,7 @@ function AdminInner() {
           )}
         </main>
       </div>
-    </div>
+    </AdminShell>
   );
 }
 

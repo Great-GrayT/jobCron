@@ -29,16 +29,17 @@
   max-width: 420px;
   background: var(--terminal-bg-panel);
   border: 1px solid var(--terminal-border);
-  border-radius: 10px;
+  border-radius: 6px;
   padding: 2rem;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-lg);
 }
 .auth-card h1 {
-  font-family: var(--font-code);
-  font-size: 1.25rem;
-  color: var(--terminal-accent);
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--terminal-text);
   margin: 0 0 0.25rem;
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
 }
 .auth-card .sub {
   color: var(--terminal-text-muted);
@@ -156,14 +157,29 @@
 .dash-nav a.active { background: var(--terminal-bg-secondary); color: var(--terminal-accent); }
 .dash-main { flex: 1; min-width: 0; }
 
+/* admin two-column (user list + detail) inside AdminShell */
+.admin-two-col { display: flex; gap: 1.5rem; align-items: flex-start; }
+.admin-two-col .dash-nav { position: sticky; top: calc(var(--navbar-height, 56px) + 1rem); }
+@media (max-width: 768px) { .admin-two-col { flex-direction: column; } .admin-two-col .dash-nav { position: static; width: 100%; } }
+
 .panel {
   background: var(--terminal-bg-panel);
   border: 1px solid var(--terminal-border);
-  border-radius: 10px;
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
   padding: 1.5rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
-.panel h2 { font-family: var(--font-code); font-size: 1rem; margin: 0 0 1rem; color: var(--terminal-accent); }
+.panel h2 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--terminal-border);
+  color: var(--terminal-text);
+  letter-spacing: 0;
+}
 .panel .hint { color: var(--terminal-text-muted); font-size: 0.8rem; margin-bottom: 1rem; }
 
 .row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
@@ -172,10 +188,18 @@
 table.dash-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 table.dash-table th, table.dash-table td {
   text-align: left;
-  padding: 0.55rem 0.6rem;
+  padding: 0.6rem 0.65rem;
   border-bottom: 1px solid var(--terminal-border);
 }
-table.dash-table th { color: var(--terminal-text-muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
+table.dash-table th {
+  color: var(--terminal-text-muted);
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom-width: 2px;
+}
+table.dash-table tbody tr:hover { background: var(--terminal-hover); }
 
 .chip-input { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.5rem; border: 1px solid var(--terminal-border); border-radius: 6px; background: var(--terminal-bg-secondary); }
 .chip { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--terminal-bg-tertiary, #242b3d); border-radius: 4px; padding: 0.2rem 0.45rem; font-size: 0.75rem; }

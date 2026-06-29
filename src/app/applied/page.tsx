@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
 import {
-  ArrowLeft,
   RefreshCw,
   Loader2,
   Briefcase,
@@ -33,8 +31,10 @@ import {
   ComposedChart,
   Area,
 } from "recharts";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { AuthGuard } from "@/components/AuthGuard";
+import { AdminShell } from "@/components/AdminShell";
+import { featuresMenu } from "@/components/navMenu";
+import { useAuth } from "@/context/AuthContext";
 import { applied as appliedApi } from "@/lib/api/applied";
 import "./applied.css";
 
@@ -107,6 +107,7 @@ const formatDelayCompact = (minutes: number | null): string => {
 };
 
 function AppliedJobsInner() {
+  const { user } = useAuth();
   const [allApplications, setAllApplications] = useState<AppliedJob[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -381,41 +382,19 @@ function AppliedJobsInner() {
     };
   }, [applications]);
 
-  return (
-    <div className="terminal-page">
-      {/* Top Bar */}
-      <div className="terminal-topbar">
-        <div className="terminal-topbar-left">
-          <Briefcase size={20} />
-          <span className="terminal-title">APPLICATION TRACKER</span>
-          <span className="terminal-separator">|</span>
-          <span className="terminal-subtitle">JOB APPLICATION ANALYTICS</span>
-        </div>
-        <div className="terminal-topbar-right">
-          <button
-            onClick={() => fetchApplications(selectedMonth || undefined)}
-            disabled={loading}
-            className={`terminal-btn ${loading ? "loading" : ""}`}
-          >
-            {loading ? (
-              <Loader2 size={14} className="spin" />
-            ) : (
-              <RefreshCw size={14} />
-            )}
-            <span>REFRESH</span>
-          </button>
-          <Link href="/stats" className="terminal-btn">
-            <BarChart3 size={14} />
-            <span>STATS</span>
-          </Link>
-          <Link href="/" className="terminal-btn">
-            <ArrowLeft size={14} />
-            <span>HOME</span>
-          </Link>
-          <ThemeToggle />
-        </div>
-      </div>
+  const heroActions = (
+    <button
+      onClick={() => fetchApplications(selectedMonth || undefined)}
+      disabled={loading}
+      className="button is-primary is-small"
+    >
+      {loading ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}
+      <span>Refresh</span>
+    </button>
+  );
 
+  return (
+    <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Features", "Tracking"]} title="Application Tracker" actions={heroActions}>
       {/* Status Bar */}
       {stats && (
         <div className="terminal-statusbar">
@@ -1189,7 +1168,7 @@ function AppliedJobsInner() {
           )}
         </div>
       )}
-    </div>
+    </AdminShell>
   );
 }
 

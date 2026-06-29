@@ -13,12 +13,14 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark");
+  // Default to the light "Admin One" look; users can still switch to dark/system.
+  const [theme, setTheme] = useState<Theme>("light");
+  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light");
 
   useEffect(() => {
-    // Load saved theme from localStorage
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
+    // Load saved theme. NOTE: key bumped to v2 so the Admin One light redesign
+    // becomes the default even for returning users who previously chose dark.
+    const savedTheme = localStorage.getItem("theme-v2") as Theme | null;
     if (savedTheme && ["dark", "light", "system"].includes(savedTheme)) {
       setTheme(savedTheme);
     }
@@ -48,7 +50,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const handleSetTheme = (newTheme: Theme) => {
     setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
+    localStorage.setItem("theme-v2", newTheme);
   };
 
   return (

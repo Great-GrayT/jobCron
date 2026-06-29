@@ -10,53 +10,63 @@
 @import "../components/SearchFilterPanel.css";
 
 :root {
-  /* Core Colors - Dark Grey, White, Blue */
-  --color-bg-primary: #0f1419; /* Deep dark grey - main background */
-  --color-bg-secondary: #1a1f2e; /* Dark grey - cards/sections */
-  --color-bg-tertiary: #242b3d; /* Medium dark grey - hover states */
+  /* ===== Admin One (Bulma) palette — LIGHT is the default look ===== */
+  /* Core Colors */
+  --color-bg-primary: #f8f8f8; /* body background */
+  --color-bg-secondary: #ffffff; /* cards / sections */
+  --color-bg-tertiary: #f5f6f7; /* hover / inset surfaces */
 
-  --color-blue-primary: #3b82f6; /* Primary blue - main actions */
-  --color-blue-secondary: #2563eb; /* Darker blue - hover states */
-  --color-blue-accent: #60a5fa; /* Light blue - highlights */
-  --color-blue-glow: rgba(59, 130, 246, 0.3);
+  /* "blue-primary" tokens drive the main action buttons — template primary is turquoise */
+  --color-blue-primary: #00d1b2; /* turquoise primary */
+  --color-blue-secondary: #00c4a7; /* darker turquoise - hover */
+  --color-blue-accent: #3273dc; /* template link blue */
+  --color-blue-glow: rgba(0, 209, 178, 0.25);
 
   --color-white: #ffffff;
-  --color-text-primary: #e4e6eb; /* Off-white for main text */
-  --color-text-secondary: #9ca3af; /* Grey for secondary text */
-  --color-text-muted: #6b7280; /* Muted grey for hints */
+  --color-text-primary: #2e323a; /* base ink */
+  --color-text-secondary: #5b6066; /* secondary text */
+  --color-text-muted: #8b9096; /* hints */
 
   /* Semantic Colors */
-  --color-success: #10b981;
-  --color-success-glow: rgba(16, 185, 129, 0.3);
-  --color-warning: #f59e0b;
-  --color-warning-glow: rgba(245, 158, 11, 0.3);
-  --color-error: #ef4444;
-  --color-error-glow: rgba(239, 68, 68, 0.3);
-  --color-info: #06b6d4;
+  --color-success: #48c774;
+  --color-success-glow: rgba(72, 199, 116, 0.25);
+  --color-warning: #ffdd57;
+  --color-warning-glow: rgba(255, 221, 87, 0.25);
+  --color-error: #f14668;
+  --color-error-glow: rgba(241, 70, 104, 0.25);
+  --color-info: #3298dc;
 
-  /* Borders & Shadows */
-  --color-border: #232934;
-  --color-border-light: #8294ac;
+  /* Borders */
+  --color-border: rgba(24, 28, 33, 0.08);
+  --color-border-light: rgba(24, 28, 33, 0.12);
 
-  /* Terminal Theme Colors (Dark) */
-  --terminal-bg: #0a0e1a;
-  --terminal-bg-secondary: #0f1419;
-  --terminal-bg-panel: #0f1419;
-  --terminal-bg-header: #000000;
-  --terminal-border: #1a2332;
-  --terminal-accent: #00d4ff;
-  --terminal-accent-secondary: #00ff88;
-  --terminal-text: #e5e7eb;
-  --terminal-text-secondary: #9ca3af;
-  --terminal-text-muted: #6b7280;
-  --terminal-hover: #1a233220;
-  --terminal-scanline: rgba(59, 130, 246, 0.02);
-  --terminal-grid-opacity: 0.03;
+  /* Sidebar stays dark in BOTH themes (template signature) */
+  --aside-bg: #2e323a;
+  --aside-tools-bg: #23262c;
+  --aside-label: #8a9097;
+  --aside-item: #b5bcc4;
+  --aside-item-hover-bg: #282b32;
+  --aside-item-active-bg: #292c33;
 
-  /* Font Stack */
-  --font-sans: var(--font-arimo), "Arimo", sans-serif;
-  --font-mono: var(--font-arimo), "Arimo", sans-serif;
-  --font-display: var(--font-arimo), "Arimo", sans-serif;
+  /* Terminal Theme tokens remapped to the light template surfaces */
+  --terminal-bg: #f8f8f8;
+  --terminal-bg-secondary: #f5f6f7;
+  --terminal-bg-panel: #ffffff;
+  --terminal-bg-header: #ffffff;
+  --terminal-border: rgba(24, 28, 33, 0.08);
+  --terminal-accent: #00d1b2;
+  --terminal-accent-secondary: #3273dc;
+  --terminal-text: #2e323a;
+  --terminal-text-secondary: #5b6066;
+  --terminal-text-muted: #8b9096;
+  --terminal-hover: rgba(24, 28, 33, 0.03);
+  --terminal-scanline: transparent;
+  --terminal-grid-opacity: 0;
+
+  /* Font Stack — Nunito to match the template */
+  --font-sans: var(--font-nunito), "Nunito", "Arimo", sans-serif;
+  --font-mono: var(--font-nunito), "Nunito", "Arimo", sans-serif;
+  --font-display: var(--font-nunito), "Nunito", "Arimo", sans-serif;
   --font-code: "JetBrains Mono", "IBM Plex Mono", "Courier New", monospace;
 
   /* Spacing */
@@ -87,56 +97,96 @@
   --shadow-success: 0 0 20px var(--color-success-glow);
 }
 
-/* Light Theme */
+/* Light Theme (explicit) — mirrors :root template defaults */
 [data-theme="light"] {
-  /* Core Colors - Light Theme */
-  --color-bg-primary: #f8fafc;
+  --color-bg-primary: #f8f8f8;
   --color-bg-secondary: #ffffff;
-  --color-bg-tertiary: #f1f5f9;
+  --color-bg-tertiary: #f5f6f7;
 
-  --color-blue-primary: #2563eb;
-  --color-blue-secondary: #1d4ed8;
-  --color-blue-accent: #3b82f6;
-  --color-blue-glow: rgba(37, 99, 235, 0.2);
+  --color-blue-primary: #00d1b2;
+  --color-blue-secondary: #00c4a7;
+  --color-blue-accent: #3273dc;
+  --color-blue-glow: rgba(0, 209, 178, 0.25);
 
   --color-white: #ffffff;
-  --color-text-primary: #1e293b;
-  --color-text-secondary: #475569;
-  --color-text-muted: #64748b;
+  --color-text-primary: #2e323a;
+  --color-text-secondary: #5b6066;
+  --color-text-muted: #8b9096;
 
-  /* Semantic Colors - Light */
-  --color-success: #059669;
-  --color-success-glow: rgba(5, 150, 105, 0.2);
-  --color-warning: #d97706;
-  --color-warning-glow: rgba(217, 119, 6, 0.2);
-  --color-error: #dc2626;
-  --color-error-glow: rgba(220, 38, 38, 0.2);
-  --color-info: #0891b2;
+  --color-success: #48c774;
+  --color-success-glow: rgba(72, 199, 116, 0.25);
+  --color-warning: #ffdd57;
+  --color-warning-glow: rgba(255, 221, 87, 0.25);
+  --color-error: #f14668;
+  --color-error-glow: rgba(241, 70, 104, 0.25);
+  --color-info: #3298dc;
 
-  /* Borders & Shadows - Light */
-  --color-border: #a5b5c8;
-  --color-border-light: #a7b6c5;
+  --color-border: rgba(24, 28, 33, 0.08);
+  --color-border-light: rgba(24, 28, 33, 0.12);
 
-  /* Terminal Theme Colors (Light) */
-  --terminal-bg: #f8fafc;
-  --terminal-bg-secondary: #f1f5f9;
+  --terminal-bg: #f8f8f8;
+  --terminal-bg-secondary: #f5f6f7;
   --terminal-bg-panel: #ffffff;
-  --terminal-bg-header: hsla(0, 0%, 73%, 0.799);
-  --terminal-border: #e2e8f0;
-  --terminal-accent: #2563eb;
-  --terminal-accent-secondary: #059669;
-  --terminal-text: #1e293b;
-  --terminal-text-secondary: #475569;
-  --terminal-text-muted: #64748b;
-  --terminal-hover: #f1f5f920;
-  --terminal-scanline: rgba(37, 99, 235, 0.02);
-  --terminal-grid-opacity: 0.02;
+  --terminal-bg-header: #ffffff;
+  --terminal-border: rgba(24, 28, 33, 0.08);
+  --terminal-accent: #00d1b2;
+  --terminal-accent-secondary: #3273dc;
+  --terminal-text: #2e323a;
+  --terminal-text-secondary: #5b6066;
+  --terminal-text-muted: #8b9096;
+  --terminal-hover: rgba(24, 28, 33, 0.03);
 
-  /* Shadows - Light */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.12);
+  --shadow-blue: 0 0 16px var(--color-blue-glow);
+  --shadow-success: 0 0 16px var(--color-success-glow);
+}
+
+/* Dark Theme — kept for the toggle. Sidebar still uses --aside-* (dark) from :root. */
+[data-theme="dark"] {
+  --color-bg-primary: #0f1419;
+  --color-bg-secondary: #1a1f2e;
+  --color-bg-tertiary: #242b3d;
+
+  --color-blue-primary: #00d1b2;
+  --color-blue-secondary: #00b89d;
+  --color-blue-accent: #4fd1c5;
+  --color-blue-glow: rgba(0, 209, 178, 0.3);
+
+  --color-white: #ffffff;
+  --color-text-primary: #e4e6eb;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+
+  --color-success: #48c774;
+  --color-success-glow: rgba(72, 199, 116, 0.3);
+  --color-warning: #ffdd57;
+  --color-warning-glow: rgba(255, 221, 87, 0.3);
+  --color-error: #f14668;
+  --color-error-glow: rgba(241, 70, 104, 0.3);
+  --color-info: #3298dc;
+
+  --color-border: #232934;
+  --color-border-light: #2c3442;
+
+  --terminal-bg: #0a0e1a;
+  --terminal-bg-secondary: #0f1419;
+  --terminal-bg-panel: #11161f;
+  --terminal-bg-header: #0c1019;
+  --terminal-border: #1a2332;
+  --terminal-accent: #00d1b2;
+  --terminal-accent-secondary: #4fd1c5;
+  --terminal-text: #e5e7eb;
+  --terminal-text-secondary: #9ca3af;
+  --terminal-text-muted: #6b7280;
+  --terminal-hover: rgba(255, 255, 255, 0.04);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
   --shadow-blue: 0 0 20px var(--color-blue-glow);
   --shadow-success: 0 0 20px var(--color-success-glow);
 }
@@ -182,10 +232,9 @@ body::before {
     linear-gradient(var(--color-border) 1px, transparent 1px),
     linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
   background-size: 50px 50px;
-  opacity: 0.05;
+  opacity: var(--terminal-grid-opacity, 0);
   z-index: -1;
   pointer-events: none;
-  animation: gridPulse 20s ease-in-out infinite;
 }
 
 @keyframes gridPulse {
@@ -198,25 +247,8 @@ body::before {
   }
 }
 
-/* Scanline effect (subtle) */
-body::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(59, 130, 246, 0.02) 0px,
-    transparent 1px,
-    transparent 2px,
-    rgba(59, 130, 246, 0.02) 3px
-  );
-  z-index: -1;
-  pointer-events: none;
-  animation: scanline 8s linear infinite;
-}
+/* Scanline effect removed in the Admin One look (kept selector empty for safety) */
+body::after { content: none; }
 
 @keyframes scanline {
   0% {
@@ -238,44 +270,25 @@ h4,
 h5,
 h6 {
   font-family: var(--font-display);
-  font-weight: 600;
-  line-height: 1.2;
-  color: var(--color-white);
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
 }
 
 h1 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   margin-bottom: var(--spacing-lg);
-  background: linear-gradient(
-    135deg,
-    var(--color-white) 0%,
-    var(--color-blue-accent) 100%
-  );
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: titleShimmer 3s ease-in-out infinite;
-}
-
-@keyframes titleShimmer {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.2);
-  }
 }
 
 h2 {
-  font-size: 1.875rem;
+  font-size: 1.5rem;
   margin-bottom: var(--spacing-md);
-  color: var(--color-blue-accent);
+  color: var(--color-text-primary);
 }
 
 h3 {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   margin-bottom: var(--spacing-md);
 }
 
@@ -287,28 +300,11 @@ p {
 a {
   color: var(--color-blue-accent);
   text-decoration: none;
-  transition: all var(--transition-fast);
-  position: relative;
+  transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--color-white);
-  text-shadow: 0 0 8px var(--color-blue-glow);
-}
-
-a::after {
-  content: "";
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: var(--color-blue-primary);
-  transition: width var(--transition-base);
-}
-
-a:hover::after {
-  width: 100%;
+  color: var(--color-blue-secondary);
 }
 
 code {
@@ -325,89 +321,61 @@ code {
    BUTTONS
    ======================================== */
 
-.btn {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--radius-md);
-  border: none;
+/* Bulma-style buttons (template look): solid, calm, icon+label */
+.btn,
+.button {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all var(--transition-base);
-  position: relative;
-  overflow: hidden;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.875rem;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  font-size: 0.9rem;
+  line-height: 1.2;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  box-shadow: var(--shadow-md);
-}
-
-.btn::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%);
-  transition:
-    width 0.6s,
-    height 0.6s;
-}
-
-.btn:hover::before {
-  width: 300px;
-  height: 300px;
-}
-
-.btn-primary {
+  justify-content: center;
+  gap: 0.4rem;
   background: var(--color-blue-primary);
-  color: var(--color-white);
-  box-shadow: 0 0 0 0 var(--color-blue-glow);
+  color: #fff;
+  white-space: nowrap;
 }
 
-.btn-primary:hover {
-  background: var(--color-blue-secondary);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-blue), var(--shadow-lg);
-}
+.btn:hover,
+.button:hover { background: var(--color-blue-secondary); }
 
-.btn-primary:active {
-  transform: translateY(0);
-}
+/* size + style variants shared by .btn and .button */
+.btn.sm, .button.is-small { padding: 0.32rem 0.6rem; font-size: 0.78rem; }
+.btn.block, .button.is-fullwidth { width: 100%; }
 
-.btn-secondary {
+.btn-primary, .button.is-primary { background: var(--color-blue-primary); color: #fff; }
+.btn-primary:hover, .button.is-primary:hover { background: var(--color-blue-secondary); }
+
+.button.is-link { background: var(--color-blue-accent); color: #fff; }
+.button.is-link:hover { filter: brightness(0.94); }
+
+.btn-success, .button.is-success { background: var(--color-success); color: #fff; }
+.btn-success:hover, .button.is-success:hover { filter: brightness(0.94); }
+
+.btn.danger, .btn-danger, .button.is-danger { background: var(--color-error); color: #fff; }
+.btn.danger:hover, .btn-danger:hover, .button.is-danger:hover { filter: brightness(0.94); }
+
+/* ghost / light / outlined */
+.btn.ghost, .btn-secondary, .button.is-light, .button.is-ghost {
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
-  border: 2px solid var(--color-border);
+  border-color: var(--color-border-light);
 }
-
-.btn-secondary:hover {
+.btn.ghost:hover, .btn-secondary:hover, .button.is-light:hover, .button.is-ghost:hover {
   background: var(--color-bg-tertiary);
   border-color: var(--color-blue-primary);
-  color: var(--color-white);
-  transform: translateY(-2px);
+  color: var(--color-blue-secondary);
 }
 
-.btn-success {
-  background: var(--color-success);
-  color: var(--color-white);
-}
-
-.btn-success:hover {
-  background: #059669;
-  box-shadow: var(--shadow-success), var(--shadow-lg);
-  transform: translateY(-2px);
-}
-
-.btn:disabled {
+.btn:disabled, .button:disabled, .button[disabled] {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none !important;
 }
 
 /* Glitch effect on hover */
@@ -443,44 +411,12 @@ code {
 .card {
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
-  box-shadow: var(--shadow-md);
-  transition: all var(--transition-base);
-  position: relative;
-  overflow: hidden;
-}
-
-.card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(59, 130, 246, 0.1),
-    transparent
-  );
-  transition: left 0.5s;
-}
-
-.card:hover::before {
-  left: 100%;
-}
-
-.card:hover {
-  border-color: var(--color-blue-primary);
-  box-shadow: var(--shadow-lg), var(--shadow-blue);
-  transform: translateY(-4px);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
 }
 
 .card-glow {
-  box-shadow:
-    0 0 30px var(--color-blue-glow),
-    var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 /* ========================================
@@ -505,16 +441,15 @@ code {
 .input,
 .select,
 .textarea {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   width: 100%;
-  padding: 0.75rem 1rem;
-  background: var(--color-bg-tertiary);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
+  padding: 0.55rem 0.75rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: 4px;
   color: var(--color-text-primary);
   font-size: 0.95rem;
-  transition: all var(--transition-base);
-  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .input:focus,
@@ -522,10 +457,7 @@ code {
 .textarea:focus {
   outline: none;
   border-color: var(--color-blue-primary);
-  box-shadow:
-    0 0 0 3px var(--color-blue-glow),
-    var(--shadow-md);
-  background: var(--color-bg-secondary);
+  box-shadow: 0 0 0 2px var(--color-blue-glow);
 }
 
 .input::placeholder {
@@ -941,21 +873,23 @@ code {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.8rem;
+  padding: 0.4rem 0.7rem;
   background: var(--terminal-bg-panel);
-  border: 1px solid var(--terminal-accent);
-  color: var(--terminal-accent);
+  border: 1px solid var(--color-border-light);
+  color: var(--terminal-text-secondary);
+  border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   cursor: pointer;
-  transition: all 0.2s;
-  font-family: var(--font-mono);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  font-family: var(--font-sans);
 }
 
 .theme-toggle-btn:hover {
-  background: var(--terminal-accent);
-  color: var(--terminal-bg-header);
+  background: var(--color-blue-primary);
+  border-color: var(--color-blue-primary);
+  color: #fff;
 }
 
 .theme-dropdown {

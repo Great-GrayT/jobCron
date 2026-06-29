@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import Link from "next/link";
-import { BarChart3, TrendingUp, RefreshCw, Loader2, ArrowLeft, X, Filter, Calendar, Briefcase, Award, Target, MapPin, Building2, Zap, Users, DollarSign, TrendingDown, AlertCircle, Sparkles, Activity, Globe } from "lucide-react";
+import { BarChart3, TrendingUp, RefreshCw, Loader2, X, Filter, Calendar, Briefcase, Award, Target, MapPin, Building2, Zap, Users, DollarSign, TrendingDown, AlertCircle, Sparkles, Activity, Globe } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area } from 'recharts';
 import WorldMap from '@/components/WorldMap';
 import {
@@ -14,7 +13,9 @@ import {
   CertsBump,
   CHART_COLORS,
 } from '@/components/charts';
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AdminShell } from "@/components/AdminShell";
+import { featuresMenu } from "@/components/navMenu";
+import { useAuth } from "@/context/AuthContext";
 import { SearchFilterPanel } from "@/components/SearchFilterPanel";
 import {
   fetchStatistics,
@@ -60,6 +61,7 @@ function currentMonthStr(): string {
 }
 
 export default function StatsPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [statsData, setStatsData] = useState<StatsData | null>(null);
   // Filtered aggregates that drive every chart (server already applied filters).
@@ -728,53 +730,41 @@ export default function StatsPage() {
     });
   };
 
-  return (
-    <div className="terminal-page">
-      {/* Top Bar */}
-      <div className="terminal-topbar">
-        <div className="terminal-topbar-left">
-          <BarChart3 size={20} />
-          <span className="terminal-title">JOB MARKET ANALYTICS</span>
-          <span className="terminal-separator">|</span>
-          <span className="terminal-subtitle">RECRUITMENT INTELLIGENCE TERMINAL</span>
-        </div>
-        <div className="terminal-topbar-right">
-          <div className="scope-toggle" role="group" aria-label="Stats scope">
-            <button
-              type="button"
-              onClick={() => setScope('public')}
-              className={`terminal-btn ${scope === 'public' ? 'active' : ''}`}
-              title="All shared feeds"
-            >
-              <Globe size={14} />
-              <span>TOTAL</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setScope('me')}
-              className={`terminal-btn ${scope === 'me' ? 'active' : ''}`}
-              title="Only feeds you use"
-            >
-              <Users size={14} />
-              <span>PERSONAL</span>
-            </button>
-          </div>
-          <button
-            onClick={loadStatistics}
-            disabled={loading}
-            className={`terminal-btn ${loading ? 'loading' : ''}`}
-          >
-            {loading ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}
-            <span>LOAD DATA</span>
-          </button>
-          <Link href="/" className="terminal-btn">
-            <ArrowLeft size={14} />
-            <span>HOME</span>
-          </Link>
-          <ThemeToggle />
-        </div>
+  const heroActions = (
+    <>
+      <div className="scope-toggle" role="group" aria-label="Stats scope">
+        <button
+          type="button"
+          onClick={() => setScope('public')}
+          className={`button is-small ${scope === 'public' ? 'is-primary' : 'is-light'}`}
+          title="All shared feeds"
+        >
+          <Globe size={14} />
+          <span>Total</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setScope('me')}
+          className={`button is-small ${scope === 'me' ? 'is-primary' : 'is-light'}`}
+          title="Only feeds you use"
+        >
+          <Users size={14} />
+          <span>Personal</span>
+        </button>
       </div>
+      <button
+        onClick={loadStatistics}
+        disabled={loading}
+        className="button is-primary is-small"
+      >
+        {loading ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}
+        <span>Load data</span>
+      </button>
+    </>
+  );
 
+  return (
+    <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Features", "Stats"]} title="Job Market Analytics" actions={heroActions}>
       {/* Status Bar */}
       {statsData && (
         <div className="terminal-statusbar">
@@ -1929,6 +1919,6 @@ export default function StatsPage() {
           </div>
         </div>
       )}
-    </div>
+    </AdminShell>
   );
 }

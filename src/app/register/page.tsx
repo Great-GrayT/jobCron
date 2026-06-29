@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Loader2, UserPlus, MailCheck } from "lucide-react";
+import { Loader2, UserPlus, MailCheck, ArrowLeft } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import { oauthUrl, resendVerification } from "@/lib/api/auth";
 import { COUNTRY_NAMES, SPECIALITIES, UNIQUE_DIAL_CODES } from "@/lib/profile-options";
@@ -214,11 +216,12 @@ export default function RegisterPage() {
 
         <div className="divider">— OR —</div>
         <div className="oauth-row">
-          <a className="btn ghost block" href={oauthUrl("google")}>Google</a>
-          <a className="btn ghost block" href={oauthUrl("github")}>GitHub</a>
+          <a className="btn ghost block" href={oauthUrl("google")}><FcGoogle size={16} /> Google</a>
+          <a className="btn ghost block" href={oauthUrl("github")}><FaGithub size={16} /> GitHub</a>
         </div>
 
         <p className="auth-foot">Already have an account? <Link href="/login">Sign in</Link></p>
+        <p className="auth-foot"><Link href="/"><ArrowLeft size={13} /> Back to home</Link></p>
       </div>
 
       {/* ---- the "are you a spy?" saga ---- */}

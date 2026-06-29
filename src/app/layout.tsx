@@ -2,13 +2,20 @@ import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { RouteGuard } from '@/components/RouteGuard';
-import { Arimo } from 'next/font/google';
+import { Arimo, Nunito } from 'next/font/google';
 
 const arimo = Arimo({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-arimo',
+  display: 'swap',
+});
+
+const nunito = Nunito({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-nunito',
   display: 'swap',
 });
 
@@ -23,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={arimo.variable}>
-      <body>
+    <html lang="en" suppressHydrationWarning className={`${arimo.variable} ${nunito.variable}`}>
+      <body suppressHydrationWarning>
         <ThemeProvider>
           <AuthProvider>
             <RouteGuard>{children}</RouteGuard>
