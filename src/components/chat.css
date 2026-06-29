@@ -129,6 +129,39 @@
 }
 .sent_msg p { margin: 0; color: #fff; font-size: 0.88rem; white-space: pre-wrap; word-break: break-word; }
 
+/* admin-authored bubbles → gold with an "Admin" tag */
+.sent_msg, .received_withd_msg { position: relative; }
+.admin-tag {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0.08rem 0.4rem;
+  border-radius: 6px;
+  background: rgba(43, 35, 0, 0.88);
+  color: #ffd23f;
+}
+.sent_msg.is-admin {
+  background: linear-gradient(135deg, #ffd23f, #f2b200);
+  color: #2b2300;
+  padding-top: 1.3rem;
+}
+.sent_msg.is-admin p { color: #2b2300; }
+.sent_msg.is-admin .time_date { color: #5a4a00; opacity: 0.85; }
+.received_withd_msg.is-admin {
+  background: linear-gradient(135deg, #ffe27a, #ffd23f);
+  border-color: #e6b400;
+  color: #2b2300;
+  padding-top: 1.3rem;
+}
+.received_withd_msg.is-admin p { color: #2b2300; }
+.received_withd_msg.is-admin .time_date { color: #5a4a00; }
+.received_withd_msg.is-admin .msg-from-name { color: #7a3b00; }
+.received_withd_msg.is-admin .msg-from-email { color: #6b5600; }
+
 .time_date { display: block; margin-top: 0.3rem; font-size: 0.66rem; opacity: 0.7; }
 .received_withd_msg .time_date { color: var(--terminal-text-muted); }
 

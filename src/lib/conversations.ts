@@ -53,9 +53,9 @@ export function deriveConversations(
   return list;
 }
 
-/** Display name for a counterpart (Admin thread when partner is null). */
+/** Display name for a counterpart (the catch-all admin thread when partner is null). */
 export function partnerName(c: Conversation): string {
-  if (!c.partner) return "Admin";
+  if (!c.partner) return "General Admin Query";
   return c.partner.username || c.partner.name || c.partner.email;
 }
 

@@ -37,12 +37,35 @@ function Avatar({ src, name, size = 40 }: { src?: string | null; name: string; s
   );
 }
 
+/** Synthetic, front-end-only acknowledgement appended after a General Admin Query. */
+function makeAutoReply(meId: string): Message {
+  const now = new Date().toISOString();
+  return {
+    id: `auto-${Date.now()}`,
+    fromUserId: "system",
+    toUserId: meId,
+    toAdmin: false,
+    subject: null,
+    body: "Thanks for reaching out — an admin will contact you surely.",
+    readAt: now,
+    createdAt: now,
+    from: { id: "system", email: "", username: "Admin", name: "Admin", avatarUrl: null, role: "admin" },
+    to: null,
+  };
+}
+
 function MessagesInner() {
   const { user } = useAuth();
   const meId = user?.id ?? "";
+  const meRole = user?.role;
+
+  /** True when a message was authored by an admin (own role, or sender role when exposed). */
+  const authoredByAdmin = (m: Message) =>
+    m.fromUserId === meId ? meRole === "admin" : m.from.role === "admin";
 
   const [inbox, setInbox] = useState<Message[]>([]);
   const [sent, setSent] = useState<Message[]>([]);
+  const [autoReplies, setAutoReplies] = useState<Record<string, Message[]>>({});
   const [loading, setLoading] = useState(true);
 
   const [selectedKey, setSelectedKey] = useState<string>("admin");
@@ -90,6 +113,15 @@ function MessagesInner() {
     [conversations, selectedKey],
   );
 
+  // Real messages + any front-end auto-replies for this thread, in time order.
+  const threadMessages = useMemo(() => {
+    if (!selected) return [] as Message[];
+    const autos = autoReplies[selected.key] ?? [];
+    return [...selected.messages, ...autos].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+  }, [selected, autoReplies]);
+
   // Mark incoming unread messages as read when a thread is opened.
   useEffect(() => {
     if (!selected || composing) return;
@@ -111,12 +143,18 @@ function MessagesInner() {
   const sendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selected || !body.trim()) return;
+    const target = replyTarget(selected);
+    const key = selected.key;
     setBusy(true);
     setNote(null);
     try {
-      await messages.send({ ...replyTarget(selected), body: body.trim() });
+      await messages.send({ ...target, body: body.trim() });
       setBody("");
       await load();
+      // Front-end auto-acknowledgement for the "General Admin Query" thread.
+      if (target.toAdmin) {
+        setAutoReplies((prev) => ({ ...prev, [key]: [...(prev[key] ?? []), makeAutoReply(meId)] }));
+      }
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Failed to send");
     } finally {
@@ -224,17 +262,19 @@ function MessagesInner() {
               </div>
 
               <div className="msg-history">
-                {selected.messages.length === 0 ? (
+                {threadMessages.length === 0 ? (
                   <div className="chat-empty">
                     <MessageSquare size={28} />
                     <p>No messages yet. Start the conversation below.</p>
                   </div>
                 ) : (
-                  selected.messages.map((m) => {
+                  threadMessages.map((m) => {
                     const outgoing = m.fromUserId === meId;
+                    const admin = authoredByAdmin(m);
                     return outgoing ? (
                       <div key={m.id} className="outgoing_msg">
-                        <div className="sent_msg">
+                        <div className={`sent_msg${admin ? " is-admin" : ""}`}>
+                          {admin && <span className="admin-tag">Admin</span>}
                           {m.subject && <div className="msg-subject-line">{m.subject}</div>}
                           <p>{m.body}</p>
                           <span className="time_date">{fmtTime(m.createdAt)}</span>
@@ -246,10 +286,11 @@ function MessagesInner() {
                           <Avatar src={m.from.avatarUrl} name={m.from.username || m.from.name || m.from.email} size={36} />
                         </div>
                         <div className="received_msg">
-                          <div className="received_withd_msg">
+                          <div className={`received_withd_msg${admin ? " is-admin" : ""}`}>
+                            {admin && <span className="admin-tag">Admin</span>}
                             <div className="msg-from-line">
                               <span className="msg-from-name">{m.from.username || m.from.name || m.from.email}</span>
-                              <span className="msg-from-email">{m.from.email}</span>
+                              {m.from.email && <span className="msg-from-email">{m.from.email}</span>}
                             </div>
                             {m.subject && <div className="msg-subject-line">{m.subject}</div>}
                             <p>{m.body}</p>
