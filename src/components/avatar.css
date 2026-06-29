@@ -1,0 +1,38 @@
+/* Avatar album picker (presets grid + random + upload) */
+
+.avatar-picker { display: flex; flex-direction: column; gap: 0.85rem; }
+.avatar-picker-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 0.6rem;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+.avatar-cell {
+  position: relative;
+  padding: 0;
+  border: 2px solid var(--terminal-border);
+  border-radius: 50%;
+  background: var(--terminal-bg-secondary);
+  cursor: pointer;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+.avatar-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-cell:hover { border-color: var(--color-blue-primary); transform: scale(1.06); }
+.avatar-cell:disabled { cursor: default; opacity: 0.7; }
+.avatar-cell-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+.avatar-picker-hint { font-size: 0.78rem; color: var(--terminal-text-muted); display: flex; align-items: center; gap: 0.35rem; margin: 0; }

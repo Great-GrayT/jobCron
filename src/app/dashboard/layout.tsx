@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { AuthGuard } from "@/components/AuthGuard";
 import { AdminShell } from "@/components/AdminShell";
+import { AvatarPrompt } from "@/components/AvatarPrompt";
 import { settingsMenu } from "@/components/navMenu";
 import "@/components/dashboard.css";
 
@@ -20,6 +21,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminShell menu={settingsMenu()} breadcrumb={["Dashboard", title]} title={title} back="/">
+      <AvatarPrompt />
       {children}
     </AdminShell>
   );

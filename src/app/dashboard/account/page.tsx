@@ -1,30 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Save, ShieldCheck, ShieldAlert, Camera } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { AvatarPicker } from "@/components/AvatarPicker";
 import { COUNTRY_NAMES, SPECIALITIES, UNIQUE_DIAL_CODES } from "@/lib/profile-options";
 import type { ProfileInput } from "@/lib/api/types";
 
 export default function AccountPage() {
   const { user, updateProfile, logout } = useAuth();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  const onPickAvatar = async (file: File) => {
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Image too large — max 2MB.");
-      return;
-    }
+  const onPickAvatar = async (value: string, kind: "url" | "data") => {
     setAvatarBusy(true);
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(String(r.result));
-        r.onerror = reject;
-        r.readAsDataURL(file);
-      });
-      await updateProfile({ avatarData: dataUrl });
+      // Save the chosen field and clear the other so there's a single source of truth.
+      await updateProfile(kind === "url" ? { avatarUrl: value, avatarData: "" } : { avatarData: value, avatarUrl: "" });
+      setPickerOpen(false);
     } catch {
       /* ignore */
     } finally {
@@ -73,7 +66,7 @@ export default function AccountPage() {
     <section className="panel">
       <h2>ACCOUNT</h2>
 
-      <div className="row" style={{ marginBottom: "1rem", alignItems: "center" }}>
+      <div className="row acct-id-row">
         <div className="avatar-wrap">
           {user.avatarData || user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -81,27 +74,25 @@ export default function AccountPage() {
           ) : (
             <div className="avatar-img avatar-fallback">{(user.name || user.email)[0]?.toUpperCase()}</div>
           )}
-          <button type="button" className="btn ghost sm" onClick={() => fileRef.current?.click()} disabled={avatarBusy}>
-            {avatarBusy ? <Loader2 className="spin" size={14} /> : <Camera size={14} />} CHANGE
+          <button type="button" className="btn ghost sm" onClick={() => setPickerOpen((v) => !v)} disabled={avatarBusy}>
+            {avatarBusy ? <Loader2 className="spin" size={14} /> : <Camera size={14} />} {pickerOpen ? "CLOSE" : "CHANGE"}
           </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            hidden
-            aria-label="Upload avatar"
-            onChange={(e) => e.target.files?.[0] && onPickAvatar(e.target.files[0])}
-          />
         </div>
         <div>
           {user.emailVerified ? (
             <span className="ok"><ShieldCheck size={14} /> {user.email} — verified</span>
           ) : (
-            <span style={{ color: "var(--color-warning)" }}><ShieldAlert size={14} /> {user.email} — not verified</span>
+            <span className="warn-text"><ShieldAlert size={14} /> {user.email} — not verified</span>
           )}
           <div className="muted">role: {user.role}</div>
         </div>
       </div>
+
+      {pickerOpen && (
+        <div className="acct-avatar-picker">
+          <AvatarPicker current={user.avatarData || user.avatarUrl} onPick={onPickAvatar} busy={avatarBusy} />
+        </div>
+      )}
 
       {error && <div className="auth-error">{error}</div>}
 

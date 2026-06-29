@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Loader2, UserPlus, MailCheck, ArrowLeft } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
+import { Camera } from "lucide-react";
+import { AvatarPicker } from "@/components/AvatarPicker";
 import { useAuth } from "@/context/AuthContext";
 import { oauthUrl, resendVerification } from "@/lib/api/auth";
 import { COUNTRY_NAMES, SPECIALITIES, UNIQUE_DIAL_CODES } from "@/lib/profile-options";
@@ -39,6 +41,9 @@ export default function RegisterPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<{ url?: string; data?: string }>({});
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const avatarPreview = avatar.url || avatar.data || "";
 
   const set = (k: keyof Form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -69,6 +74,8 @@ export default function RegisterPage() {
         speciality: form.speciality.trim() || undefined,
         country: form.country.trim() || undefined,
         city: form.city.trim() || undefined,
+        avatarUrl: avatar.url || undefined,
+        avatarData: avatar.data || undefined,
       });
       setRegisteredEmail(form.email.trim());
     } catch (err) {
@@ -124,6 +131,29 @@ export default function RegisterPage() {
         <p className="sub">Email, username and password are required. The rest helps us tailor your feed.</p>
 
         {error && <div className="auth-error">{error}</div>}
+
+        <div className="reg-avatar-row">
+          {avatarPreview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="avatar-img" src={avatarPreview} alt="chosen avatar" />
+          ) : (
+            <div className="avatar-img avatar-fallback"><Camera size={22} /></div>
+          )}
+          <div>
+            <button type="button" className="btn ghost sm" onClick={() => setAvatarOpen((v) => !v)}>
+              <Camera size={14} /> {avatarOpen ? "Close" : avatarPreview ? "Change avatar" : "Choose avatar"}
+            </button>
+            <div className="muted">Optional — or pick one later.</div>
+          </div>
+        </div>
+        {avatarOpen && (
+          <div className="acct-avatar-picker">
+            <AvatarPicker
+              current={avatarPreview}
+              onPick={(value, kind) => { setAvatar(kind === "url" ? { url: value } : { data: value }); setAvatarOpen(false); }}
+            />
+          </div>
+        )}
 
         <form onSubmit={onSubmit}>
           <div className="grid2">
