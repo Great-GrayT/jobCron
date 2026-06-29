@@ -37,9 +37,13 @@ function AdminInner() {
   };
 
   const setRole = async (uid: string, role: "user" | "admin") => {
-    await admin.setAccess(uid, { role });
-    setUsers((p) => p.map((u) => (u.id === uid ? { ...u, role } : u)));
-    setDetail((d) => (d && d.user.id === uid ? { ...d, user: { ...d.user, role } } : d));
+    try {
+      await admin.setAccess(uid, { role });
+      setUsers((p) => p.map((u) => (u.id === uid ? { ...u, role } : u)));
+      setDetail((d) => (d && d.user.id === uid ? { ...d, user: { ...d.user, role } } : d));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to change role");
+    }
   };
 
   const act = async (key: string, fn: () => Promise<{ logs: LogLine[] }>) => {
