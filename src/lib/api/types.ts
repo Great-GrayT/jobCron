@@ -159,6 +159,7 @@ export interface AdminUser {
   emailVerified: boolean;
   revokedPages: string[];
   avatarUrl: string | null;
+  avatarData?: string | null;
   createdAt: string;
   _count: { feeds: number; channels: number; schedules: number; appliedJobs: number };
 }

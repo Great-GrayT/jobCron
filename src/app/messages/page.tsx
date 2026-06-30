@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Send, Plus, MessageSquare, ArrowLeft } from "lucide-react";
+import { Loader2, Send, Plus, MessageSquare, ArrowLeft, Reply, Copy, Trash2, X } from "lucide-react";
 import { messages } from "@/lib/api/messages";
+import { users } from "@/lib/api/users";
 import type { Message } from "@/lib/api/types";
 import { AuthGuard } from "@/components/AuthGuard";
 import { AdminShell } from "@/components/AdminShell";
 import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
 import { isAdminUser } from "@/lib/admins";
+import { UserInfoModal } from "@/components/UserInfoModal";
 import {
   deriveConversations,
   partnerName,
@@ -79,6 +81,19 @@ function MessagesInner() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
+  // Info popup + avatar resolution (uploaded avatars live in avatarData, which the
+  // messages payload omits — resolve those once per partner via the card endpoint).
+  const [infoUser, setInfoUser] = useState<{ id: string; name: string; avatar?: string | null } | null>(null);
+  const [avatarCache, setAvatarCache] = useState<Record<string, string>>({});
+  const viewerIsAdmin = isAdminUser(user);
+
+  // Right-click context menu + quoted reply.
+  const [ctx, setCtx] = useState<{ x: number; y: number; m: Message } | null>(null);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+
+  const resolvedAvatar = (u?: { id: string; avatarUrl: string | null } | null) =>
+    (u && (u.avatarUrl || avatarCache[u.id])) || null;
+
   const load = async () => {
     setLoading(true);
     try {
@@ -92,6 +107,37 @@ function MessagesInner() {
   useEffect(() => {
     load();
   }, []);
+
+  // Resolve avatars for partners who have no avatarUrl (i.e. an uploaded base64
+  // avatar) — one card fetch per unique partner, cached.
+  useEffect(() => {
+    const need = new Map<string, void>();
+    const collect = (u: { id: string; avatarUrl: string | null } | null) => {
+      if (u && u.id && u.id !== "system" && !u.avatarUrl && !avatarCache[u.id]) need.set(u.id);
+    };
+    inbox.forEach((m) => collect(m.from));
+    sent.forEach((m) => collect(m.to));
+    const ids = [...need.keys()];
+    if (!ids.length) return;
+    let alive = true;
+    Promise.all(
+      ids.map((id) =>
+        users
+          .card(id)
+          .then((c) => [id, c.avatarData || c.avatarUrl || ""] as const)
+          .catch(() => [id, ""] as const),
+      ),
+    ).then((pairs) => {
+      if (!alive) return;
+      const next: Record<string, string> = {};
+      for (const [id, src] of pairs) if (src) next[id] = src;
+      if (Object.keys(next).length) setAvatarCache((prev) => ({ ...prev, ...next }));
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inbox, sent]);
 
   // Derive threads; always surface a pinned "Admin" contact for first contact.
   const conversations = useMemo(() => {
@@ -138,6 +184,55 @@ function MessagesInner() {
     setSelectedKey(key);
     setBody("");
     setNote(null);
+    setReplyingTo(null);
+  };
+
+  // Close the context menu on any outside click / scroll / Escape.
+  useEffect(() => {
+    if (!ctx) return;
+    const close = () => setCtx(null);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setCtx(null);
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [ctx]);
+
+  const openCtx = (e: React.MouseEvent, m: Message) => {
+    e.preventDefault();
+    setCtx({ x: e.clientX, y: e.clientY, m });
+  };
+  const doCopy = (m: Message) => {
+    navigator.clipboard?.writeText(m.body).catch(() => {});
+    setCtx(null);
+  };
+  const doReply = (m: Message) => {
+    setReplyingTo(m);
+    setComposing(false);
+    setCtx(null);
+  };
+  const doDelete = async (m: Message) => {
+    setCtx(null);
+    if (m.id.startsWith("auto-")) {
+      // Front-end-only auto message — just drop it locally.
+      setAutoReplies((prev) => {
+        const next: Record<string, Message[]> = {};
+        for (const k of Object.keys(prev)) next[k] = prev[k].filter((x) => x.id !== m.id);
+        return next;
+      });
+      return;
+    }
+    if (!confirm("Delete this message for everyone?")) return;
+    try {
+      await messages.remove(m.id);
+      await load();
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : "Delete failed");
+    }
   };
 
   const sendReply = async (e: React.FormEvent) => {
@@ -145,11 +240,15 @@ function MessagesInner() {
     if (!selected || !body.trim()) return;
     const target = replyTarget(selected);
     const key = selected.key;
+    const quote = replyingTo
+      ? `> ${replyingTo.body.replace(/\s+/g, " ").slice(0, 140)}\n\n`
+      : "";
     setBusy(true);
     setNote(null);
     try {
-      await messages.send({ ...target, body: body.trim() });
+      await messages.send({ ...target, body: quote + body.trim() });
       setBody("");
+      setReplyingTo(null);
       await load();
       // Front-end auto-acknowledgement for the "General Admin Query" thread.
       if (target.toAdmin) {
@@ -206,7 +305,7 @@ function MessagesInner() {
                     className={`chat-contact${c.key === selectedKey && !composing ? " active" : ""}`}
                     onClick={() => openThread(c.key)}
                   >
-                    <Avatar src={c.partner?.avatarUrl} name={name} />
+                    <Avatar src={resolvedAvatar(c.partner)} name={name} />
                     <div className="chat-contact-meta">
                       <div className="chat-contact-top">
                         <span className="chat-contact-name">{name}</span>
@@ -253,13 +352,28 @@ function MessagesInner() {
             </>
           ) : selected ? (
             <>
-              <div className="chat-thread-head">
-                <Avatar src={selected.partner?.avatarUrl} name={partnerName(selected)} size={42} />
-                <div className="chat-thread-who">
-                  <span className="chat-thread-name">{partnerName(selected)}</span>
-                  <span className="chat-thread-email">{partnerEmail(selected)}</span>
+              {selected.partner ? (
+                <button
+                  type="button"
+                  className="chat-thread-head chat-thread-head-btn"
+                  onClick={() => setInfoUser({ id: selected.partner!.id, name: partnerName(selected), avatar: resolvedAvatar(selected.partner) })}
+                  title="View profile"
+                >
+                  <Avatar src={resolvedAvatar(selected.partner)} name={partnerName(selected)} size={42} />
+                  <div className="chat-thread-who">
+                    <span className="chat-thread-name">{partnerName(selected)}</span>
+                    <span className="chat-thread-email">{partnerEmail(selected)}</span>
+                  </div>
+                </button>
+              ) : (
+                <div className="chat-thread-head">
+                  <Avatar src={null} name={partnerName(selected)} size={42} />
+                  <div className="chat-thread-who">
+                    <span className="chat-thread-name">{partnerName(selected)}</span>
+                    <span className="chat-thread-email">{partnerEmail(selected)}</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="msg-history">
                 {threadMessages.length === 0 ? (
@@ -273,7 +387,7 @@ function MessagesInner() {
                     const admin = authoredByAdmin(m);
                     return outgoing ? (
                       <div key={m.id} className="outgoing_msg">
-                        <div className={`sent_msg${admin ? " is-admin" : ""}`}>
+                        <div className={`sent_msg${admin ? " is-admin" : ""}`} onContextMenu={(e) => openCtx(e, m)}>
                           {admin && <span className="admin-tag">Admin</span>}
                           {m.subject && <div className="msg-subject-line">{m.subject}</div>}
                           <p>{m.body}</p>
@@ -282,11 +396,22 @@ function MessagesInner() {
                       </div>
                     ) : (
                       <div key={m.id} className="incoming_msg">
-                        <div className="incoming_msg_img">
-                          <Avatar src={m.from.avatarUrl} name={m.from.username || m.from.name || m.from.email} size={36} />
-                        </div>
+                        {m.from.id && m.from.id !== "system" ? (
+                          <button
+                            type="button"
+                            className="incoming_msg_img incoming_msg_img-btn"
+                            onClick={() => setInfoUser({ id: m.from.id, name: m.from.username || m.from.name || m.from.email, avatar: resolvedAvatar(m.from) })}
+                            title="View profile"
+                          >
+                            <Avatar src={resolvedAvatar(m.from)} name={m.from.username || m.from.name || m.from.email} size={36} />
+                          </button>
+                        ) : (
+                          <div className="incoming_msg_img">
+                            <Avatar src={resolvedAvatar(m.from)} name={m.from.username || m.from.name || m.from.email} size={36} />
+                          </div>
+                        )}
                         <div className="received_msg">
-                          <div className={`received_withd_msg${admin ? " is-admin" : ""}`}>
+                          <div className={`received_withd_msg${admin ? " is-admin" : ""}`} onContextMenu={(e) => openCtx(e, m)}>
                             {admin && <span className="admin-tag">Admin</span>}
                             <div className="msg-from-line">
                               <span className="msg-from-name">{m.from.username || m.from.name || m.from.email}</span>
@@ -305,10 +430,17 @@ function MessagesInner() {
 
               <form className="chat-reply" onSubmit={sendReply}>
                 {note && <div className="auth-error chat-reply-note">{note}</div>}
+                {replyingTo && (
+                  <div className="chat-reply-quote">
+                    <Reply size={13} />
+                    <span className="chat-reply-quote-text">{replyingTo.body}</span>
+                    <button type="button" aria-label="Cancel reply" onClick={() => setReplyingTo(null)}><X size={13} /></button>
+                  </div>
+                )}
                 <input
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  placeholder={`Message ${partnerName(selected)}…`}
+                  placeholder={replyingTo ? "Type your reply…" : `Message ${partnerName(selected)}…`}
                   aria-label="Reply"
                 />
                 <button className="button is-primary" type="submit" aria-label="Send message" disabled={busy || !body.trim()}>
@@ -324,6 +456,26 @@ function MessagesInner() {
           )}
         </section>
       </div>
+
+      {infoUser && (
+        <UserInfoModal
+          userId={infoUser.id}
+          fallbackName={infoUser.name}
+          fallbackAvatar={infoUser.avatar}
+          viewerIsAdmin={viewerIsAdmin}
+          onClose={() => setInfoUser(null)}
+        />
+      )}
+
+      {ctx && (
+        <div className="ctx-menu" style={{ top: ctx.y, left: ctx.x }} onClick={(e) => e.stopPropagation()}>
+          <button type="button" onClick={() => doReply(ctx.m)}><Reply size={14} /> Reply</button>
+          <button type="button" onClick={() => doCopy(ctx.m)}><Copy size={14} /> Copy text</button>
+          {viewerIsAdmin && (
+            <button type="button" className="ctx-danger" onClick={() => doDelete(ctx.m)}><Trash2 size={14} /> Delete</button>
+          )}
+        </div>
+      )}
     </AdminShell>
   );
 }

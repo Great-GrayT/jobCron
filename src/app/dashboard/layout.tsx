@@ -20,7 +20,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   const title = TITLES[pathname] ?? "Settings";
 
   return (
-    <AdminShell menu={settingsMenu()} breadcrumb={["Dashboard", title]} title={title} back="/">
+    <AdminShell menu={settingsMenu()} breadcrumb={["Dashboard", title]} title={title} back="/" section="settings">
       <AvatarPrompt />
       {children}
     </AdminShell>

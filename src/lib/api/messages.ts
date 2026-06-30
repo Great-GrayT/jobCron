@@ -9,4 +9,5 @@ export const messages = {
   send: (body: { toIdentifier?: string; toAdmin?: boolean; subject?: string; body: string }) =>
     api.post<{ message: Message }>("/api/me/messages", body),
   markRead: (id: string) => api.patch<{ ok: boolean }>(`/api/me/messages/${id}`),
+  remove: (id: string) => api.delete<{ ok: boolean }>(`/api/me/messages/${id}`),
 };

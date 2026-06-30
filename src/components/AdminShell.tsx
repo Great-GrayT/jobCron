@@ -3,11 +3,12 @@
 import { Fragment, ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, LogOut, ChevronDown, Search, ArrowLeft, User as UserIcon, type LucideIcon } from "lucide-react";
+import { Menu, X, LogOut, ChevronDown, Search, ArrowLeft, User as UserIcon, Settings, LayoutGrid, CornerDownLeft, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { messages } from "@/lib/api/messages";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { navbarLinks } from "@/components/navMenu";
+import { searchPages } from "@/components/searchIndex";
 import "@/components/admin-shell.css";
 
 export interface MenuItem {
@@ -31,6 +32,8 @@ interface AdminShellProps {
   actions?: ReactNode;
   /** Back target. `false` hides the button; a string is used as href; otherwise router.back(). */
   back?: string | false;
+  /** Which main area this page belongs to — drives the Settings/Features switcher. */
+  section?: "settings" | "features";
   children: ReactNode;
 }
 
@@ -41,6 +44,7 @@ export function AdminShell({
   brand = "JOBCRON",
   actions,
   back,
+  section = "features",
   children,
 }: AdminShellProps) {
   const pathname = usePathname();
@@ -50,7 +54,18 @@ export function AdminShell({
   const [navOpen, setNavOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const results = searchPages(query);
+
+  const goTo = (href: string) => {
+    setQuery("");
+    setSearchOpen(false);
+    router.push(href);
+  };
 
   useEffect(() => {
     messages.list().then((r) => setUnread(r.unread)).catch(() => {});
@@ -61,6 +76,8 @@ export function AdminShell({
     setOpen(false);
     setNavOpen(false);
     setUserOpen(false);
+    setSearchOpen(false);
+    setQuery("");
   }, [pathname]);
 
   // Close dropdowns when clicking outside.
@@ -69,6 +86,9 @@ export function AdminShell({
       if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
         setNavOpen(false);
         setUserOpen(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
       }
     };
     document.addEventListener("mousedown", onClick);
@@ -98,9 +118,32 @@ export function AdminShell({
           <Link href="/" className="navbar-brand-text">
             ◆ {brand}
           </Link>
-          <div className="navbar-search">
-            <Search size={15} />
-            <input placeholder="Search…" aria-label="Search" />
+          <div className="navbar-search-wrap" ref={searchRef}>
+            <div className="navbar-search">
+              <Search size={15} />
+              <input
+                placeholder="Search the page"
+                aria-label="Search the page"
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setSearchOpen(true); }}
+                onFocus={() => setSearchOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && results[0]) goTo(results[0].href);
+                  if (e.key === "Escape") setSearchOpen(false);
+                }}
+              />
+            </div>
+            {searchOpen && results.length > 0 && (
+              <div className="search-dropdown">
+                {results.map((r) => (
+                  <button type="button" key={`${r.label}-${r.href}`} className="search-item" onClick={() => goTo(r.href)}>
+                    <span className="search-item-label">{r.label}</span>
+                    <span className="search-item-hint">{r.hint}</span>
+                    <CornerDownLeft size={13} className="search-item-go" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -158,6 +201,15 @@ export function AdminShell({
           <span>
             <b>◆</b> {brand}
           </span>
+        </div>
+        {/* Switch between the two main areas */}
+        <div className="aside-switch">
+          <Link href="/dashboard/account" className={`aside-switch-btn${section === "settings" ? " active" : ""}`}>
+            <Settings size={15} /> Settings
+          </Link>
+          <Link href="/rss" className={`aside-switch-btn${section === "features" ? " active" : ""}`}>
+            <LayoutGrid size={15} /> Features
+          </Link>
         </div>
         <div className="aside-menu">
           {menu.map((section, i) => (

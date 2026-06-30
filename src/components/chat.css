@@ -89,6 +89,17 @@
   border-bottom: 1px solid var(--terminal-border);
   background: var(--terminal-bg-panel);
 }
+.chat-thread-head-btn {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.chat-thread-head-btn:hover { background: var(--terminal-hover); }
+.incoming_msg_img-btn { background: none; border: none; padding: 0; cursor: pointer; border-radius: 50%; }
+.incoming_msg_img-btn:hover { filter: brightness(0.95); }
 .chat-thread-who { display: flex; flex-direction: column; min-width: 0; }
 .chat-thread-name { font-weight: 700; font-size: 0.95rem; }
 .chat-thread-email { font-size: 0.75rem; color: var(--terminal-text-muted); }
@@ -193,6 +204,55 @@
 .chat-reply-note { flex: 1 0 100%; }
 
 .chat-compose { padding: 1.25rem; overflow-y: auto; }
+
+/* quoted-reply banner above the input */
+.chat-reply-quote {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--terminal-bg-secondary);
+  border-left: 3px solid var(--color-blue-primary);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.78rem;
+  color: var(--terminal-text-secondary);
+  margin-bottom: 0.5rem;
+}
+.chat-reply-quote-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-reply-quote button { background: none; border: none; color: var(--terminal-text-muted); cursor: pointer; padding: 0.1rem; display: flex; }
+
+/* right-click context menu */
+.ctx-menu {
+  position: fixed;
+  z-index: 1200;
+  min-width: 150px;
+  background: var(--terminal-bg-panel);
+  border: 1px solid var(--terminal-border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-lg);
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+}
+.ctx-menu button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  color: var(--terminal-text);
+  padding: 0.5rem 0.6rem;
+  border-radius: 4px;
+}
+.ctx-menu button:hover { background: var(--terminal-bg-tertiary, #f1f1f1); }
+.ctx-menu button.ctx-danger { color: var(--color-error); }
+.ctx-menu button.ctx-danger:hover { background: rgba(241, 70, 104, 0.1); }
 
 /* ---------- empty states ---------- */
 .chat-empty {

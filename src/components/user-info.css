@@ -1,0 +1,76 @@
+/* User info popup (chat) */
+
+.modal-card.ui-modal {
+  max-width: 420px;
+  text-align: left;
+  position: relative;
+  padding: 1.5rem;
+}
+.ui-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--terminal-text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+}
+.ui-close:hover { background: var(--terminal-bg-tertiary, #f1f1f1); color: var(--terminal-text); }
+
+.ui-head { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.25rem; }
+.ui-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+.ui-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-blue-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.4rem;
+}
+.ui-name { font-weight: 800; font-size: 1.1rem; color: var(--terminal-text); }
+.ui-role-badge {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #ffd23f, #f2b200);
+  color: #2b2300;
+}
+
+.ui-body { display: flex; flex-direction: column; gap: 0.1rem; }
+.ui-row {
+  display: grid;
+  grid-template-columns: 18px 88px 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--terminal-border);
+  font-size: 0.86rem;
+}
+.ui-row svg { color: var(--terminal-text-muted); }
+.ui-label { color: var(--terminal-text-muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.ui-value { color: var(--terminal-text); word-break: break-word; }
+
+.ui-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.85rem 0;
+}
+.ui-counts span {
+  font-size: 0.72rem;
+  background: var(--terminal-bg-secondary);
+  border: 1px solid var(--terminal-border);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  color: var(--terminal-text-secondary);
+}
+.ui-admin-link { margin-top: 0.5rem; }
+.ui-loading { display: flex; align-items: center; gap: 0.5rem; color: var(--terminal-text-muted); padding: 1rem 0; }

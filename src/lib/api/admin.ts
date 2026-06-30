@@ -23,6 +23,8 @@ export const admin = {
       `/api/admin/users/${id}`,
       body,
     ),
+  remove: (id: string) =>
+    api.delete<{ ok: boolean; reassigned: number }>(`/api/admin/users/${id}`),
   testFeed: (id: string) => action(`/api/admin/feeds/${id}/test`),
   sendFeed: (id: string) => action(`/api/admin/feeds/${id}/send`),
   testChannel: (id: string) => action(`/api/admin/channels/${id}/test`),

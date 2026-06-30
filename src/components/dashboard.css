@@ -157,6 +157,50 @@
 .dash-nav a.active { background: var(--terminal-bg-secondary); color: var(--terminal-accent); }
 .dash-main { flex: 1; min-width: 0; }
 
+/* admin user mini-cards */
+.admin-user-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.admin-user-card {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  text-align: left;
+  background: var(--terminal-bg-panel);
+  border: 1px solid var(--terminal-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  padding: 0.9rem;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.admin-user-card:hover { border-color: var(--color-blue-primary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.admin-card-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+.admin-card-avatar-fallback {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--color-blue-primary); color: #fff; font-weight: 700; font-size: 1.2rem;
+}
+.admin-card-body { min-width: 0; flex: 1; }
+.admin-card-name { font-weight: 700; font-size: 0.92rem; color: var(--terminal-text); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.admin-role-pill {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 0.05rem 0.35rem; border-radius: 6px;
+  background: linear-gradient(135deg, #ffd23f, #f2b200); color: #2b2300;
+}
+.admin-card-email { font-size: 0.76rem; color: var(--terminal-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-card-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.72rem; color: var(--terminal-text-secondary); }
+.admin-card-chips span { display: inline-flex; align-items: center; gap: 0.25rem; }
+.admin-card-banned { color: var(--color-error); }
+.admin-card-unverified { color: var(--color-warning); }
+
+.admin-detail-bar { justify-content: space-between; margin-bottom: 1.25rem; }
+.admin-delete-btn { margin-left: auto; }
+.cell-actions-end { margin-left: auto; }
+.run-log-full { flex-basis: 100%; }
+
 /* admin two-column (user list + detail) inside AdminShell */
 .admin-two-col { display: flex; gap: 1.5rem; align-items: flex-start; }
 .admin-two-col .dash-nav { position: sticky; top: calc(var(--navbar-height, 56px) + 1rem); }
