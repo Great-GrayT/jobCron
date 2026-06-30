@@ -31,6 +31,9 @@ function AdminInner() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [logs, setLogs] = useState<Record<string, LogLine[]>>({});
+  const [delOpen, setDelOpen] = useState(false);
+  const [delPw, setDelPw] = useState("");
+  const [delErr, setDelErr] = useState<string | null>(null);
 
   useEffect(() => {
     admin
@@ -76,23 +79,21 @@ function AdminInner() {
     setBusy(null);
   };
 
-  const removeUser = async () => {
-    if (!detail) return;
+  const removeUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detail || !delPw) return;
     const who = detail.user.username || detail.user.email;
-    if (
-      !confirm(
-        `Permanently delete ${who}?\n\nTheir RSS feeds move to the oldest admin and become public. Telegram channels, tracking, schedules and messages are deleted. This cannot be undone.`,
-      )
-    )
-      return;
     setBusy("delete");
+    setDelErr(null);
     try {
-      const r = await admin.remove(detail.user.id);
+      const r = await admin.remove(detail.user.id, delPw);
       setUsers((p) => p.filter((u) => u.id !== detail.user.id));
+      setDelOpen(false);
+      setDelPw("");
       setDetail(null);
       alert(`Deleted ${who}. ${r.reassigned} feed(s) reassigned to the oldest admin.`);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Delete failed");
+    } catch (err) {
+      setDelErr(err instanceof Error ? err.message : "Delete failed");
     } finally {
       setBusy(null);
     }
@@ -142,8 +143,8 @@ function AdminInner() {
             <button type="button" className="btn ghost sm" onClick={() => setDetail(null)}>
               <ArrowLeft size={14} /> Back to users
             </button>
-            <button type="button" className="btn danger sm admin-delete-btn" disabled={busy === "delete"} onClick={removeUser}>
-              {busy === "delete" ? <Loader2 className="spin" size={14} /> : <Trash2 size={14} />} Delete user
+            <button type="button" className="btn danger sm admin-delete-btn" onClick={() => { setDelPw(""); setDelErr(null); setDelOpen(true); }}>
+              <Trash2 size={14} /> Delete user
             </button>
           </div>
 
@@ -228,6 +229,35 @@ function AdminInner() {
             {detail.applied.length === 0 && <p className="muted">No applications.</p>}
           </section>
         </>
+      )}
+
+      {delOpen && detail && (
+        <div className="modal-overlay" onClick={() => setDelOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-emoji">⚠️</div>
+            <p className="modal-title">
+              Permanently delete <b>{detail.user.username || detail.user.email}</b>?
+              <br />
+              <span className="muted">
+                Their RSS feeds move to the oldest admin and become public. Telegram channels, tracking,
+                schedules and messages are deleted. This cannot be undone.
+              </span>
+            </p>
+            <form onSubmit={removeUser}>
+              {delErr && <div className="auth-error">{delErr}</div>}
+              <div className="field">
+                <label>Confirm with your account password</label>
+                <input type="password" value={delPw} onChange={(e) => setDelPw(e.target.value)} autoComplete="current-password" autoFocus required />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn ghost" onClick={() => setDelOpen(false)}>Cancel</button>
+                <button type="submit" className="btn danger" disabled={busy === "delete" || !delPw}>
+                  {busy === "delete" ? <Loader2 className="spin" size={14} /> : <Trash2 size={14} />} Delete
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </AdminShell>
   );

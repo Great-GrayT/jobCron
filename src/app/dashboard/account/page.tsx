@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Save, ShieldCheck, ShieldAlert, Camera } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { AvatarPicker } from "@/components/AvatarPicker";
+import { PasswordForm } from "@/components/PasswordForm";
 import { COUNTRY_NAMES, SPECIALITIES, UNIQUE_DIAL_CODES } from "@/lib/profile-options";
 import type { ProfileInput } from "@/lib/api/types";
 
@@ -63,6 +64,7 @@ export default function AccountPage() {
   };
 
   return (
+    <>
     <section className="panel">
       <h2>ACCOUNT</h2>
 
@@ -152,5 +154,16 @@ export default function AccountPage() {
         <button className="btn danger" onClick={logout}>LOG OUT</button>
       </div>
     </section>
+
+    <section className="panel">
+      <h2>{user.hasPassword ? "CHANGE PASSWORD" : "SET A PASSWORD"}</h2>
+      <p className="hint">
+        {user.hasPassword
+          ? "Update your account password."
+          : "You signed in without a local password — set one so you can log in with email/username too."}
+      </p>
+      <PasswordForm />
+    </section>
+    </>
   );
 }

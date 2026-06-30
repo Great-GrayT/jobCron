@@ -90,6 +90,8 @@ function MessagesInner() {
   // Right-click context menu + quoted reply.
   const [ctx, setCtx] = useState<{ x: number; y: number; m: Message } | null>(null);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  // Thread key currently showing the admin "typing…" indicator.
+  const [typingKey, setTypingKey] = useState<string | null>(null);
 
   const resolvedAvatar = (u?: { id: string; avatarUrl: string | null } | null) =>
     (u && (u.avatarUrl || avatarCache[u.id])) || null;
@@ -250,9 +252,15 @@ function MessagesInner() {
       setBody("");
       setReplyingTo(null);
       await load();
-      // Front-end auto-acknowledgement for the "General Admin Query" thread.
+      // Front-end auto-acknowledgement for the "General Admin Query" thread:
+      // show a "typing…" indicator for 3-6s, then drop in the reply.
       if (target.toAdmin) {
-        setAutoReplies((prev) => ({ ...prev, [key]: [...(prev[key] ?? []), makeAutoReply(meId)] }));
+        setTypingKey(key);
+        const delay = 3000 + Math.random() * 3000;
+        window.setTimeout(() => {
+          setAutoReplies((prev) => ({ ...prev, [key]: [...(prev[key] ?? []), makeAutoReply(meId)] }));
+          setTypingKey((t) => (t === key ? null : t));
+        }, delay);
       }
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Failed to send");
@@ -376,13 +384,14 @@ function MessagesInner() {
               )}
 
               <div className="msg-history">
-                {threadMessages.length === 0 ? (
+                {threadMessages.length === 0 && typingKey !== selected.key ? (
                   <div className="chat-empty">
                     <MessageSquare size={28} />
                     <p>No messages yet. Start the conversation below.</p>
                   </div>
                 ) : (
-                  threadMessages.map((m) => {
+                  <>
+                  {threadMessages.map((m) => {
                     const outgoing = m.fromUserId === meId;
                     const admin = authoredByAdmin(m);
                     return outgoing ? (
@@ -424,7 +433,19 @@ function MessagesInner() {
                         </div>
                       </div>
                     );
-                  })
+                  })}
+                  {typingKey === selected.key && (
+                    <div className="incoming_msg">
+                      <div className="incoming_msg_img"><Avatar src={null} name="Admin" size={36} /></div>
+                      <div className="received_msg">
+                        <div className="received_withd_msg is-admin typing-bubble">
+                          <span className="admin-tag">Admin</span>
+                          <span className="typing-dots"><i /><i /><i /></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  </>
                 )}
               </div>
 

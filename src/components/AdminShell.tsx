@@ -9,6 +9,7 @@ import { messages } from "@/lib/api/messages";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { navbarLinks } from "@/components/navMenu";
 import { searchPages } from "@/components/searchIndex";
+import { SetPasswordPrompt } from "@/components/SetPasswordPrompt";
 import "@/components/admin-shell.css";
 
 export interface MenuItem {
@@ -105,6 +106,7 @@ export function AdminShell({
 
   return (
     <div className={`admin${open ? " aside-open" : ""}`}>
+      <SetPasswordPrompt />
       <nav className="admin-navbar">
         <div className="navbar-left">
           <button

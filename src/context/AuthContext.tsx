@@ -14,6 +14,7 @@ interface AuthState {
     body: { email: string; password: string; name?: string } & ProfileInput,
   ) => Promise<RegisterResponse>;
   updateProfile: (body: ProfileInput & { name?: string }) => Promise<User>;
+  setPassword: (body: { password: string; currentPassword?: string }) => Promise<void>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -55,7 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (identifier: string, password: string) => {
     const r = await auth.login({ identifier, password });
     setUser(r.user);
-  }, []);
+    // Pull the full profile (incl. hasPassword) so prompts behave right away.
+    await refresh();
+  }, [refresh]);
 
   // Register does NOT establish a session — the user must verify their email.
   const register = useCallback(
@@ -69,6 +72,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return user;
   }, []);
 
+  const setPassword = useCallback(
+    async (body: { password: string; currentPassword?: string }) => {
+      await auth.setPassword(body);
+      await refresh();
+    },
+    [refresh],
+  );
+
   const logout = useCallback(() => {
     auth.logout();
     setUser(null);
@@ -76,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, authenticated: Boolean(user), login, register, updateProfile, logout, refresh }}
+      value={{ user, loading, authenticated: Boolean(user), login, register, updateProfile, setPassword, logout, refresh }}
     >
       {children}
     </AuthContext.Provider>

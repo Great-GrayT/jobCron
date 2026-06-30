@@ -37,6 +37,11 @@ export function resetPassword(token: string, password: string) {
   return api.post<{ ok: boolean }>("/api/auth/reset-password", { token, password }, { auth: false });
 }
 
+/** Set or change the logged-in user's password (currentPassword required if one exists). */
+export function setPassword(body: { password: string; currentPassword?: string }) {
+  return api.post<{ ok: boolean }>("/api/auth/set-password", body);
+}
+
 export function logout() {
   clearToken();
 }

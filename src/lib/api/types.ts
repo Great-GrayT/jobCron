@@ -19,6 +19,8 @@ export interface User {
   avatarUrl: string | null;
   avatarData: string | null;
   revokedPages: string[];
+  /** False for OAuth-only accounts that never set a local password. */
+  hasPassword?: boolean;
 }
 
 export interface AuthResponse {
