@@ -8,6 +8,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { AdminShell } from "@/components/AdminShell";
 import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
+import { isAdminUser } from "@/lib/admins";
 import {
   deriveConversations,
   partnerName,
@@ -57,11 +58,10 @@ function makeAutoReply(meId: string): Message {
 function MessagesInner() {
   const { user } = useAuth();
   const meId = user?.id ?? "";
-  const meRole = user?.role;
 
-  /** True when a message was authored by an admin (own role, or sender role when exposed). */
+  /** True when a message was authored by an admin (role from the API, else allowlist). */
   const authoredByAdmin = (m: Message) =>
-    m.fromUserId === meId ? meRole === "admin" : m.from.role === "admin";
+    m.fromUserId === meId ? isAdminUser(user) : isAdminUser(m.from);
 
   const [inbox, setInbox] = useState<Message[]>([]);
   const [sent, setSent] = useState<Message[]>([]);
