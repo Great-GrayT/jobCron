@@ -1309,3 +1309,7 @@
   font-weight: 700;
 }
 .scope-toggle { display: inline-flex; gap: 0.4rem; }
+
+/* Posting-velocity time-range slider */
+.timeline-range { display: inline-flex; align-items: center; gap: 0.4rem; margin-left: auto; font-size: 0.62rem; color: var(--terminal-text-muted); }
+.timeline-range input[type="range"] { width: 120px; accent-color: var(--terminal-accent, #00d1b2); cursor: pointer; }

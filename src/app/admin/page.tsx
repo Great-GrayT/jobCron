@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plug, Send, Play, ShieldCheck, ArrowLeft, Trash2, Rss, MessageSquare, Clock, CheckSquare, Database } from "lucide-react";
 import { admin, GATED_PAGES } from "@/lib/api/admin";
+import { ApiError } from "@/lib/api/client";
 import type { AdminUser, AdminUserDetail, LogLine } from "@/lib/api/types";
 import { useAuth } from "@/context/AuthContext";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -35,16 +36,21 @@ function AdminInner() {
   const [delPw, setDelPw] = useState("");
   const [delErr, setDelErr] = useState<string | null>(null);
   const [g2Busy, setG2Busy] = useState(false);
-  const [g2Msg, setG2Msg] = useState<string | null>(null);
+  const [opLogs, setOpLogs] = useState<LogLine[]>([]);
 
   const runBackfill = async () => {
     setG2Busy(true);
-    setG2Msg(null);
+    setOpLogs([{ level: "info", message: "Importing g2 data from R2 (skipping jobs already in the DB)…" }]);
     try {
       const r = await admin.backfillG2();
-      setG2Msg(`✓ Imported ${r.inserted} new job(s) — read ${r.read} across ${r.days} day(s), ${r.months} month(s).`);
+      const skipped = Math.max(0, r.read - r.inserted);
+      setOpLogs([
+        { level: "info", message: `Read ${r.read} job(s) across ${r.days} day(s), ${r.months} month(s).` },
+        { level: "success", message: `Imported ${r.inserted} new job(s); skipped ${skipped} already in the DB.` },
+        { level: "info", message: "Now click “Rebuild stats” to refresh the summary tables." },
+      ]);
     } catch (e) {
-      setG2Msg(e instanceof Error ? e.message : "backfill failed");
+      setOpLogs([{ level: "error", message: e instanceof Error ? e.message : "backfill failed" }]);
     } finally {
       setG2Busy(false);
     }
@@ -117,11 +123,13 @@ function AdminInner() {
   const rebuildStats = async () => {
     if (!confirm("Rebuild the public stats rollups from raw jobs? Run this once after a bulk import.")) return;
     setBusy("rebuild");
+    setOpLogs([{ level: "info", message: "Rebuilding stats rollups…" }]);
     try {
       const r = await admin.rebuildStats();
-      alert(`Stats rollups rebuilt in ${(r.ms / 1000).toFixed(1)}s.`);
+      setOpLogs(r.logs?.length ? r.logs : [{ level: "success", message: `Rebuilt in ${(r.ms / 1000).toFixed(1)}s.` }]);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Rebuild failed");
+      const body = e instanceof ApiError ? (e.body as { logs?: LogLine[] } | undefined) : undefined;
+      setOpLogs(body?.logs ?? [{ level: "error", message: e instanceof Error ? e.message : "Rebuild failed" }]);
     } finally {
       setBusy(null);
     }
@@ -154,7 +162,7 @@ function AdminInner() {
               </button>
             </div>
             <p className="hint">Run <b>Rebuild stats</b> once after importing to build the fast stats summary tables.</p>
-            {g2Msg && <p className="hint">{g2Msg}</p>}
+            {opLogs.length > 0 && <LogPanel logs={opLogs} title="operation log" />}
           </section>
 
           {/* ---- user mini-cards ---- */}

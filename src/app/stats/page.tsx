@@ -8,7 +8,6 @@ import {
   AnimatedNumber,
   IndustryTreemap,
   SkillsTagCloud,
-  SalaryGauges,
   PostingHeatmap,
   CertsBump,
   CHART_COLORS,
@@ -22,6 +21,7 @@ import {
   fetchSummary,
   fetchJobs,
   fetchJobDescription,
+  fetchMonths,
   type MonthlyStatistics,
   type JobStatistic,
   type ActiveFilters,
@@ -71,6 +71,7 @@ export default function StatsPage() {
   const [jobs, setJobs] = useState<JobStatistic[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<string>('all');
+  const [timelineDays, setTimelineDays] = useState<number>(0); // 0 = full range
   // "public" = all shared feeds (default); "me" = only the user's own feeds.
   const [scope, setScope] = useState<'public' | 'me'>('public');
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({ ...EMPTY_FILTERS });
@@ -123,8 +124,8 @@ export default function StatsPage() {
     const monthQ = { filters: EMPTY_FILTERS, viewMode: 'current', selectedDate: null, scope };
     setLoadingStep('LOADING MARKET STATISTICS...');
     setLoadingProgress(40);
-    Promise.all([fetchStatistics(baseQ), fetchSummary(allTimeQ), fetchSummary(monthQ)])
-      .then(([base, allTime, thisMonth]) => {
+    Promise.all([fetchStatistics(baseQ), fetchSummary(allTimeQ), fetchSummary(monthQ), fetchMonths(scope)])
+      .then(([base, allTime, thisMonth, months]) => {
         if (cancelled) return;
         setBaseStatistics(base);
         setStatsData({
@@ -137,8 +138,8 @@ export default function StatsPage() {
           summary: {
             totalJobsAllTime: allTime.total,
             currentMonth: month,
-            availableArchives: [],
-            overallStatistics: { totalMonths: 1, averageJobsPerMonth: thisMonth.total },
+            availableArchives: months,
+            overallStatistics: { totalMonths: months.length || 1, averageJobsPerMonth: thisMonth.total },
           },
         });
         setLoadingStep('READY');
@@ -321,7 +322,8 @@ export default function StatsPage() {
     if (!stats) return [];
     const entries = Object.entries(stats.byDate)
       .sort(([a], [b]) => a.localeCompare(b));
-    const limit = viewMode === 'all' ? 30 : 14;
+    // 0 = show the whole available range; slider trims to the last N days.
+    const limit = timelineDays > 0 ? timelineDays : entries.length;
     return entries
       .slice(-limit)
       .map(([date, count]) => ({
@@ -330,6 +332,7 @@ export default function StatsPage() {
         rawDate: date,
       }));
   };
+  const timelineTotalDays = Object.keys(filteredStatistics?.byDate ?? {}).length;
 
   const getCertificateChartData = () => {
     const stats = filteredStatistics;
@@ -953,6 +956,21 @@ export default function StatsPage() {
               <TrendingUp size={14} />
               <span>POSTING VELOCITY</span>
               {selectedDate && <span style={{ marginLeft: '8px', color: '#00d4ff', fontSize: '10px' }}>(FILTERED: {selectedDate})</span>}
+              {timelineTotalDays > 1 && (
+                <div className="timeline-range">
+                  <span>{timelineDays > 0 ? `last ${Math.min(timelineDays, timelineTotalDays)}d` : `all ${timelineTotalDays}d`}</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={timelineTotalDays}
+                    step={1}
+                    value={timelineDays}
+                    onChange={(e) => setTimelineDays(Number(e.target.value))}
+                    title="Limit the visible time range (0 = all)"
+                    aria-label="Limit visible time range"
+                  />
+                </div>
+              )}
             </div>
             <div className="chart-container compact">
               <ResponsiveContainer width="100%" height={180}>
@@ -1305,94 +1323,6 @@ export default function StatsPage() {
                 </ResponsiveContainer>
               </div>
             </div>
-          )}
-
-          {/* Salary Section - organized in a row */}
-          {hasSalaryData && (
-            <>
-              <div className="terminal-panel">
-                <div className="panel-header">
-                  <DollarSign size={14} />
-                  <span>SALARY OVERVIEW</span>
-                </div>
-                <div className="chart-container compact" style={{ height: 240 }}>
-                  <SalaryGauges
-                    stats={{
-                      totalWithSalary: filteredStats.salaryStats?.totalWithSalary || 0,
-                      averageSalary: filteredStats.salaryStats?.averageSalary || null,
-                      medianSalary: filteredStats.salaryStats?.medianSalary || null,
-                    }}
-                    totalJobs={filteredStats.totalJobs}
-                  />
-                </div>
-              </div>
-
-              <div className="terminal-panel">
-                <div className="panel-header">
-                  <DollarSign size={14} />
-                  <span>SALARY DISTRIBUTION</span>
-                </div>
-                <div className="chart-container compact" style={{ height: 240 }}>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={getSalaryRangeChartData()} margin={{ top: 5, right: 15, left: 5, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                      <XAxis dataKey="range" stroke="#4a5568" tick={{ fontSize: 8 }} />
-                      <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} allowDecimals={false} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #ffcc00', fontSize: 11 }}
-                        labelStyle={{ color: '#ffcc00' }}
-                      />
-                      <Bar dataKey="count" fill="#ffcc00" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="terminal-panel">
-                <div className="panel-header">
-                  <Users size={14} />
-                  <span>SALARY BY SENIORITY</span>
-                </div>
-                <div className="chart-container compact" style={{ height: 240 }}>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={getSalaryBySeniorityData()} margin={{ top: 5, right: 15, left: 15, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                      <XAxis dataKey="name" stroke="#4a5568" tick={{ fontSize: 8 }} />
-                      <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #9d4edd', fontSize: 11 }}
-                        labelStyle={{ color: '#9d4edd' }}
-                        formatter={(value: number | undefined) => value ? [`$${(value / 1000).toFixed(0)}k`, 'Avg Salary'] : ['N/A', 'Avg Salary']}
-                      />
-                      <Bar dataKey="avg" fill="#9d4edd" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Salary by Industry - full width for better readability */}
-              <div className="terminal-panel span-full">
-                <div className="panel-header">
-                  <Building2 size={14} />
-                  <span>SALARY BY INDUSTRY</span>
-                </div>
-                <div className="chart-container compact" style={{ height: 200 }}>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={getSalaryByIndustryData()} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-                      <XAxis type="number" stroke="#4a5568" tick={{ fontSize: 10 }} />
-                      <YAxis dataKey="name" type="category" stroke="#4a5568" width={120} tick={{ fontSize: 10 }} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#0a0e1a', border: '1px solid #00ff88', fontSize: 11 }}
-                        labelStyle={{ color: '#00ff88' }}
-                        formatter={(value: number | undefined) => value ? [`$${(value / 1000).toFixed(0)}k`, 'Avg Salary'] : ['N/A', 'Avg Salary']}
-                      />
-                      <Bar dataKey="avg" fill="#00ff88" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </>
           )}
 
           {/* Jobs List Table */}

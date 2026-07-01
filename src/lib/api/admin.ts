@@ -1,5 +1,5 @@
 import { api, ApiError, getToken } from "./client";
-import type { ActionResult, AdminUser, AdminUserDetail } from "./types";
+import type { ActionResult, AdminUser, AdminUserDetail, LogLine } from "./types";
 
 export interface BackfillResult {
   success: boolean;
@@ -33,7 +33,10 @@ export const admin = {
     ),
   remove: (id: string, password: string) =>
     api.delete<{ ok: boolean; reassigned: number }>(`/api/admin/users/${id}`, { body: { password } }),
-  rebuildStats: () => api.post<{ ok: boolean; ms: number }>("/api/admin/stats/rebuild"),
+  rebuildStats: () =>
+    api.post<{ ok: boolean; ms: number; days: number; total: number; logs: LogLine[] }>(
+      "/api/admin/stats/rebuild",
+    ),
   testFeed: (id: string) => action(`/api/admin/feeds/${id}/test`),
   sendFeed: (id: string) => action(`/api/admin/feeds/${id}/send`),
   testChannel: (id: string) => action(`/api/admin/channels/${id}/test`),

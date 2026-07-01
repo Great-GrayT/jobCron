@@ -188,7 +188,6 @@ export async function fetchStatistics(q: StatsQuery): Promise<MonthlyStatistics>
     timeline,
     heatmap,
     hourly,
-    salary,
   ] = await Promise.all([
     metric<{ total: number; withSalary: number }>("summary", query),
     metric<Facet>("industries", query, LIMIT),
@@ -204,13 +203,6 @@ export async function fetchStatistics(q: StatsQuery): Promise<MonthlyStatistics>
     metric<{ series: string | null; points: { d: string; c: number }[] }>("timeline", query),
     metric<{ dow: number; hour: number; c: number }[]>("heatmap", query),
     metric<{ hour: number; c: number }[]>("hourly", query),
-    metric<{
-      totalWithSalary: number;
-      averageSalary: number | null;
-      medianSalary: number | null;
-      salaryRanges: Facet;
-      byCurrency: Facet;
-    }>("salary", query),
   ]);
 
   const byDate: Facet = {};
@@ -221,26 +213,6 @@ export async function fetchStatistics(q: StatsQuery): Promise<MonthlyStatistics>
 
   const byDayHour: Facet = {};
   for (const r of heatmap) byDayHour[`${r.dow}-${r.hour}`] = r.c;
-
-  const salaryStats: SalaryStats = {
-    totalWithSalary: salary.totalWithSalary,
-    averageSalary: salary.averageSalary,
-    medianSalary: salary.medianSalary,
-    byIndustry: {},
-    bySeniority: {},
-    byLocation: {},
-    byCountry: {},
-    byCity: {},
-    byCurrency: salary.byCurrency || {},
-    salaryRanges: {
-      "0-30k": salary.salaryRanges?.["0-30k"] ?? 0,
-      "30-50k": salary.salaryRanges?.["30-50k"] ?? 0,
-      "50-75k": salary.salaryRanges?.["50-75k"] ?? 0,
-      "75-100k": salary.salaryRanges?.["75-100k"] ?? 0,
-      "100-150k": salary.salaryRanges?.["100-150k"] ?? 0,
-      "150k+": salary.salaryRanges?.["150k+"] ?? 0,
-    },
-  };
 
   return {
     totalJobs: summary.total,
@@ -262,8 +234,13 @@ export async function fetchStatistics(q: StatsQuery): Promise<MonthlyStatistics>
     byRoleCategory: roles,
     byHour,
     byDayHour,
-    salaryStats: salaryStats.totalWithSalary > 0 ? salaryStats : undefined,
+    salaryStats: undefined,
   };
+}
+
+/** Distinct YYYY-MM posting months present in the data (for the month picker). */
+export function fetchMonths(scope: Scope = "public"): Promise<string[]> {
+  return metric<string[]>("months", { scope });
 }
 
 // ---- jobs list / detail ------------------------------------------------------
