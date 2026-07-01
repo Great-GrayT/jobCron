@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plug, Send, Play, ShieldCheck, ArrowLeft, Trash2, Rss, MessageSquare, Clock, CheckSquare } from "lucide-react";
+import { Loader2, Plug, Send, Play, ShieldCheck, ArrowLeft, Trash2, Rss, MessageSquare, Clock, CheckSquare, Database } from "lucide-react";
 import { admin, GATED_PAGES } from "@/lib/api/admin";
 import type { AdminUser, AdminUserDetail, LogLine } from "@/lib/api/types";
 import { useAuth } from "@/context/AuthContext";
@@ -34,6 +34,21 @@ function AdminInner() {
   const [delOpen, setDelOpen] = useState(false);
   const [delPw, setDelPw] = useState("");
   const [delErr, setDelErr] = useState<string | null>(null);
+  const [g2Busy, setG2Busy] = useState(false);
+  const [g2Msg, setG2Msg] = useState<string | null>(null);
+
+  const runBackfill = async () => {
+    setG2Busy(true);
+    setG2Msg(null);
+    try {
+      const r = await admin.backfillG2();
+      setG2Msg(`✓ Imported ${r.inserted} new job(s) — read ${r.read} across ${r.days} day(s), ${r.months} month(s).`);
+    } catch (e) {
+      setG2Msg(e instanceof Error ? e.message : "backfill failed");
+    } finally {
+      setG2Busy(false);
+    }
+  };
 
   useEffect(() => {
     admin
@@ -109,12 +124,26 @@ function AdminInner() {
   return (
     <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Admin", detail ? "User" : "Users"]} title="Admin" back={detail ? false : "/"}>
       {!detail ? (
-        // ---- user mini-cards ----
-        loading ? (
-          <div className="muted"><Loader2 className="spin" size={16} /> loading users…</div>
-        ) : (
-          <div className="admin-user-grid">
-            {users.map((u) => (
+        <>
+          {/* ---- g2 data import ---- */}
+          <section className="panel">
+            <h2>g2 DATA IMPORT</h2>
+            <p className="hint">
+              One-time import of historical jobs from the old R2 store into the stats database.
+              Idempotent — safe to re-run; already-imported jobs are skipped. May take a while.
+            </p>
+            <button type="button" className="btn" disabled={g2Busy} onClick={runBackfill}>
+              {g2Busy ? <Loader2 className="spin" size={14} /> : <Database size={14} />} Import g2 data
+            </button>
+            {g2Msg && <p className="hint">{g2Msg}</p>}
+          </section>
+
+          {/* ---- user mini-cards ---- */}
+          {loading ? (
+            <div className="muted"><Loader2 className="spin" size={16} /> loading users…</div>
+          ) : (
+            <div className="admin-user-grid">
+              {users.map((u) => (
               <button type="button" key={u.id} className="admin-user-card" onClick={() => open(u.id)}>
                 <CardAvatar u={u} />
                 <div className="admin-card-body">
@@ -133,9 +162,10 @@ function AdminInner() {
                   </div>
                 </div>
               </button>
-            ))}
-          </div>
-        )
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         // ---- selected user's settings ----
         <>

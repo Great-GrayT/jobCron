@@ -1,5 +1,13 @@
-import { api, ApiError } from "./client";
+import { api, ApiError, getToken } from "./client";
 import type { ActionResult, AdminUser, AdminUserDetail } from "./types";
+
+export interface BackfillResult {
+  success: boolean;
+  months: number;
+  days: number;
+  read: number;
+  inserted: number;
+}
 
 async function action(path: string): Promise<ActionResult> {
   try {
@@ -29,6 +37,22 @@ export const admin = {
   sendFeed: (id: string) => action(`/api/admin/feeds/${id}/send`),
   testChannel: (id: string) => action(`/api/admin/channels/${id}/test`),
   runSchedule: (id: string) => action(`/api/admin/schedules/${id}/run`),
+
+  // g2 backfill: hits the SAME-ORIGIN frontend route, which forwards R2 creds
+  // (from host env) + the admin JWT to the cron-server. R2 secrets stay server-side.
+  backfillG2: async (): Promise<BackfillResult> => {
+    const token = getToken();
+    const res = await fetch("/api/admin/backfill-r2", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data && data.error) || `HTTP ${res.status}`);
+    return data as BackfillResult;
+  },
 };
 
 // Page keys used by the per-user ban system (admin) + RouteGuard enforcement.
