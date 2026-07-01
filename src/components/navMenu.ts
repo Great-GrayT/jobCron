@@ -19,7 +19,7 @@ export function settingsMenu(): MenuSection[] {
         { href: "/dashboard/account", label: "Account", icon: User },
         { href: "/dashboard/feeds", label: "Feeds", icon: Rss },
         { href: "/dashboard/telegram", label: "Telegram", icon: Send },
-        { href: "/dashboard/goat", label: "GOAT", icon: Target },
+        { href: "/dashboard/jfs", label: "JFS", icon: Target },
         { href: "/dashboard/schedules", label: "Schedules", icon: Clock },
       ],
     },

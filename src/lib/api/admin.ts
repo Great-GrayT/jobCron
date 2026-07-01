@@ -64,6 +64,6 @@ export const GATED_PAGES: { key: string; label: string }[] = [
   { key: "dashboard", label: "Dashboard" },
   { key: "feeds", label: "Feeds" },
   { key: "telegram", label: "Telegram" },
-  { key: "goat", label: "GOAT" },
+  { key: "jfs", label: "JFS" },
   { key: "schedules", label: "Schedules" },
 ];

@@ -168,7 +168,7 @@ export default function Home() {
           </div>
           <div className="action-panel-content">
             <p className="action-description">
-              Manage your own feeds, Telegram channels, GOAT filters, and cron schedules.
+              Manage your own feeds, Telegram channels, job filters (JFS), and cron schedules.
             </p>
             <ul className="feature-list-compact">
               <li>Personal RSS feeds &amp; notifications</li>

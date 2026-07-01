@@ -25,7 +25,7 @@ function isPublic(pathname: string): boolean {
 function pageKey(pathname: string): string | null {
   if (pathname.startsWith("/dashboard/feeds")) return "feeds";
   if (pathname.startsWith("/dashboard/telegram")) return "telegram";
-  if (pathname.startsWith("/dashboard/goat")) return "goat";
+  if (pathname.startsWith("/dashboard/jfs")) return "jfs";
   if (pathname.startsWith("/dashboard/schedules")) return "schedules";
   if (pathname.startsWith("/dashboard/account")) return null;
   if (pathname.startsWith("/dashboard")) return "dashboard";

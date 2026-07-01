@@ -3,8 +3,10 @@ import type {
   ActionResult,
   Channel,
   ChannelKind,
+  ConditionInput,
   Feed,
-  GoatConfig,
+  FieldMeta,
+  FilterSet,
   Schedule,
   ScheduleJob,
   ScheduleRun,
@@ -52,11 +54,23 @@ export const channels = {
   test: (id: string) => action(`/api/me/channels/${id}/test`),
 };
 
-// ---- goat filters ------------------------------------------------------------
+// ---- JFS (Job Filtering System) ----------------------------------------------
 
-export const goat = {
-  get: () => api.get<{ config: GoatConfig | null }>("/api/me/goat"),
-  put: (config: GoatConfig) => api.put<{ config: GoatConfig }>("/api/me/goat", config),
+export const filters = {
+  list: () => api.get<{ filterSets: FilterSet[]; fields: FieldMeta[] }>("/api/me/filters"),
+  create: (body: { name: string; enabled?: boolean; conditions: ConditionInput[] }) =>
+    api.post<{ filterSet: FilterSet }>("/api/me/filters", body).then((r) => r.filterSet),
+  update: (id: string, body: { name?: string; enabled?: boolean; conditions?: ConditionInput[] }) =>
+    api.patch<{ filterSet: FilterSet }>(`/api/me/filters/${id}`, body).then((r) => r.filterSet),
+  remove: (id: string) => api.delete<{ ok: boolean }>(`/api/me/filters/${id}`).then(() => undefined),
+};
+
+// Server-side type-ahead over a field's dictionary (never loads the full list).
+export const dictionaries = {
+  search: (field: string, q: string, limit = 30) =>
+    api
+      .get<{ field: string; values: string[] }>(`/api/dictionaries/${field}`, { query: { q, limit } })
+      .then((r) => r.values),
 };
 
 // ---- schedules ---------------------------------------------------------------

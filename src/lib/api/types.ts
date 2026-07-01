@@ -87,7 +87,7 @@ export interface ScheduleRun {
   createdAt: string;
 }
 
-export type ChannelKind = "main" | "goat";
+export type ChannelKind = "main" | "filtered";
 
 export interface Channel {
   id: string;
@@ -100,16 +100,43 @@ export interface Channel {
   lastError?: string | null;
 }
 
-export interface GoatConfig {
+// ---- JFS (Job Filtering System) ----------------------------------------------
+
+export type FieldKind = "dict" | "text" | "number";
+
+export interface FieldMeta {
+  field: string;
+  label: string;
+  kind: FieldKind;
+  ops: string[];
+}
+
+export type Connector = "AND" | "OR";
+
+export interface FilterCondition {
+  id?: string;
+  field: string;
+  op: string; // is | has | contains | gte | lte
+  value: string;
+  connector: Connector; // joins to the NEXT condition
+  position?: number;
+}
+
+export interface FilterSet {
+  id: string;
+  name: string;
   enabled: boolean;
-  requireIndustry: boolean;
-  requireCategory: boolean;
-  categories: string[];
-  industries: string[];
-  seniorities: string[];
-  companyBlacklist: string[];
-  vipCompanies: string[];
-  locationTerms: string[];
+  conditions: FilterCondition[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Condition payload for create/update (no id/position). */
+export interface ConditionInput {
+  field: string;
+  op: string;
+  value: string;
+  connector: Connector;
 }
 
 export type ScheduleJob = "check-jobs" | "stats-ingest" | "scrape";
