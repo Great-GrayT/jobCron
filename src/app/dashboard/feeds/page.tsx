@@ -1,11 +1,26 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
-import { Loader2, Plus, Trash2, Plug, Send } from "lucide-react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { Loader2, Plus, Trash2, Plug, Send, CheckCircle2 } from "lucide-react";
 import { feeds } from "@/lib/api/me";
 import type { Feed, LogLine } from "@/lib/api/types";
 import { StatusDot } from "@/components/StatusDot";
 import { LogPanel } from "@/components/LogPanel";
+
+/** Confirmation message shown after a toggle is saved on the server. */
+function toggleMessage(body: { notify?: boolean; shareToStats?: boolean; active?: boolean }): string | null {
+  if (body.shareToStats !== undefined)
+    return body.shareToStats
+      ? "Sharing on — this feed's posts are now saved to the public stats and their info is visible to all users."
+      : "Sharing off — this feed's posts stay private; only you will see them in your own stats.";
+  if (body.notify !== undefined)
+    return body.notify
+      ? "Notify on — this feed is analysed on every check-jobs run and matching posts are sent to the Telegram channel you've set (if any)."
+      : "Notify off — this feed will no longer send posts to your Telegram channel.";
+  if (body.active !== undefined)
+    return body.active ? "Feed enabled." : "Feed paused — it won't run until you re-enable it.";
+  return null;
+}
 
 export default function FeedsPage() {
   const [list, setList] = useState<Feed[]>([]);
@@ -18,6 +33,14 @@ export default function FeedsPage() {
   const [name, setName] = useState("");
   const [notify, setNotify] = useState(true);
   const [shareToStats, setShareToStats] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 5000);
+  };
   const [adding, setAdding] = useState(false);
 
   const load = async () => {
@@ -76,6 +99,8 @@ export default function FeedsPage() {
     setList((prev) => prev.map((f) => (f.id === id ? { ...f, ...body } : f)));
     try {
       await feeds.update(id, body);
+      const msg = toggleMessage(body);
+      if (msg) showToast(msg); // only after the server confirms the change
     } catch {
       load();
     }
@@ -175,6 +200,13 @@ export default function FeedsPage() {
             ))}
           </tbody>
         </table>
+      )}
+
+      {toast && (
+        <div className="feed-toast" role="status" aria-live="polite">
+          <CheckCircle2 size={16} />
+          <span>{toast}</span>
+        </div>
       )}
     </section>
   );
