@@ -114,6 +114,19 @@ function AdminInner() {
     }
   };
 
+  const rebuildStats = async () => {
+    if (!confirm("Rebuild the public stats rollups from raw jobs? Run this once after a bulk import.")) return;
+    setBusy("rebuild");
+    try {
+      const r = await admin.rebuildStats();
+      alert(`Stats rollups rebuilt in ${(r.ms / 1000).toFixed(1)}s.`);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Rebuild failed");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   if (user && user.role !== "admin") {
     return (
       <div className="auth-wrap"><div className="auth-card"><h1>FORBIDDEN</h1>
@@ -132,9 +145,15 @@ function AdminInner() {
               One-time import of historical jobs from the old R2 store into the stats database.
               Idempotent — safe to re-run; already-imported jobs are skipped. May take a while.
             </p>
-            <button type="button" className="btn" disabled={g2Busy} onClick={runBackfill}>
-              {g2Busy ? <Loader2 className="spin" size={14} /> : <Database size={14} />} Import g2 data
-            </button>
+            <div className="row">
+              <button type="button" className="btn" disabled={g2Busy} onClick={runBackfill}>
+                {g2Busy ? <Loader2 className="spin" size={14} /> : <Database size={14} />} Import g2 data
+              </button>
+              <button type="button" className="btn ghost" disabled={busy === "rebuild"} onClick={rebuildStats} title="Rebuild the public stats rollups (summary tables) from raw jobs">
+                {busy === "rebuild" ? <Loader2 className="spin" size={14} /> : <Database size={14} />} Rebuild stats
+              </button>
+            </div>
+            <p className="hint">Run <b>Rebuild stats</b> once after importing to build the fast stats summary tables.</p>
             {g2Msg && <p className="hint">{g2Msg}</p>}
           </section>
 
