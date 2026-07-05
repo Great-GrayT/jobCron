@@ -423,3 +423,8 @@ table.dash-table tbody tr:hover { background: var(--terminal-hover); }
 .modal-title { font-size: 1rem; color: var(--terminal-text); margin: 0 0 1.5rem; line-height: 1.5; }
 .modal-actions { display: flex; gap: 0.6rem; justify-content: center; }
 .modal-actions .btn { min-width: 96px; }
+
+/* Clean-DB modal dataset checklist */
+.clean-row { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; cursor: pointer; }
+.clean-row input[type="checkbox"] { margin-top: 3px; }
+.clean-desc { font-size: 12px; }

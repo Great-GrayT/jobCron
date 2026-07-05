@@ -83,7 +83,29 @@ export const admin = {
     if (!res.ok) throw new Error((data && data.error) || `HTTP ${res.status}`);
     return data as BackfillStatus;
   },
+
+  // DESTRUCTIVE — empties selected datasets. Server re-verifies admin role AND
+  // the acting admin's password; datasets are an allowlist (no table names sent).
+  cleanDb: (datasets: CleanDataset[], password: string) =>
+    api.post<CleanResult>("/api/admin/clean-db", { datasets, password }),
 };
+
+export type CleanDataset = "jobs" | "applied" | "dedup" | "backfills";
+
+export interface CleanResult {
+  ok: boolean;
+  cleared: string[];
+  counts: Record<string, number>;
+  tables: string[];
+}
+
+// Mirrors the server allowlist (FUNC-cleanup-repo). Account data is NOT clearable.
+export const CLEAN_DATASETS: { key: CleanDataset; label: string; desc: string }[] = [
+  { key: "jobs", label: "Job data + stats", desc: "All jobs, descriptions, user links and stats rollups. Repopulate via g2 import + Rebuild stats." },
+  { key: "applied", label: "Applied / tracking", desc: "Every user's applied-job records." },
+  { key: "dedup", label: "Dedup ledger", desc: "Telegram sent-URL history (old jobs may re-notify after clearing)." },
+  { key: "backfills", label: "Backfill history", desc: "Past import run records." },
+];
 
 // Page keys used by the per-user ban system (admin) + RouteGuard enforcement.
 export const GATED_PAGES: { key: string; label: string }[] = [

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plug, Send, Play, ShieldCheck, ArrowLeft, Trash2, Rss, MessageSquare, Clock, CheckSquare, Database } from "lucide-react";
-import { admin, GATED_PAGES } from "@/lib/api/admin";
+import { admin, GATED_PAGES, CLEAN_DATASETS, type CleanDataset } from "@/lib/api/admin";
 import { ApiError } from "@/lib/api/client";
 import type { AdminUser, AdminUserDetail, LogLine } from "@/lib/api/types";
 import { useAuth } from "@/context/AuthContext";
@@ -37,6 +37,12 @@ function AdminInner() {
   const [delErr, setDelErr] = useState<string | null>(null);
   const [g2Busy, setG2Busy] = useState(false);
   const [opLogs, setOpLogs] = useState<LogLine[]>([]);
+  // Clean-DB modal (destructive; re-auth with password).
+  const [cleanOpen, setCleanOpen] = useState(false);
+  const [cleanSel, setCleanSel] = useState<Set<CleanDataset>>(new Set());
+  const [cleanPw, setCleanPw] = useState("");
+  const [cleanErr, setCleanErr] = useState<string | null>(null);
+  const [cleanBusy, setCleanBusy] = useState(false);
 
   const runBackfill = async () => {
     setG2Busy(true);
@@ -183,6 +189,40 @@ function AdminInner() {
     }
   };
 
+  const toggleClean = (key: CleanDataset) => {
+    setCleanSel((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
+
+  const runClean = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cleanSel.size === 0 || !cleanPw) return;
+    setCleanBusy(true);
+    setCleanErr(null);
+    try {
+      const datasets = [...cleanSel];
+      const r = await admin.cleanDb(datasets, cleanPw);
+      const lines: LogLine[] = [
+        { level: "success", message: `Cleaned: ${r.cleared.join(", ")}.` },
+        ...Object.entries(r.counts).map(
+          ([k, n]): LogLine => ({ level: "info", message: `  ${k}: removed ${n} row(s).` }),
+        ),
+        { level: "info", message: "Now run Import g2 data, then Rebuild stats to repopulate." },
+      ];
+      setOpLogs(lines);
+      setCleanOpen(false);
+      setCleanSel(new Set());
+      setCleanPw("");
+    } catch (err) {
+      setCleanErr(err instanceof Error ? err.message : "clean failed");
+    } finally {
+      setCleanBusy(false);
+    }
+  };
+
   if (user && user.role !== "admin") {
     return (
       <div className="auth-wrap"><div className="auth-card"><h1>FORBIDDEN</h1>
@@ -207,6 +247,9 @@ function AdminInner() {
               </button>
               <button type="button" className="btn ghost" disabled={busy === "rebuild"} onClick={rebuildStats} title="Rebuild the public stats rollups (summary tables) from raw jobs">
                 {busy === "rebuild" ? <Loader2 className="spin" size={14} /> : <Database size={14} />} Rebuild stats
+              </button>
+              <button type="button" className="btn danger" onClick={() => { setCleanErr(null); setCleanOpen(true); }} title="Empty selected datasets so they can be re-imported (requires your password)">
+                <Trash2 size={14} /> Clean database
               </button>
             </div>
             <p className="hint">Run <b>Rebuild stats</b> once after importing to build the fast stats summary tables.</p>
@@ -334,6 +377,44 @@ function AdminInner() {
             {detail.applied.length === 0 && <p className="muted">No applications.</p>}
           </section>
         </>
+      )}
+
+      {cleanOpen && (
+        <div className="modal-overlay" onClick={() => !cleanBusy && setCleanOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-emoji">🧨</div>
+            <p className="modal-title">
+              Clean database
+              <br />
+              <span className="muted">
+                Permanently empties the selected datasets. This cannot be undone — job data is
+                recreatable via the g2 import, but tracking/dedup history is not.
+              </span>
+            </p>
+            <form onSubmit={runClean}>
+              {cleanErr && <div className="auth-error">{cleanErr}</div>}
+              <div className="field">
+                <label>Datasets to empty</label>
+                {CLEAN_DATASETS.map((d) => (
+                  <label key={d.key} className="clean-row">
+                    <input type="checkbox" aria-label={d.label} checked={cleanSel.has(d.key)} onChange={() => toggleClean(d.key)} />
+                    <span><b>{d.label}</b><br /><span className="muted clean-desc">{d.desc}</span></span>
+                  </label>
+                ))}
+              </div>
+              <div className="field">
+                <label>Confirm with your account password</label>
+                <input type="password" aria-label="account password" value={cleanPw} onChange={(e) => setCleanPw(e.target.value)} autoComplete="current-password" autoFocus required />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn ghost" onClick={() => setCleanOpen(false)} disabled={cleanBusy}>Cancel</button>
+                <button type="submit" className="btn danger" disabled={cleanBusy || cleanSel.size === 0 || !cleanPw}>
+                  {cleanBusy ? <Loader2 className="spin" size={14} /> : <Trash2 size={14} />} Empty {cleanSel.size || ""} dataset{cleanSel.size === 1 ? "" : "s"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {delOpen && detail && (
