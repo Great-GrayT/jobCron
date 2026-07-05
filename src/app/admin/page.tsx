@@ -41,30 +41,64 @@ function AdminInner() {
   const runBackfill = async () => {
     setG2Busy(true);
     setOpLogs([{ level: "info", message: "Starting g2 import from R2…" }]);
+    // Keep the last good render so a transient poll error (e.g. the server
+    // restarting -> 502) never wipes the log panel to a bare error.
+    let lastGood: LogLine[] = [{ level: "info", message: "Starting g2 import from R2…" }];
+    let failures = 0;
+    const MAX_FAILURES = 40; // ~60s of retries before giving up
+
     try {
       const start = await admin.backfillG2Start();
       if (!start.jobId) throw new Error(start.error || "failed to start backfill");
 
       // Poll the async job until it finishes; render a live header + log tail.
+      // The worker runs server-side regardless — polling only reflects it.
       for (;;) {
-        const s = await admin.backfillStatus(start.jobId);
+        let s;
+        try {
+          s = await admin.backfillStatus(start.jobId);
+          failures = 0;
+        } catch (pollErr) {
+          // Transient (server busy/restarting). Keep last logs, warn, retry.
+          failures++;
+          const why = pollErr instanceof Error ? pollErr.message : "connection error";
+          if (failures >= MAX_FAILURES) {
+            setOpLogs([
+              ...lastGood,
+              { level: "error", message: `Lost contact with the server (${why}). The import may still be running — reopen this page to re-attach.` },
+            ]);
+            break;
+          }
+          setOpLogs([
+            ...lastGood,
+            { level: "warning", message: `Reconnecting… (${why}) [${failures}/${MAX_FAILURES}]` },
+          ]);
+          await new Promise((r) => setTimeout(r, 1500));
+          continue;
+        }
+
         const header: LogLine = {
           level: s.status === "failed" ? "error" : s.status === "done" ? "success" : "info",
           message: `[${s.status}] ${s.phase} — ${s.inserted} inserted / ${s.read} read · ${s.daysDone} day(s), ${s.monthsDone} month(s)`,
         };
         const tail: LogLine[] = (s.logs || [])
-          .slice(-12)
-          .map((l) => ({ level: l.level === "warning" ? "info" : l.level, message: l.message }));
-        const next = [header, ...tail];
+          .slice(-14)
+          .map((l) => ({ level: l.level, message: l.message }));
+        const next: LogLine[] = [header, ...tail];
+        if (s.status === "failed" && s.error) {
+          next.push({ level: "error", message: s.error });
+        }
         if (s.status === "done") {
           next.push({ level: "info", message: "Now click “Rebuild stats” to refresh the summary tables." });
         }
+        lastGood = next;
         setOpLogs(next);
         if (s.status === "done" || s.status === "failed") break;
         await new Promise((r) => setTimeout(r, 1500));
       }
     } catch (e) {
-      setOpLogs([{ level: "error", message: e instanceof Error ? e.message : "backfill failed" }]);
+      // Start failed, or something unexpected — append, don't wipe prior context.
+      setOpLogs([...lastGood, { level: "error", message: e instanceof Error ? e.message : "backfill failed" }]);
     } finally {
       setG2Busy(false);
     }
