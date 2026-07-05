@@ -1,12 +1,25 @@
 import { api, ApiError, getToken } from "./client";
 import type { ActionResult, AdminUser, AdminUserDetail, LogLine } from "./types";
 
-export interface BackfillResult {
-  success: boolean;
-  months: number;
-  days: number;
+export interface BackfillStart {
+  success?: boolean;
+  jobId: string;
+  status: string;
+  error?: string;
+}
+
+export interface BackfillStatus {
+  jobId: string;
+  status: "running" | "done" | "failed" | "idle";
+  phase: string;
+  monthsDone: number;
+  daysDone: number;
   read: number;
   inserted: number;
+  logs: LogLine[];
+  error?: string | null;
+  startedAt?: string;
+  finishedAt?: string;
 }
 
 async function action(path: string): Promise<ActionResult> {
@@ -44,7 +57,8 @@ export const admin = {
 
   // g2 backfill: hits the SAME-ORIGIN frontend route, which forwards R2 creds
   // (from host env) + the admin JWT to the cron-server. R2 secrets stay server-side.
-  backfillG2: async (): Promise<BackfillResult> => {
+  // The import is async: START returns a jobId, then poll backfillStatus().
+  backfillG2Start: async (): Promise<BackfillStart> => {
     const token = getToken();
     const res = await fetch("/api/admin/backfill-r2", {
       method: "POST",
@@ -54,8 +68,20 @@ export const admin = {
       },
     });
     const data = await res.json().catch(() => ({}));
+    // 409 = one already running: re-attach to it instead of erroring.
+    if (res.status === 409 && data?.jobId) return data as BackfillStart;
     if (!res.ok) throw new Error((data && data.error) || `HTTP ${res.status}`);
-    return data as BackfillResult;
+    return data as BackfillStart;
+  },
+
+  backfillStatus: async (jobId: string): Promise<BackfillStatus> => {
+    const token = getToken();
+    const res = await fetch(`/api/admin/backfill-r2?jobId=${encodeURIComponent(jobId)}`, {
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data && data.error) || `HTTP ${res.status}`);
+    return data as BackfillStatus;
   },
 };
 

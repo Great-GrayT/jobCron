@@ -40,15 +40,29 @@ function AdminInner() {
 
   const runBackfill = async () => {
     setG2Busy(true);
-    setOpLogs([{ level: "info", message: "Importing g2 data from R2 (skipping jobs already in the DB)…" }]);
+    setOpLogs([{ level: "info", message: "Starting g2 import from R2…" }]);
     try {
-      const r = await admin.backfillG2();
-      const skipped = Math.max(0, r.read - r.inserted);
-      setOpLogs([
-        { level: "info", message: `Read ${r.read} job(s) across ${r.days} day(s), ${r.months} month(s).` },
-        { level: "success", message: `Imported ${r.inserted} new job(s); skipped ${skipped} already in the DB.` },
-        { level: "info", message: "Now click “Rebuild stats” to refresh the summary tables." },
-      ]);
+      const start = await admin.backfillG2Start();
+      if (!start.jobId) throw new Error(start.error || "failed to start backfill");
+
+      // Poll the async job until it finishes; render a live header + log tail.
+      for (;;) {
+        const s = await admin.backfillStatus(start.jobId);
+        const header: LogLine = {
+          level: s.status === "failed" ? "error" : s.status === "done" ? "success" : "info",
+          message: `[${s.status}] ${s.phase} — ${s.inserted} inserted / ${s.read} read · ${s.daysDone} day(s), ${s.monthsDone} month(s)`,
+        };
+        const tail: LogLine[] = (s.logs || [])
+          .slice(-12)
+          .map((l) => ({ level: l.level === "warning" ? "info" : l.level, message: l.message }));
+        const next = [header, ...tail];
+        if (s.status === "done") {
+          next.push({ level: "info", message: "Now click “Rebuild stats” to refresh the summary tables." });
+        }
+        setOpLogs(next);
+        if (s.status === "done" || s.status === "failed") break;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
     } catch (e) {
       setOpLogs([{ level: "error", message: e instanceof Error ? e.message : "backfill failed" }]);
     } finally {
