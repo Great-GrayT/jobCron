@@ -1313,3 +1313,47 @@
 /* Posting-velocity time-range slider */
 .timeline-range { display: inline-flex; align-items: center; gap: 0.4rem; margin-left: auto; font-size: 0.62rem; color: var(--terminal-text-muted); }
 .timeline-range input[type="range"] { width: 120px; accent-color: var(--terminal-accent, #00d1b2); cursor: pointer; }
+
+/* ============ Stats page redesign (velocity brush, jobs pager, overlay) ===== */
+
+.velocity-filtered-badge { margin-left: 8px; color: #00d4ff; font-size: 10px; }
+
+/* Recent Jobs: header badges + page-size selector */
+.jobs-count-badge { margin-left: 10px; font-size: 10px; color: var(--terminal-text-muted, #7a8aa0); font-weight: 400; }
+.jobs-pagesize { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--terminal-text-muted, #7a8aa0); }
+.jobs-pagesize select { background: #0a0e1a; color: var(--terminal-text, #cfe3ff); border: 1px solid #1f2b3d; border-radius: 4px; padding: 2px 6px; font-size: 11px; }
+
+/* Recent Jobs table column widths (moved off inline styles) */
+.jobs-table-full .col-title { width: 35%; }
+.jobs-table-full .col-employer { width: 13%; }
+.jobs-table-full .col-industry { width: 12%; }
+.jobs-table-full .col-seniority { width: 10%; }
+.jobs-table-full .col-country { width: 10%; }
+.jobs-table-full .col-city { width: 10%; }
+.jobs-table-full .col-published { width: 10%; }
+
+.job-row { cursor: pointer; transition: background 0.12s; }
+.job-row:hover { background: #0e1626; }
+.cell-title-hover { position: relative; }
+.cell-title-text { font-weight: 700; }
+.cell-loading-circle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+
+/* Pagination */
+.jobs-pagination { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-items: center; padding: 10px 6px 4px; }
+.page-btn { min-width: 30px; height: 28px; padding: 0 8px; background: #0a0e1a; color: var(--terminal-text, #cfe3ff); border: 1px solid #1f2b3d; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.12s; }
+.page-btn:hover:not(:disabled) { border-color: #00d4ff; color: #00d4ff; }
+.page-btn.active { background: #00d4ff; color: #04121f; border-color: #00d4ff; font-weight: 700; }
+.page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.page-gap { padding: 0 4px; color: var(--terminal-text-muted, #7a8aa0); }
+
+/* Refetch overlay — transparent animated popup during filter/view refetch */
+.refetch-overlay { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 900; pointer-events: none; animation: refetch-in 0.18s ease-out; }
+.refetch-card { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: rgba(10, 14, 26, 0.82); backdrop-filter: blur(6px); border: 1px solid #00d4ff55; border-radius: 8px; color: #cfe3ff; font-size: 12px; box-shadow: 0 6px 24px rgba(0, 212, 255, 0.18); }
+.refetch-bar { width: 90px; height: 3px; background: #12233a; border-radius: 2px; overflow: hidden; }
+.refetch-bar-fill { width: 40%; height: 100%; background: #00d4ff; border-radius: 2px; animation: refetch-slide 1s ease-in-out infinite; }
+@keyframes refetch-in { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes refetch-slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+
+/* Recharts brush handles under Posting Velocity */
+.recharts-brush-traveller rect { fill: #12233a; stroke: #00d4ff; }
+.recharts-brush-slide { fill: #00d4ff14; }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { BarChart3, TrendingUp, RefreshCw, Loader2, X, Filter, Calendar, Briefcase, Award, Target, MapPin, Building2, Zap, Users, DollarSign, TrendingDown, AlertCircle, Sparkles, Activity, Globe } from "lucide-react";
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area } from 'recharts';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area, Brush } from 'recharts';
 import WorldMap from '@/components/WorldMap';
 import {
   AnimatedNumber,
@@ -36,7 +36,6 @@ interface StatsData {
     month: string;
     lastUpdated: string;
     jobCount: number;
-    statistics: MonthlyStatistics;
   };
   summary: {
     totalJobsAllTime: number;
@@ -71,7 +70,6 @@ export default function StatsPage() {
   const [jobs, setJobs] = useState<JobStatistic[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<string>('all');
-  const [timelineDays, setTimelineDays] = useState<number>(0); // 0 = full range
   // "public" = all shared feeds (default); "me" = only the user's own feeds.
   const [scope, setScope] = useState<'public' | 'me'>('public');
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({ ...EMPTY_FILTERS });
@@ -82,12 +80,21 @@ export default function StatsPage() {
   const [hoveredJob, setHoveredJob] = useState<JobStatistic | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveringJobId, setHoveringJobId] = useState<string | null>(null);
-  const [isMouseOverPopup, setIsMouseOverPopup] = useState<boolean>(false);
+  // Ref mirror of "mouse is over popup" — the cell's mouse-leave timeout reads this,
+  // and a state value would be captured stale in that closure (the "only works
+  // the second time" bug). The ref always holds the latest value.
+  const isMouseOverPopupRef = useRef(false);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
   const loadingBarRef = useRef<HTMLDivElement>(null);
   const jobsBarRef = useRef<HTMLDivElement>(null);
   const [jobsLoading, setJobsLoading] = useState<boolean>(false);
+  const [statsUpdating, setStatsUpdating] = useState<boolean>(false);
+  // Server-side pagination for the jobs table (item 3).
+  const [jobsPage, setJobsPage] = useState<number>(1);
+  const [jobsPageSize, setJobsPageSize] = useState<number>(20);
+  const [jobsTotal, setJobsTotal] = useState<number>(0);
+  const [jobsTotalPages, setJobsTotalPages] = useState<number>(1);
   const [descriptionCache, setDescriptionCache] = useState<Map<string, string>>(new Map());
   const [loadingDescriptionsDate, setLoadingDescriptionsDate] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState<string>('INITIALIZING...');
@@ -110,31 +117,20 @@ export default function StatsPage() {
     if (jobsBarRef.current) jobsBarRef.current.style.width = `${loadingProgress}%`;
   }, [loadingProgress]);
 
-  // Base load — unfiltered aggregates for the current view + the summary cards.
-  // Powers the filter dropdowns, so it ignores the active facet filters.
+  // Summary cards + month list. These depend ONLY on scope (all-time total, this
+  // month's count, the archive list) — not on filters/view/date/search — so they
+  // refetch only when scope (or a manual reload) changes, instead of piggy-
+  // backing on every filter tweak like before.
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setLoadingStep('CONNECTING TO DATA LAYER...');
-    setLoadingProgress(15);
     const month = currentMonthStr();
-    const baseQ = { filters: EMPTY_FILTERS, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope };
     const allTimeQ = { filters: EMPTY_FILTERS, viewMode: 'all', selectedDate: null, scope };
     const monthQ = { filters: EMPTY_FILTERS, viewMode: 'current', selectedDate: null, scope };
-    setLoadingStep('LOADING MARKET STATISTICS...');
-    setLoadingProgress(40);
-    Promise.all([fetchStatistics(baseQ), fetchSummary(allTimeQ), fetchSummary(monthQ), fetchMonths(scope)])
-      .then(([base, allTime, thisMonth, months]) => {
+    Promise.all([fetchSummary(allTimeQ), fetchSummary(monthQ), fetchMonths(scope)])
+      .then(([allTime, thisMonth, months]) => {
         if (cancelled) return;
-        setBaseStatistics(base);
         setStatsData({
-          currentMonth: {
-            month,
-            lastUpdated: new Date().toISOString(),
-            jobCount: thisMonth.total,
-            statistics: base,
-          },
+          currentMonth: { month, lastUpdated: new Date().toISOString(), jobCount: thisMonth.total },
           summary: {
             totalJobsAllTime: allTime.total,
             currentMonth: month,
@@ -142,46 +138,61 @@ export default function StatsPage() {
             overallStatistics: { totalMonths: months.length || 1, averageJobsPerMonth: thisMonth.total },
           },
         });
-        setLoadingStep('READY');
-        setLoadingProgress(100);
       })
-      .catch(err => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load statistics');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      .catch(err => { if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load summary'); });
     return () => { cancelled = true; };
-  }, [viewMode, selectedDate, debouncedTextSearch, scope, reloadKey]);
+  }, [scope, reloadKey]);
 
-  // Filtered load — aggregates + job rows for the active filter set.
+  // Chart aggregates. Fetches the FILTERED view (drives every chart). The
+  // unfiltered "base" that powers the filter dropdowns is identical when no
+  // facet filter is active, so we only issue that second request when filters
+  // ARE active — eliminating the duplicate bundle that fired on every load.
+  useEffect(() => {
+    let cancelled = false;
+    const initial = !filteredStatistics;
+    if (initial) { setLoading(true); setLoadingStep('LOADING MARKET STATISTICS...'); setLoadingProgress(40); }
+    else { setStatsUpdating(true); }
+    setError(null);
+    const q = { filters: activeFilters, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope };
+    const hasFacets = Object.values(activeFilters).some(a => a.length > 0);
+    const baseQ = { filters: EMPTY_FILTERS, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope };
+    Promise.all([fetchStatistics(q), hasFacets ? fetchStatistics(baseQ) : Promise.resolve(null)])
+      .then(([stats, base]) => {
+        if (cancelled) return;
+        setFilteredStatistics(stats);
+        setBaseStatistics(base ?? stats); // reuse when unfiltered — no 2nd call
+        setLoadingStep('READY'); setLoadingProgress(100);
+      })
+      .catch(err => { if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load statistics'); })
+      .finally(() => { if (!cancelled) { setLoading(false); setStatsUpdating(false); } });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFilters, viewMode, selectedDate, debouncedTextSearch, scope, reloadKey]);
+
+  // Any change to the filter context resets the jobs table to page 1 (a no-op
+  // when already on page 1, so it doesn't cause an extra fetch).
+  useEffect(() => {
+    setJobsPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFilters, viewMode, selectedDate, debouncedTextSearch, scope]);
+
+  // Paginated jobs for the table — server-side page/pageSize, descriptions
+  // omitted (fetched on demand when a row is hovered).
   useEffect(() => {
     let cancelled = false;
     setJobsLoading(true);
-    setLoadingStep('LOADING JOB RECORDS...');
-    setLoadingProgress(85);
     const q = { filters: activeFilters, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope };
-    Promise.all([
-      fetchStatistics(q),
-      fetchJobs(q, { pageSize: 200, withDescription: false }),
-    ])
-      .then(([stats, jobsPage]) => {
+    fetchJobs(q, { page: jobsPage, pageSize: jobsPageSize, withDescription: false })
+      .then(res => {
         if (cancelled) return;
-        setFilteredStatistics(stats);
-        setJobs(jobsPage.jobs);
+        setJobs(res.jobs);
+        setJobsTotal(res.total);
+        setJobsTotalPages(res.totalPages || 1);
       })
-      .catch(err => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load jobs');
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setJobsLoading(false);
-          setLoadingStep('READY');
-          setLoadingProgress(100);
-        }
-      });
+      .catch(err => { if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load jobs'); })
+      .finally(() => { if (!cancelled) setJobsLoading(false); });
     return () => { cancelled = true; };
-  }, [activeFilters, viewMode, selectedDate, debouncedTextSearch, scope, reloadKey]);
+  }, [activeFilters, viewMode, selectedDate, debouncedTextSearch, scope, reloadKey, jobsPage, jobsPageSize]);
 
   // Filter management
   const toggleFilter = (category: keyof ActiveFilters, value: string) => {
@@ -317,22 +328,19 @@ export default function StatsPage() {
       .map(([name, value]) => ({ name, value }));
   };
 
+  // Full timeline — the <Brush> under the chart handles windowing (drag the grey
+  // scrollbar handles), so we no longer slice here.
   const getDateChartData = () => {
     const stats = filteredStatistics;
     if (!stats) return [];
-    const entries = Object.entries(stats.byDate)
-      .sort(([a], [b]) => a.localeCompare(b));
-    // 0 = show the whole available range; slider trims to the last N days.
-    const limit = timelineDays > 0 ? timelineDays : entries.length;
-    return entries
-      .slice(-limit)
+    return Object.entries(stats.byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, count]) => ({
         date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         jobs: count,
         rawDate: date,
       }));
   };
-  const timelineTotalDays = Object.keys(filteredStatistics?.byDate ?? {}).length;
 
   const getCertificateChartData = () => {
     const stats = filteredStatistics;
@@ -686,39 +694,64 @@ export default function StatsPage() {
   const hasRoleTypeData = filteredStats?.byRoleType && Object.keys(filteredStats.byRoleType).length > 0;
   const hasRoleCategoryData = filteredStats?.byRoleCategory && Object.keys(filteredStats.byRoleCategory).length > 0;
 
-  // Get publication time analysis data
-  // Priority 1: real 10-minute slots from loaded jobs (genuine sub-hour variation)
-  // Priority 2: pre-computed byHour stats as honest hourly bars (no synthetic splitting)
+  // Publication times = the server-computed hourly histogram (byHour), which
+  // aggregates the FULL result set by real hour-of-day. The old approach bucketed
+  // the ~200 loaded rows by 10-minute slots of postedDate, but imported jobs have
+  // a date-only postedDate (midnight), so every bar collapsed onto 00:00–01:50.
+  // Render all 24 hours (zero-filled) so the axis is a full day.
   const getPublicationTimeData = () => {
-    if (filteredJobs.length > 0) {
-      const timeSlots: Record<string, number> = {};
-      filteredJobs.forEach(job => {
-        const date = new Date(job.postedDate);
-        const hours = date.getUTCHours();
-        const roundedMinutes = Math.floor(date.getUTCMinutes() / 10) * 10;
-        const timeKey = `${String(hours).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`;
-        timeSlots[timeKey] = (timeSlots[timeKey] || 0) + 1;
-      });
-      return Object.entries(timeSlots)
-        .map(([time, count]) => ({ time, count }))
-        .sort((a, b) => a.time.localeCompare(b.time));
-    }
-
-    const byHour = filteredStats?.byHour;
-    if (byHour && Object.keys(byHour).length > 0) {
-      return Object.entries(byHour)
-        .map(([hour, count]) => ({ time: `${hour.padStart(2, '0')}:00`, count }))
-        .sort((a, b) => a.time.localeCompare(b.time));
-    }
-
-    return [];
+    const byHour = filteredStats?.byHour ?? {};
+    return Array.from({ length: 24 }, (_, h) => {
+      const key = String(h).padStart(2, '0');
+      return { time: `${key}:00`, count: byHour[key] ?? 0 };
+    });
   };
 
-  // Get jobs sorted by publish time (most recent first)
-  const getSortedJobs = () => {
-    return filteredJobs
-      .sort((a: JobStatistic, b: JobStatistic) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime())
-      .slice(0, 100);
+  // ---- jobs table hover popup (item 5) ---------------------------------------
+  // Open on hover after a short delay, positioned NEAR the cursor (so the mouse
+  // can travel onto it), and start fetching the description immediately so the
+  // loading circle reflects the real request.
+  const openJobHover = (job: JobStatistic, e: React.MouseEvent) => {
+    const cx = e.clientX;
+    const cy = e.clientY;
+    setHoveringJobId(job.id);
+    if (!descriptionCache.has(job.id)) loadJobDescription(job.id, job.extractedDate.split('T')[0]);
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      const w = 440, h = 360;
+      const x = Math.min(Math.max(12, cx + 16), Math.max(12, window.innerWidth - w));
+      const y = Math.min(Math.max(12, cy - 24), Math.max(12, window.innerHeight - h));
+      setHoveredJob(job);
+      setPopupPosition({ x, y });
+    }, 350);
+  };
+
+  const closeJobHover = () => {
+    if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
+    setHoveringJobId(null);
+    // Delay close so the mouse can reach the popup. Read the REF (not state) so
+    // this closure sees the live value — the stale-state read was why the popup
+    // only stayed on the second hover.
+    setTimeout(() => {
+      if (!isMouseOverPopupRef.current) {
+        setHoveredJob(null);
+        setPopupPosition(null);
+      }
+    }, 160);
+  };
+
+  // Build a compact page list with ellipses: 1 … 4 5 [6] 7 8 … 20
+  const pageWindow = (current: number, total: number): number[] => {
+    const pages = new Set<number>([1, total, current, current - 1, current + 1]);
+    const sorted = [...pages].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+    const out: number[] = [];
+    let prev = 0;
+    for (const p of sorted) {
+      if (prev && p - prev > 1) out.push(-1); // gap marker
+      out.push(p);
+      prev = p;
+    }
+    return out;
   };
 
   // Format date for display
@@ -800,7 +833,7 @@ export default function StatsPage() {
       )}
 
       {/* Loading State */}
-      {loading && (
+      {(loading || (!statsData && !error)) && (
         <div className="loading-screen">
           <div className="loading-screen-card">
             <div className="loading-brand">
@@ -824,6 +857,18 @@ export default function StatsPage() {
                 STAGE {loadingProgress < 20 ? 1 : loadingProgress < 80 ? 2 : 3} / 3
               </span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refetch overlay — transparent animated pop-up shown while new data is
+          loading after a filter/view change (item 6). */}
+      {!loading && (statsUpdating || jobsLoading) && (
+        <div className="refetch-overlay" aria-live="polite">
+          <div className="refetch-card">
+            <Loader2 size={16} className="spin" />
+            <span>Updating data…</span>
+            <div className="refetch-bar"><div className="refetch-bar-fill" /></div>
           </div>
         </div>
       )}
@@ -955,26 +1000,11 @@ export default function StatsPage() {
             <div className="panel-header">
               <TrendingUp size={14} />
               <span>POSTING VELOCITY</span>
-              {selectedDate && <span style={{ marginLeft: '8px', color: '#00d4ff', fontSize: '10px' }}>(FILTERED: {selectedDate})</span>}
-              {timelineTotalDays > 1 && (
-                <div className="timeline-range">
-                  <span>{timelineDays > 0 ? `last ${Math.min(timelineDays, timelineTotalDays)}d` : `all ${timelineTotalDays}d`}</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={timelineTotalDays}
-                    step={1}
-                    value={timelineDays}
-                    onChange={(e) => setTimelineDays(Number(e.target.value))}
-                    title="Limit the visible time range (0 = all)"
-                    aria-label="Limit visible time range"
-                  />
-                </div>
-              )}
+              {selectedDate && <span className="velocity-filtered-badge">(FILTERED: {selectedDate})</span>}
             </div>
             <div className="chart-container compact">
-              <ResponsiveContainer width="100%" height={180}>
-                <ComposedChart data={getDateChartData()} onClick={handleDateClick}>
+              <ResponsiveContainer width="100%" height={210}>
+                <ComposedChart data={getDateChartData()} onClick={handleDateClick} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
                   <XAxis dataKey="date" stroke="#4a5568" tick={{ fontSize: 10 }} />
                   <YAxis stroke="#4a5568" tick={{ fontSize: 10 }} />
@@ -1036,6 +1066,15 @@ export default function StatsPage() {
                         />
                       );
                     }}
+                  />
+                  {/* Draggable window scrollbar under the chart (item 1). */}
+                  <Brush
+                    dataKey="date"
+                    height={22}
+                    travellerWidth={10}
+                    stroke="#00d4ff"
+                    fill="#0a0e1a"
+                    tickFormatter={() => ''}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -1329,20 +1368,37 @@ export default function StatsPage() {
           <div className="terminal-panel span-full">
             <div className="panel-header">
               <Briefcase size={14} />
-              <span>RECENT JOBS (TOP 100)</span>
+              <span>RECENT JOBS</span>
+              {jobsTotal > 0 && (
+                <span className="jobs-count-badge">
+                  {(jobsPage - 1) * jobsPageSize + 1}–{Math.min(jobsPage * jobsPageSize, jobsTotal)} of {jobsTotal.toLocaleString()}
+                </span>
+              )}
               {jobsLoading && <Loader2 size={12} className="spin panel-header-spinner" />}
+              <div className="jobs-pagesize">
+                <span>Show</span>
+                <select
+                  aria-label="Jobs per page"
+                  value={jobsPageSize}
+                  onChange={(e) => { setJobsPageSize(Number(e.target.value)); setJobsPage(1); }}
+                >
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
             </div>
             <div className="jobs-table-container">
               <table className="jobs-table-full">
                 <thead>
                   <tr>
-                    <th style={{ width: '35%' }}>JOB TITLE</th>
-                    <th style={{ width: '13%' }}>EMPLOYER</th>
-                    <th style={{ width: '12%' }}>INDUSTRY</th>
-                    <th style={{ width: '10%' }}>SENIORITY</th>
-                    <th style={{ width: '10%' }}>COUNTRY</th>
-                    <th style={{ width: '10%' }}>CITY</th>
-                    <th style={{ width: '10%' }}>PUBLISHED</th>
+                    <th className="col-title">JOB TITLE</th>
+                    <th className="col-employer">EMPLOYER</th>
+                    <th className="col-industry">INDUSTRY</th>
+                    <th className="col-seniority">SENIORITY</th>
+                    <th className="col-country">COUNTRY</th>
+                    <th className="col-city">CITY</th>
+                    <th className="col-published">PUBLISHED</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1351,101 +1407,60 @@ export default function StatsPage() {
                       <td colSpan={7}>Loading jobs...</td>
                     </tr>
                   )}
-                  {getSortedJobs().map((job: JobStatistic) => (
+                  {filteredJobs.map((job: JobStatistic) => (
                     <tr
                       key={job.id}
-                      onClick={() => window.open(job.url, '_blank')}
+                      className="job-row"
+                      onClick={() => job.url && window.open(job.url, '_blank', 'noopener,noreferrer')}
+                      title="Open job posting in a new tab"
                     >
                       <td
-                        className="cell-title"
-                        style={{ position: 'relative' }}
-                        onMouseEnter={(e) => {
-                          e.stopPropagation();
-                          setHoveringJobId(job.id);
-
-                          // Show popup after 3 seconds
-                          hoverTimerRef.current = setTimeout(() => {
-                            const dateKey = job.extractedDate.split('T')[0];
-                            setHoveredJob(job);
-                            setPopupPosition({
-                              x: window.innerWidth / 2 - 200,
-                              y: window.innerHeight / 2 - 250
-                            });
-                            if (!descriptionCache.has(job.id)) {
-                              loadJobDescription(job.id, dateKey);
-                            }
-                          }, 3000);
-                        }}
-                        onMouseLeave={(e) => {
-                          e.stopPropagation();
-                          // Clear loading timer
-                          if (hoverTimerRef.current) {
-                            clearTimeout(hoverTimerRef.current);
-                            hoverTimerRef.current = null;
-                          }
-                          setHoveringJobId(null);
-
-                          // Only close popup if mouse is not moving to the popup
-                          // Use a small delay to allow mouse to reach the popup
-                          setTimeout(() => {
-                            if (!isMouseOverPopup) {
-                              setHoveredJob(null);
-                              setPopupPosition(null);
-                            }
-                          }, 100);
-                        }}
+                        className="cell-title cell-title-hover"
+                        onMouseEnter={(e) => openJobHover(job, e)}
+                        onMouseLeave={closeJobHover}
                       >
-                        {/* Loading circle indicator - top right of title cell */}
+                        {/* Loading circle — spins while the description is fetching */}
                         {hoveringJobId === job.id && !hoveredJob && (
-                          <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 20 20"
-                            style={{
-                              position: 'absolute',
-                              right: '8px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                            }}
-                          >
-                            <circle
-                              cx="10"
-                              cy="10"
-                              r="8"
-                              fill="none"
-                              className="loading-circle-bg"
-                              strokeWidth="2"
-                            />
-                            <circle
-                              cx="10"
-                              cy="10"
-                              r="8"
-                              fill="none"
-                              className="loading-circle-fg loading-circle-progress"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeDasharray="50.27"
-                              strokeDashoffset="50.27"
-                            />
+                          <svg width="20" height="20" viewBox="0 0 20 20" className="cell-loading-circle">
+                            <circle cx="10" cy="10" r="8" fill="none" className="loading-circle-bg" strokeWidth="2" />
+                            <circle cx="10" cy="10" r="8" fill="none" className="loading-circle-fg loading-circle-progress" strokeWidth="2" strokeLinecap="round" strokeDasharray="50.27" strokeDashoffset="50.27" />
                           </svg>
                         )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontWeight: 'bold' }}>{job.title}</span>
-                        </div>
+                        <span className="cell-title-text">{job.title}</span>
                       </td>
                       <td className="cell-company">{job.company || 'N/A'}</td>
                       <td className="cell-industry">{job.industry || 'N/A'}</td>
                       <td className="cell-seniority">{job.seniority || 'N/A'}</td>
                       <td className="cell-location">{job.country || 'N/A'}</td>
                       <td className="cell-location">{normalizeCity(job.city) || 'N/A'}</td>
-                      <td className="cell-date">
-                        {formatPublishDate(job.postedDate)}
-                      </td>
+                      <td className="cell-date">{formatPublishDate(job.postedDate)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            {jobsTotalPages > 1 && (
+              <div className="jobs-pagination">
+                <button type="button" className="page-btn" disabled={jobsPage <= 1} onClick={() => setJobsPage(1)} title="First page">«</button>
+                <button type="button" className="page-btn" disabled={jobsPage <= 1} onClick={() => setJobsPage(p => Math.max(1, p - 1))} title="Previous page">‹</button>
+                {pageWindow(jobsPage, jobsTotalPages).map((p, i) =>
+                  p === -1 ? (
+                    <span key={`gap-${i}`} className="page-gap">…</span>
+                  ) : (
+                    <button
+                      type="button"
+                      key={p}
+                      className={`page-btn ${p === jobsPage ? 'active' : ''}`}
+                      onClick={() => setJobsPage(p)}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+                <button type="button" className="page-btn" disabled={jobsPage >= jobsTotalPages} onClick={() => setJobsPage(p => Math.min(jobsTotalPages, p + 1))} title="Next page">›</button>
+                <button type="button" className="page-btn" disabled={jobsPage >= jobsTotalPages} onClick={() => setJobsPage(jobsTotalPages)} title="Last page">»</button>
+              </div>
+            )}
           </div>
 
           {/* Comprehensive Statistics Table */}
@@ -1810,10 +1825,10 @@ export default function StatsPage() {
             pointerEvents: 'auto',
           }}
           onMouseEnter={() => {
-            setIsMouseOverPopup(true);
+            isMouseOverPopupRef.current = true;
           }}
           onMouseLeave={() => {
-            setIsMouseOverPopup(false);
+            isMouseOverPopupRef.current = false;
             setHoveredJob(null);
             setPopupPosition(null);
           }}
@@ -1821,9 +1836,11 @@ export default function StatsPage() {
           {/* Header with close button - fixed */}
           <div className="job-popup-header">
             <button
+              type="button"
               className="job-popup-close"
+              title="Close"
               onClick={() => {
-                setIsMouseOverPopup(false);
+                isMouseOverPopupRef.current = false;
                 setHoveredJob(null);
                 setPopupPosition(null);
               }}

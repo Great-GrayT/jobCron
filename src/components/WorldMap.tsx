@@ -20,8 +20,10 @@ interface WorldMapProps {
   selectedCountry?: string | null;
 }
 
-// TopoJSON world map URL
-const geoUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+// TopoJSON world map — served locally from /public so it works under the strict
+// CSP (connect-src 'self'); the jsdelivr CDN fetch was blocked, leaving the map
+// blank. Same-origin also loads faster and can't break if the CDN is down.
+const geoUrl = '/countries-110m.json';
 
 // Map country names from data to names in the TopoJSON
 const countryNameMapping: Record<string, string[]> = {
