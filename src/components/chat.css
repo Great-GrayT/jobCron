@@ -283,6 +283,22 @@
   text-align: center;
   padding: 2rem;
   margin: auto;
+  position: relative;
+  isolation: isolate;
+}
+/* ceramic ornament brings life to the empty conversation state */
+.chat-empty::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--ceramic-pattern);
+  background-repeat: repeat;
+  background-size: 300px;
+  opacity: var(--ceramic-opacity);
+  -webkit-mask-image: radial-gradient(80% 80% at 50% 50%, #000 0%, transparent 75%);
+          mask-image: radial-gradient(80% 80% at 50% 50%, #000 0%, transparent 75%);
 }
 .chat-empty-full { flex: 1; }
 

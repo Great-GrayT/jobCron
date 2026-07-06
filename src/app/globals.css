@@ -95,6 +95,11 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
   --shadow-blue: 0 0 20px var(--color-blue-glow);
   --shadow-success: 0 0 20px var(--color-success-glow);
+
+  /* Ceramic ornament pattern — subtle theme-aware watermark. Light = porcelain navy. */
+  --ceramic-pattern: url("/ornate/premium-ceramic-navy.png");
+  --ceramic-opacity: 0.06;
+  --ceramic-size: 340px;
 }
 
 /* Light Theme (explicit) — mirrors :root template defaults */
@@ -189,7 +194,30 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
   --shadow-blue: 0 0 20px var(--color-blue-glow);
   --shadow-success: 0 0 20px var(--color-success-glow);
+
+  /* Ceramic ornament pattern — dark theme uses the gold tint. */
+  --ceramic-pattern: url("/ornate/premium-ceramic-gold.png");
+  --ceramic-opacity: 0.07;
 }
+
+/* Shared ceramic watermark — layers the pattern behind content, opacity-controlled.
+   Applied to a few calm surfaces only (auth backdrop, empty states). Never on data panels. */
+.ceramic-surface { position: relative; isolation: isolate; }
+.ceramic-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--ceramic-pattern);
+  background-repeat: repeat;
+  background-size: var(--ceramic-size);
+  opacity: var(--ceramic-opacity);
+  /* fade the pattern toward the center so foreground content stays clean */
+  -webkit-mask-image: radial-gradient(120% 120% at 50% 40%, transparent 20%, #000 85%);
+          mask-image: radial-gradient(120% 120% at 50% 40%, transparent 20%, #000 85%);
+}
+@media (prefers-reduced-motion: reduce) { .ceramic-surface::before { background-attachment: initial; } }
 
 /* ========================================
    RESET & BASE STYLES
