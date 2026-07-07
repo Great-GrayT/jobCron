@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { BarChart3, TrendingUp, RefreshCw, Loader2, X, Filter, Calendar, Briefcase, Award, Target, MapPin, Building2, Zap, Users, DollarSign, TrendingDown, AlertCircle, Sparkles, Activity, Globe } from "lucide-react";
+import { BarChart3, TrendingUp, RefreshCw, Loader2, X, Filter, Calendar, Briefcase, Award, Target, MapPin, Building2, Zap, Users, DollarSign, TrendingDown, AlertCircle, Sparkles, Activity, Globe, ExternalLink } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area, Brush } from 'recharts';
 import WorldMap from '@/components/WorldMap';
 import {
@@ -727,6 +727,19 @@ export default function StatsPage() {
     }, 350);
   };
 
+  // Open a job posting reliably: a synthetic anchor click is never treated as a
+  // popup (unlike window.open with a features string, which some blockers eat).
+  const openJob = (url?: string | null) => {
+    if (!url) return;
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const closeJobHover = () => {
     if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
     setHoveringJobId(null);
@@ -1411,7 +1424,7 @@ export default function StatsPage() {
                     <tr
                       key={job.id}
                       className="job-row"
-                      onClick={() => job.url && window.open(job.url, '_blank', 'noopener,noreferrer')}
+                      onClick={() => openJob(job.url)}
                       title="Open job posting in a new tab"
                     >
                       <td
@@ -1426,7 +1439,15 @@ export default function StatsPage() {
                             <circle cx="10" cy="10" r="8" fill="none" className="loading-circle-fg loading-circle-progress" strokeWidth="2" strokeLinecap="round" strokeDasharray="50.27" strokeDashoffset="50.27" />
                           </svg>
                         )}
-                        <span className="cell-title-text">{job.title}</span>
+                        <a
+                          className="cell-title-text cell-title-link"
+                          href={job.url || undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {job.title}
+                        </a>
                       </td>
                       <td className="cell-company">{job.company || 'N/A'}</td>
                       <td className="cell-industry">{job.industry || 'N/A'}</td>
@@ -1833,8 +1854,19 @@ export default function StatsPage() {
             setPopupPosition(null);
           }}
         >
-          {/* Header with close button - fixed */}
+          {/* Header with open + close - fixed */}
           <div className="job-popup-header">
+            {hoveredJob.url && (
+              <a
+                className="job-popup-open"
+                href={hoveredJob.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open job posting in a new tab"
+              >
+                <ExternalLink size={13} /> Open posting
+              </a>
+            )}
             <button
               type="button"
               className="job-popup-close"
