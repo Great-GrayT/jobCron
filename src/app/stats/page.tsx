@@ -1073,8 +1073,7 @@ export default function StatsPage() {
                     dataKey="date"
                     height={22}
                     travellerWidth={10}
-                    stroke="#00d4ff"
-                    fill="#0a0e1a"
+                    className="velocity-brush"
                     tickFormatter={() => ''}
                   />
                 </ComposedChart>

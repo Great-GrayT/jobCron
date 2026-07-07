@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plug, Send, Play, ShieldCheck, ArrowLeft, Trash2, Rss, MessageSquare, Clock, CheckSquare, Database } from "lucide-react";
-import { admin, GATED_PAGES, CLEAN_DATASETS, type CleanDataset } from "@/lib/api/admin";
+import { admin, GATED_PAGES, CLEAN_DATASETS, REBUILD_OPS, type CleanDataset, type RebuildOp } from "@/lib/api/admin";
 import { ApiError } from "@/lib/api/client";
 import type { AdminUser, AdminUserDetail, LogLine } from "@/lib/api/types";
 import { useAuth } from "@/context/AuthContext";
@@ -45,6 +45,11 @@ function AdminInner() {
   const [cleanPw, setCleanPw] = useState("");
   const [cleanErr, setCleanErr] = useState<string | null>(null);
   const [cleanBusy, setCleanBusy] = useState(false);
+  // Rebuild / repair modal — pick which maintenance operations to run.
+  const [rebuildOpen, setRebuildOpen] = useState(false);
+  const [rebuildSel, setRebuildSel] = useState<Set<RebuildOp>>(
+    () => new Set(REBUILD_OPS.filter((o) => o.default).map((o) => o.key)),
+  );
 
   const runBackfill = async () => {
     setG2Busy(true);
@@ -176,13 +181,23 @@ function AdminInner() {
     }
   };
 
-  const rebuildStats = async () => {
-    if (!confirm("Rebuild the public stats rollups from raw jobs? Run this once after a bulk import.")) return;
+  const toggleRebuild = (key: RebuildOp) => {
+    setRebuildSel((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
+
+  const runRebuild = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (rebuildSel.size === 0) return;
     setBusy("rebuild");
-    setOpLogs([{ level: "info", message: "Rebuilding stats rollups…" }]);
+    setRebuildOpen(false);
+    setOpLogs([{ level: "info", message: "Running maintenance…" }]);
     try {
-      const r = await admin.rebuildStats();
-      setOpLogs(r.logs?.length ? r.logs : [{ level: "success", message: `Rebuilt in ${(r.ms / 1000).toFixed(1)}s.` }]);
+      const r = await admin.rebuildStats([...rebuildSel]);
+      setOpLogs(r.logs?.length ? r.logs : [{ level: "success", message: `Done in ${(r.ms / 1000).toFixed(1)}s.` }]);
     } catch (e) {
       const body = e instanceof ApiError ? (e.body as { logs?: LogLine[] } | undefined) : undefined;
       setOpLogs(body?.logs ?? [{ level: "error", message: e instanceof Error ? e.message : "Rebuild failed" }]);
@@ -247,8 +262,8 @@ function AdminInner() {
               <button type="button" className="btn" disabled={g2Busy} onClick={runBackfill}>
                 {g2Busy ? <Loader2 className="spin" size={14} /> : <Database size={14} />} Import g2 data
               </button>
-              <button type="button" className="btn ghost" disabled={busy === "rebuild"} onClick={rebuildStats} title="Rebuild the public stats rollups (summary tables) from raw jobs">
-                {busy === "rebuild" ? <Loader2 className="spin" size={14} /> : <Database size={14} />} Rebuild stats
+              <button type="button" className="btn ghost" disabled={busy === "rebuild"} onClick={() => setRebuildOpen(true)} title="Choose which stats/maintenance operations to run">
+                {busy === "rebuild" ? <Loader2 className="spin" size={14} /> : <Database size={14} />} Rebuild / repair
               </button>
               <button type="button" className="btn danger" onClick={() => { setCleanErr(null); setCleanOpen(true); }} title="Empty selected datasets so they can be re-imported (requires your password)">
                 <Trash2 size={14} /> Clean database
@@ -379,6 +394,39 @@ function AdminInner() {
             {detail.applied.length === 0 && <p className="muted">No applications.</p>}
           </section>
         </>
+      )}
+
+      {rebuildOpen && (
+        <div className="modal-overlay" onClick={() => busy !== "rebuild" && setRebuildOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-emoji">🛠️</div>
+            <p className="modal-title">
+              Rebuild / repair
+              <br />
+              <span className="muted">
+                Pick which maintenance operations to run. They execute in a safe order
+                (date fixes before rollup rebuild). Non-destructive.
+              </span>
+            </p>
+            <form onSubmit={runRebuild}>
+              <div className="field">
+                <label>Operations</label>
+                {REBUILD_OPS.map((o) => (
+                  <label key={o.key} className="clean-row">
+                    <input type="checkbox" aria-label={o.label} checked={rebuildSel.has(o.key)} onChange={() => toggleRebuild(o.key)} />
+                    <span><b>{o.label}</b><br /><span className="muted clean-desc">{o.desc}</span></span>
+                  </label>
+                ))}
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn ghost" onClick={() => setRebuildOpen(false)}>Cancel</button>
+                <button type="submit" className="btn" disabled={rebuildSel.size === 0}>
+                  <Database size={14} /> Run {rebuildSel.size || ""} operation{rebuildSel.size === 1 ? "" : "s"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {cleanOpen && (

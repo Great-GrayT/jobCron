@@ -46,9 +46,10 @@ export const admin = {
     ),
   remove: (id: string, password: string) =>
     api.delete<{ ok: boolean; reassigned: number }>(`/api/admin/users/${id}`, { body: { password } }),
-  rebuildStats: () =>
-    api.post<{ ok: boolean; ms: number; days: number; total: number; logs: LogLine[] }>(
+  rebuildStats: (operations: RebuildOp[]) =>
+    api.post<{ ok: boolean; ms: number; ran: string[]; logs: LogLine[] }>(
       "/api/admin/stats/rebuild",
+      { operations },
     ),
   testFeed: (id: string) => action(`/api/admin/feeds/${id}/test`),
   sendFeed: (id: string) => action(`/api/admin/feeds/${id}/send`),
@@ -89,6 +90,25 @@ export const admin = {
   cleanDb: (datasets: CleanDataset[], password: string) =>
     api.post<CleanResult>("/api/admin/clean-db", { datasets, password }),
 };
+
+export type RebuildOp =
+  | "clampDates"
+  | "rebuildRollups"
+  | "pruneDescriptions"
+  | "pruneRunHistory"
+  | "purgeUnverified"
+  | "pruneUrlCache";
+
+// Mirrors the server OPERATIONS allowlist (stats/rebuild route). `default` items
+// are pre-checked (the common "fix dates + rebuild" path).
+export const REBUILD_OPS: { key: RebuildOp; label: string; desc: string; default?: boolean }[] = [
+  { key: "clampDates", label: "Fix publication dates", desc: "Clamp out-of-range posted dates (before 2026 / in the future) to now.", default: true },
+  { key: "rebuildRollups", label: "Rebuild stats rollups", desc: "Recompute the summary tables (velocity, heatmap, hourly, monthly) from raw jobs.", default: true },
+  { key: "pruneDescriptions", label: "Prune old descriptions", desc: "Delete job description rows past the retention window." },
+  { key: "pruneRunHistory", label: "Prune run history", desc: "Trim old schedule + cron run records." },
+  { key: "purgeUnverified", label: "Purge unverified users", desc: "Remove accounts that never verified their email." },
+  { key: "pruneUrlCache", label: "Prune sent-URL cache", desc: "Drop expired Telegram dedup entries." },
+];
 
 export type CleanDataset = "jobs" | "applied" | "dedup" | "backfills";
 

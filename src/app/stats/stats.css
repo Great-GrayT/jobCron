@@ -1354,6 +1354,9 @@
 @keyframes refetch-in { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 @keyframes refetch-slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
 
-/* Recharts brush handles under Posting Velocity */
+/* Recharts brush ("slider") under Posting Velocity — theme-aware (CSS beats the
+   inline SVG presentation attributes recharts sets). */
+.recharts-brush > rect { fill: var(--terminal-bg-secondary); stroke: var(--terminal-border); }
 .recharts-brush-traveller rect { fill: var(--color-bg-tertiary); stroke: var(--terminal-accent); }
 .recharts-brush-slide { fill: rgba(0, 209, 178, 0.08); }
+.recharts-brush-texts text, .recharts-brush text { fill: var(--terminal-text-muted); }
