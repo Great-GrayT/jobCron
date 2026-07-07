@@ -33,7 +33,7 @@ The LinkedIn Jobs Monitor is an automated system that:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│           Vercel Cron (Every 5 min)             │
+│   External scheduler (*/5 8-21 * * * UTC)       │
 └───────────────────┬─────────────────────────────┘
                     │
                     ▼
@@ -177,8 +177,9 @@ Extracts from job descriptions:
 
 ### Cron Job
 - **Path**: `/api/cron/check-jobs`
-- **Schedule**: Every 5 minutes (`*/5 * * * *`)
-- **Timeout**: 10 seconds (Vercel default)
+- **Trigger**: external scheduler (Bearer `CRON_SECRET`), not `vercel.json`
+- **Schedule**: `*/5 8-21 * * *` — every 5 min, 08:00–21:59 **UTC**
+- **Optional guard**: `CRON_ACTIVE_HOURS` (UTC hour spec) enforces the window in-code
 - **Concurrency**: 1 (prevents overlapping executions)
 
 ### Environment Variables

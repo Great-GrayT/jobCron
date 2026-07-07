@@ -6,6 +6,7 @@ import { Loader2, X, Mail, AtSign, MapPin, Briefcase, Phone, ShieldCheck, Calend
 import { users, type UserCard } from "@/lib/api/users";
 import { admin } from "@/lib/api/admin";
 import type { AdminUserDetail } from "@/lib/api/types";
+import { useTimezone } from "@/context/TimezoneContext";
 import "@/components/user-info.css";
 
 interface Props {
@@ -30,6 +31,7 @@ function Row({ icon: Icon, label, value }: { icon: typeof Mail; label: string; v
 }
 
 export function UserInfoModal({ userId, fallbackName, fallbackAvatar, viewerIsAdmin, onClose }: Props) {
+  const { format } = useTimezone();
   const [card, setCard] = useState<UserCard | null>(null);
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,7 +122,7 @@ export function UserInfoModal({ userId, fallbackName, fallbackAvatar, viewerIsAd
                 <Row
                   icon={Calendar}
                   label="Joined"
-                  value={new Date(detail.user.createdAt).toLocaleDateString()}
+                  value={format(detail.user.createdAt, "dd LLL yyyy")}
                 />
                 <div className="ui-counts">
                   <span>{detail.feeds.length} feeds</span>

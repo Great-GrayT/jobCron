@@ -9,6 +9,8 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { AdminShell } from "@/components/AdminShell";
 import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
+import { useTimezone } from "@/context/TimezoneContext";
+import { formatInZoneFmt } from "@/lib/timezone";
 import { isAdminUser } from "@/lib/admins";
 import { UserInfoModal } from "@/components/UserInfoModal";
 import {
@@ -21,11 +23,9 @@ import {
 import "@/components/dashboard.css";
 import "@/components/chat.css";
 
-function fmtTime(iso: string): string {
-  const d = new Date(iso);
-  const t = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  const day = d.toLocaleDateString([], { month: "short", day: "numeric" });
-  return `${t}  |  ${day}`;
+function fmtTime(iso: string, zone: string): string {
+  // "14:05  |  Jul 07" rendered in the user's global timezone.
+  return formatInZoneFmt(new Date(iso), zone, "HH:mm  '|'  LLL dd");
 }
 
 function Avatar({ src, name, size = 40 }: { src?: string | null; name: string; size?: number }) {
@@ -59,6 +59,7 @@ function makeAutoReply(meId: string): Message {
 
 function MessagesInner() {
   const { user } = useAuth();
+  const { timezone } = useTimezone();
   const meId = user?.id ?? "";
 
   /** True when a message was authored by an admin (role from the API, else allowlist). */
@@ -317,7 +318,7 @@ function MessagesInner() {
                     <div className="chat-contact-meta">
                       <div className="chat-contact-top">
                         <span className="chat-contact-name">{name}</span>
-                        {c.last && <span className="chat-contact-time">{fmtTime(c.last.createdAt)}</span>}
+                        {c.last && <span className="chat-contact-time">{fmtTime(c.last.createdAt, timezone)}</span>}
                       </div>
                       <div className="chat-contact-preview">{preview}</div>
                     </div>
@@ -400,7 +401,7 @@ function MessagesInner() {
                           {admin && <span className="admin-tag">Admin</span>}
                           {m.subject && <div className="msg-subject-line">{m.subject}</div>}
                           <p>{m.body}</p>
-                          <span className="time_date">{fmtTime(m.createdAt)}</span>
+                          <span className="time_date">{fmtTime(m.createdAt, timezone)}</span>
                         </div>
                       </div>
                     ) : (
@@ -428,7 +429,7 @@ function MessagesInner() {
                             </div>
                             {m.subject && <div className="msg-subject-line">{m.subject}</div>}
                             <p>{m.body}</p>
-                            <span className="time_date">{fmtTime(m.createdAt)}</span>
+                            <span className="time_date">{fmtTime(m.createdAt, timezone)}</span>
                           </div>
                         </div>
                       </div>

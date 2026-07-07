@@ -15,6 +15,7 @@ import {
 import { AdminShell } from "@/components/AdminShell";
 import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
+import { useTimezone } from "@/context/TimezoneContext";
 import { SearchFilterPanel } from "@/components/SearchFilterPanel";
 import {
   fetchStatistics,
@@ -61,6 +62,7 @@ function currentMonthStr(): string {
 
 export default function StatsPage() {
   const { user } = useAuth();
+  const { format } = useTimezone();
   const [loading, setLoading] = useState(true);
   const [statsData, setStatsData] = useState<StatsData | null>(null);
   // Filtered aggregates that drive every chart (server already applied filters).
@@ -694,11 +696,10 @@ export default function StatsPage() {
   const hasRoleTypeData = filteredStats?.byRoleType && Object.keys(filteredStats.byRoleType).length > 0;
   const hasRoleCategoryData = filteredStats?.byRoleCategory && Object.keys(filteredStats.byRoleCategory).length > 0;
 
-  // Publication times = the server-computed hourly histogram (byHour), which
-  // aggregates the FULL result set by real hour-of-day. The old approach bucketed
-  // the ~200 loaded rows by 10-minute slots of postedDate, but imported jobs have
-  // a date-only postedDate (midnight), so every bar collapsed onto 00:00–01:50.
-  // Render all 24 hours (zero-filled) so the axis is a full day.
+  // Publication times = the server-computed hourly histogram (byHour), keyed by
+  // the hour-of-day of posted_date (the real publication time shown in the table),
+  // aggregated over the FULL result set. Render all 24 hours (zero-filled) so the
+  // axis is a full day.
   const getPublicationTimeData = () => {
     const byHour = filteredStats?.byHour ?? {};
     return Array.from({ length: 24 }, (_, h) => {
@@ -810,7 +811,7 @@ export default function StatsPage() {
           </div>
           <div className="status-item">
             <Target size={12} />
-            <span>LAST UPDATE: {new Date(statsData.currentMonth.lastUpdated).toLocaleString()}</span>
+            <span>LAST UPDATE: {format(statsData.currentMonth.lastUpdated)}</span>
           </div>
           <div className="status-item">
             <Briefcase size={12} />

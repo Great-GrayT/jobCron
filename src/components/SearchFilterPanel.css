@@ -5,12 +5,12 @@
 
 .search-filter-panel {
   background: var(--terminal-bg);
-  border: 1px solid rgb(106, 0, 193);
+  border: 1px solid var(--terminal-accent);
   border-radius: var(--radius-sm);
   margin-bottom: var(--spacing-lg);
   margin-left: var(--spacing-sm);
   margin-right: var(--spacing-sm);
-  box-shadow: 0 0 20px rgba(141, 44, 220, 0.2);
+  box-shadow: var(--shadow-blue);
 }
 
 .search-filter-header {
@@ -36,7 +36,7 @@
 
 .search-input-container:focus-within {
   border-color: var(--terminal-accent);
-  box-shadow: 0 0 10px rgba(157, 78, 221, 0.3);
+  box-shadow: 0 0 10px var(--color-blue-glow);
 }
 
 .search-input-container svg {
@@ -79,7 +79,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: rgba(157, 78, 221, 0.1);
+  background: rgba(0, 209, 178, 0.08);
   border: 1px solid var(--terminal-accent);
   border-radius: var(--radius-sm);
   color: var(--terminal-accent);
@@ -94,12 +94,12 @@
 
 .filter-toggle-btn:hover,
 .clear-all-btn:hover {
-  background: rgba(157, 78, 221, 0.2);
-  box-shadow: 0 0 10px rgba(157, 78, 221, 0.3);
+  background: rgba(0, 209, 178, 0.16);
+  box-shadow: 0 0 10px var(--color-blue-glow);
 }
 
 .filter-toggle-btn.active {
-  background: rgba(157, 78, 221, 0.3);
+  background: rgba(0, 209, 178, 0.24);
 }
 
 .clear-all-btn {
@@ -166,16 +166,16 @@
 
 .filter-dropdown-trigger:hover {
   border-color: var(--terminal-accent);
-  background: rgba(157, 78, 221, 0.1);
+  background: rgba(0, 209, 178, 0.1);
 }
 
 .filter-dropdown-trigger.active {
   border-color: var(--terminal-accent);
-  background: rgba(157, 78, 221, 0.2);
+  background: rgba(0, 209, 178, 0.2);
 }
 
 .filter-icon {
-  color: rgb(206, 30, 255);
+  color: var(--terminal-accent);
   flex-shrink: 0;
 }
 
@@ -252,7 +252,7 @@
 }
 
 .filter-dropdown-options::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--color-bg-tertiary);
 }
 
 .filter-dropdown-options::-webkit-scrollbar-thumb {
@@ -330,7 +330,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  background: rgba(157, 78, 221, 0.2);
+  background: rgba(0, 209, 178, 0.16);
   border: 1px solid var(--terminal-accent);
   border-radius: 12px;
   font-size: 11px;

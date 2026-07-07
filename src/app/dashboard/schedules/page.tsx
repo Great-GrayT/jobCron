@@ -7,10 +7,12 @@ import type { Schedule, ScheduleJob, LogLine, ScheduleRun } from "@/lib/api/type
 import { StatusDot } from "@/components/StatusDot";
 import { LogPanel } from "@/components/LogPanel";
 import { CronBuilder } from "@/components/CronBuilder";
+import { useTimezone } from "@/context/TimezoneContext";
 
 const JOBS: ScheduleJob[] = ["check-jobs", "stats-ingest", "scrape"];
 
 export default function SchedulesPage() {
+  const { format } = useTimezone();
   const [list, setList] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -225,7 +227,7 @@ export default function SchedulesPage() {
                           history[s.id].map((r) => (
                             <div className="run-row" key={r.id}>
                               <StatusDot status={r.ok ? "success" : "fail"} />
-                              <span className="run-when">{new Date(r.createdAt).toLocaleString()}</span>
+                              <span className="run-when">{format(r.createdAt)}</span>
                               <span className="muted">{r.trigger} · {r.durationMs}ms</span>
                               <span className="run-detail">{r.error ?? r.summary ?? "—"}</span>
                             </div>

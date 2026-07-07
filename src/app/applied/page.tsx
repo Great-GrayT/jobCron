@@ -35,6 +35,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { AdminShell } from "@/components/AdminShell";
 import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
+import { useTimezone } from "@/context/TimezoneContext";
 import { applied as appliedApi } from "@/lib/api/applied";
 import "./applied.css";
 
@@ -108,6 +109,7 @@ const formatDelayCompact = (minutes: number | null): string => {
 
 function AppliedJobsInner() {
   const { user } = useAuth();
+  const { format } = useTimezone();
   const [allApplications, setAllApplications] = useState<AppliedJob[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -169,24 +171,9 @@ function AppliedJobsInner() {
     fetchApplications(month || undefined);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatShortDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-    });
-  };
+  // Rendered in the user's global timezone.
+  const formatDate = (dateString: string) => format(dateString, "dd LLL yyyy, HH:mm");
+  const formatShortDate = (dateString: string) => format(dateString, "dd LLL");
 
   const getTimeAgo = (dateString: string) => {
     const date = new Date(dateString);

@@ -214,16 +214,19 @@ https://jobs.example.com/12345
 
 ## Cron Schedule Cheatsheet
 
+Set on the **external scheduler** (not `vercel.json`). Hours are **UTC**.
+Current: `*/5 8-21 * * *`.
+
 | Schedule | Description |
 |----------|-------------|
 | `*/5 * * * *` | Every 5 minutes |
-| `*/10 * * * *` | Every 10 minutes |
+| `*/5 8-21 * * *` | Every 5 min, 08:00–21:59 UTC (current) |
 | `*/15 * * * *` | Every 15 minutes |
 | `0 * * * *` | Every hour |
 | `0 */2 * * *` | Every 2 hours |
-| `0 9 * * *` | Daily at 9 AM |
-| `0 9 * * 1-5` | Weekdays at 9 AM |
-| `0 0 * * 0` | Every Sunday at midnight |
+| `0 9 * * *` | Daily at 09:00 UTC |
+| `0 9 * * 1-5` | Weekdays at 09:00 UTC |
+| `0 0 * * 0` | Every Sunday at 00:00 UTC |
 
 Format: `minute hour day month weekday`>
 

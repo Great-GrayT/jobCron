@@ -1,5 +1,6 @@
 import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { TimezoneProvider } from '@/context/TimezoneContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { RouteGuard } from '@/components/RouteGuard';
 import { Arimo, Nunito } from 'next/font/google';
@@ -33,9 +34,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${arimo.variable} ${nunito.variable}`}>
       <body suppressHydrationWarning>
         <ThemeProvider>
-          <AuthProvider>
-            <RouteGuard>{children}</RouteGuard>
-          </AuthProvider>
+          <TimezoneProvider>
+            <AuthProvider>
+              <RouteGuard>{children}</RouteGuard>
+            </AuthProvider>
+          </TimezoneProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -7,6 +7,7 @@ import { admin, GATED_PAGES, CLEAN_DATASETS, type CleanDataset } from "@/lib/api
 import { ApiError } from "@/lib/api/client";
 import type { AdminUser, AdminUserDetail, LogLine } from "@/lib/api/types";
 import { useAuth } from "@/context/AuthContext";
+import { useTimezone } from "@/context/TimezoneContext";
 import { AuthGuard } from "@/components/AuthGuard";
 import { AdminShell } from "@/components/AdminShell";
 import { featuresMenu } from "@/components/navMenu";
@@ -27,6 +28,7 @@ function CardAvatar({ u }: { u: AdminUser }) {
 
 function AdminInner() {
   const { user } = useAuth();
+  const { format } = useTimezone();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -298,7 +300,7 @@ function AdminInner() {
 
           <section className="panel">
             <h2>{detail.user.username || detail.user.email}</h2>
-            <p className="hint">{detail.user.email} · {detail.user.emailVerified ? "verified" : "unverified"} · joined {new Date(detail.user.createdAt).toLocaleDateString()}</p>
+            <p className="hint">{detail.user.email} · {detail.user.emailVerified ? "verified" : "unverified"} · joined {format(detail.user.createdAt, "dd LLL yyyy")}</p>
 
             <label className="cron-label">Role</label>
             <div className="row">
@@ -370,7 +372,7 @@ function AdminInner() {
             <h2>TRACKING ({detail.applied.length})</h2>
             {detail.applied.slice(0, 30).map((a) => (
               <div key={a.id} className="run-row">
-                <span className="run-when">{new Date(a.appliedAt).toLocaleDateString()}</span>
+                <span className="run-when">{format(a.appliedAt, "dd LLL yyyy")}</span>
                 <span className="run-detail">{a.jobTitle} — {a.company}</span>
               </div>
             ))}

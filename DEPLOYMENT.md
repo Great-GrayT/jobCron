@@ -160,29 +160,27 @@ openssl rand -base64 32
 
 ### Cron Schedule
 
-The cron schedule is defined in `vercel.json`:
+The schedule is **not** in `vercel.json` (that file is empty). The pipeline is
+driven by an **external scheduler** that calls `GET /api/cron/check-jobs` with
+the `CRON_SECRET` Bearer token. Current schedule: `*/5 8-21 * * *`.
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/check-jobs",
-      "schedule": "*/5 * * * *"
-    }
-  ]
-}
-```
-
-**Schedule Format:** `minute hour day month weekday`
+**Schedule Format:** `minute hour day month weekday` — evaluated in **UTC**.
 
 Examples:
 - `*/5 * * * *` - Every 5 minutes
-- `*/10 * * * *` - Every 10 minutes
+- `*/5 8-21 * * *` - Every 5 minutes, 08:00–21:59 UTC (the current setting)
 - `0 * * * *` - Every hour at minute 0
-- `0 9 * * *` - Every day at 9:00 AM
-- `0 9 * * 1-5` - Every weekday at 9:00 AM
+- `0 9 * * *` - Every day at 09:00 UTC
+- `0 9 * * 1-5` - Every weekday at 09:00 UTC
 
-**Important:** If you change the schedule, update `CHECK_INTERVAL_MINUTES` to match!
+**Timezone:** the scheduler's hour field and all stored stats are UTC. If your
+scheduler runs in local time, convert your intended window to UTC.
+
+**Optional server-side guard:** set `CRON_ACTIVE_HOURS` (UTC hour spec, e.g.
+`8-21`) to enforce the window in-code — calls outside it return
+`200 { skipped: true }` and do no work.
+
+**Important:** If you change the cadence, update `CHECK_INTERVAL_MINUTES` to match!
 
 ## Verification
 

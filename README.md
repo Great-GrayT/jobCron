@@ -156,7 +156,11 @@ vercel
 3. Add environment variables in the Vercel dashboard
 4. Deploy
 
-The cron job is configured in `vercel.json` to run every 5 minutes automatically.
+The pipeline is triggered by an **external scheduler** (e.g. cron-job.org) that
+calls `GET /api/cron/check-jobs` on a schedule — it is **not** run from
+`vercel.json`. The current schedule is `*/5 8-21 * * *` (every 5 minutes,
+08:00–21:59 **UTC**, daily). Point your scheduler at the deployed endpoint and
+send the `CRON_SECRET` as a Bearer token (see Security below).
 
 ### 7. Set Up Persistent Cache (Recommended - 100% Free)
 
@@ -185,23 +189,15 @@ You can override this by setting the `RSS_FEED_URLS` environment variable with c
 
 ### Check Interval
 
-The default check interval is 5 minutes. You can change this by:
+The pipeline runs whenever the external scheduler calls it. Change the cadence by
+editing the schedule in that scheduler's dashboard (cron format
+`* * * * *` = minute hour day month weekday, evaluated in **UTC**). The current
+value is `*/5 8-21 * * *`.
 
-1. Setting `CHECK_INTERVAL_MINUTES` in your `.env` file
-2. Updating the cron schedule in `vercel.json`:
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/check-jobs",
-      "schedule": "*/5 * * * *"  // Every 5 minutes
-    }
-  ]
-}
-```
-
-Cron schedule format: `* * * * *` (minute hour day month weekday)
+**Server-side window (optional):** set `CRON_ACTIVE_HOURS` (a UTC hour spec such
+as `8-21`) and the endpoint will skip — returning `200 { skipped: true }` —
+outside that window, regardless of how the scheduler is configured. Leave it
+unset to always run when called.
 
 ### Security
 
