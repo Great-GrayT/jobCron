@@ -1369,3 +1369,7 @@
 .recharts-brush-traveller rect { fill: var(--color-bg-tertiary); stroke: var(--terminal-accent); }
 .recharts-brush-slide { fill: rgba(0, 209, 178, 0.08); }
 .recharts-brush-texts text, .recharts-brush text { fill: var(--terminal-text-muted); }
+
+/* Keyword trend badge (icon + label) */
+.trend-cell { text-align: center; }
+.trend-cell svg { display: inline-block; vertical-align: -2px; margin-right: 3px; color: var(--terminal-accent); }

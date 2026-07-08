@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, LocateFixed } from "lucide-react";
 import { useTimezone } from "@/context/TimezoneContext";
 import { browserTz, listZones } from "@/lib/timezone";
 import { Flag } from "@/components/Flag";
@@ -62,7 +62,7 @@ export function TimezonePicker() {
             className="tz-option tz-detect"
             onClick={() => { setTimezone(browserTz()); setOpen(false); }}
           >
-            📍 Detect my timezone
+            <LocateFixed size={13} /> Detect my timezone
           </button>
           <div className="tz-list">
             {filtered.map((z) => (

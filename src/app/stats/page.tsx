@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { BarChart3, TrendingUp, RefreshCw, Loader2, X, Filter, Calendar, Briefcase, Award, Target, MapPin, Building2, Zap, Users, DollarSign, TrendingDown, AlertCircle, Sparkles, Activity, Globe, ExternalLink } from "lucide-react";
+import { BarChart3, TrendingUp, RefreshCw, Loader2, X, Filter, Calendar, Briefcase, Award, Target, MapPin, Building2, Zap, Users, DollarSign, TrendingDown, AlertCircle, Sparkles, Activity, Globe, ExternalLink, Flame, ArrowRight } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area, Brush } from 'recharts';
 import WorldMap from '@/components/WorldMap';
 import {
@@ -1802,8 +1802,14 @@ export default function StatsPage() {
                         <td className="cell-title">{keyword}</td>
                         <td className="cell-highlight" style={{ textAlign: 'right' }}>{count}</td>
                         <td className="cell-seniority" style={{ textAlign: 'right' }}>{percentage}%</td>
-                        <td className="cell-location" style={{ textAlign: 'center' }}>
-                          {index < 5 ? '🔥 HOT' : index < 10 ? '↗ RISING' : '→ STABLE'}
+                        <td className="cell-location trend-cell">
+                          {index < 5 ? (
+                            <><Flame size={12} /> HOT</>
+                          ) : index < 10 ? (
+                            <><TrendingUp size={12} /> RISING</>
+                          ) : (
+                            <><ArrowRight size={12} /> STABLE</>
+                          )}
                         </td>
                       </tr>
                     );

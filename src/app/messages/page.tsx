@@ -306,7 +306,7 @@ function MessagesInner() {
             ) : (
               conversations.map((c) => {
                 const name = partnerName(c);
-                const preview = c.last ? c.last.body : "No messages yet — say hi 👋";
+                const preview = c.last ? c.last.body : "No messages yet — say hi";
                 return (
                   <button
                     type="button"

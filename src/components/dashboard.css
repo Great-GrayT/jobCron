@@ -665,6 +665,16 @@ table.dash-table tbody tr:hover { background: var(--terminal-hover); }
 .modal-card.avatar-modal .modal-title { display: flex; align-items: center; gap: 0.45rem; }
 .set-pw-note { margin-bottom: 1rem; }
 .modal-emoji { font-size: 3rem; line-height: 1; margin-bottom: 0.75rem; }
+.modal-emoji svg { display: block; margin: 0 auto; color: var(--terminal-accent); }
+.modal-emoji.danger svg { color: var(--color-error); }
+.modal-illustration {
+  display: block;
+  width: auto;
+  max-width: 180px;
+  max-height: 150px;
+  margin: 0 auto 1rem;
+  object-fit: contain;
+}
 .modal-title { font-size: 1rem; color: var(--terminal-text); margin: 0 0 1.5rem; line-height: 1.5; }
 .modal-actions { display: flex; gap: 0.6rem; justify-content: center; }
 .modal-actions .btn { min-width: 96px; }

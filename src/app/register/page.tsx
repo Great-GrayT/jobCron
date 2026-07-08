@@ -251,26 +251,26 @@ export default function RegisterPage() {
 
       {/* ---- the "are you a spy?" saga ---- */}
       {saga === "warn" && (
-        <Modal emoji="⚠️" title="The information is not provided. Are you sure you want to proceed?">
+        <Modal image="/saga/warning.png" title="The information is not provided. Are you sure you want to proceed?">
           <button className="btn ghost" onClick={() => setSaga(null)}>No</button>
           <button className="btn" onClick={() => setSaga("spy")}>Yes</button>
         </Modal>
       )}
       {saga === "spy" && (
-        <Modal emoji="🫥" title="What are you hiding? Are you a Spy?">
+        <Modal image="/saga/spy.png" title="What are you hiding? Are you a Spy?">
           <button className="btn ghost" onClick={() => setSaga("mockNo")}>No</button>
           <button className="btn" onClick={() => setSaga("mockYes")}>Yes</button>
         </Modal>
       )}
       {saga === "mockYes" && (
-        <Modal emoji="🤣" title="Ha Ha, very funny. Now go back and fill out the form, good boy/girl.">
+        <Modal image="/saga/mockyes.png" title="Ha Ha, very funny. Now go back and fill out the form, good boy/girl.">
           <button className="btn" onClick={() => { setSaga(null); setBypassOptional(true); }}>
             On my eyes, Kind Master
           </button>
         </Modal>
       )}
       {saga === "mockNo" && (
-        <Modal emoji="🤣" title="That's what I thought. Now go back and fill out the form.">
+        <Modal image="/saga/mockno.png" title="That's what I thought. Now go back and fill out the form.">
           <button className="btn" onClick={() => { setSaga(null); setBypassOptional(true); }}>
             On my eyes, Kind Master
           </button>
@@ -280,11 +280,12 @@ export default function RegisterPage() {
   );
 }
 
-function Modal({ emoji, title, children }: { emoji: string; title: string; children: React.ReactNode }) {
+function Modal({ image, title, children }: { image: string; title: string; children: React.ReactNode }) {
   return (
     <div className="modal-overlay">
       <div className="modal-card">
-        <div className="modal-emoji">{emoji}</div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="modal-illustration" src={image} alt="" />
         <p className="modal-title">{title}</p>
         <div className="modal-actions">{children}</div>
       </div>

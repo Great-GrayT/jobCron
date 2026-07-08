@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plug, Send, Play, ShieldCheck, ArrowLeft, Trash2, Rss, MessageSquare, Clock, CheckSquare, Database } from "lucide-react";
+import { Loader2, Plug, Send, Play, ShieldCheck, ArrowLeft, Trash2, Rss, MessageSquare, Clock, CheckSquare, Database, Wrench, Bomb, AlertTriangle } from "lucide-react";
 import { admin, GATED_PAGES, CLEAN_DATASETS, REBUILD_OPS, type CleanDataset, type RebuildOp } from "@/lib/api/admin";
 import { ApiError } from "@/lib/api/client";
 import type { AdminUser, AdminUserDetail, LogLine } from "@/lib/api/types";
@@ -399,7 +399,7 @@ function AdminInner() {
       {rebuildOpen && (
         <div className="modal-overlay" onClick={() => busy !== "rebuild" && setRebuildOpen(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-emoji">🛠️</div>
+            <div className="modal-emoji"><Wrench size={40} /></div>
             <p className="modal-title">
               Rebuild / repair
               <br />
@@ -432,7 +432,7 @@ function AdminInner() {
       {cleanOpen && (
         <div className="modal-overlay" onClick={() => !cleanBusy && setCleanOpen(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-emoji">🧨</div>
+            <div className="modal-emoji danger"><Bomb size={40} /></div>
             <p className="modal-title">
               Clean database
               <br />
@@ -470,7 +470,7 @@ function AdminInner() {
       {delOpen && detail && (
         <div className="modal-overlay" onClick={() => setDelOpen(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-emoji">⚠️</div>
+            <div className="modal-emoji danger"><AlertTriangle size={40} /></div>
             <p className="modal-title">
               Permanently delete <b>{detail.user.username || detail.user.email}</b>?
               <br />
