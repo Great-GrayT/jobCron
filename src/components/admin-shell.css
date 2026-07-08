@@ -222,11 +222,11 @@
   pointer-events: none;
   background: linear-gradient(
     115deg,
-    transparent 42%,
-    rgba(190, 250, 255, 0.55) 50%,
-    transparent 58%
+    transparent 22%,
+    rgba(190, 250, 255, 0.5) 50%,
+    transparent 78%
   );
-  background-size: 260% 260%;
+  background-size: 300% 300%;
   background-repeat: no-repeat;
   -webkit-mask-image: url("/ornate/premium-ceramic-teal.png"), linear-gradient(to bottom, transparent, #000 45%);
           mask-image: url("/ornate/premium-ceramic-teal.png"), linear-gradient(to bottom, transparent, #000 45%);
@@ -236,11 +236,11 @@
           mask-repeat: repeat, no-repeat;
   -webkit-mask-composite: source-in;
           mask-composite: intersect;
-  animation: aside-sheen 9s linear infinite;
+  animation: aside-sheen 18s linear infinite;
 }
 @keyframes aside-sheen {
-  0% { background-position: 135% 135%; }
-  100% { background-position: -35% -35%; }
+  0% { background-position: 140% 140%; }
+  100% { background-position: -40% -40%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .admin-aside::after { animation: none; }
