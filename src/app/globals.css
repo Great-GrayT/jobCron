@@ -100,6 +100,15 @@
   --ceramic-pattern: url("/ornate/premium-ceramic-navy.png");
   --ceramic-opacity: 0.06;
   --ceramic-size: 340px;
+
+  /* Chat bubbles — theme-aware with deliberate contrast. "me" = outgoing (deep
+     teal + white), "them" = incoming (surface that separates from the thread bg). */
+  --chat-me-bg: #0f766e;
+  --chat-me-text: #ffffff;
+  --chat-them-bg: #ffffff;
+  --chat-them-border: rgba(24, 28, 33, 0.16);
+  --chat-them-text: #2e323a;
+  --chat-them-muted: #6b7280;
 }
 
 /* Light Theme (explicit) — mirrors :root template defaults */
@@ -198,6 +207,14 @@
   /* Ceramic ornament pattern — dark theme uses the gold tint. */
   --ceramic-pattern: url("/ornate/premium-ceramic-gold.png");
   --ceramic-opacity: 0.07;
+
+  /* Chat bubbles (dark) */
+  --chat-me-bg: #0e7d6f;
+  --chat-me-text: #ffffff;
+  --chat-them-bg: #1b2230;
+  --chat-them-border: #2c3442;
+  --chat-them-text: #e6e8ec;
+  --chat-them-muted: #98a2b3;
 }
 
 /* Shared ceramic watermark — layers the pattern behind content, opacity-controlled.

@@ -133,23 +133,25 @@
 .incoming_msg_img { flex: 0 0 auto; }
 .received_msg { min-width: 0; }
 .received_withd_msg {
-  background: var(--terminal-bg-panel);
-  border: 1px solid var(--terminal-border);
+  background: var(--chat-them-bg);
+  border: 1px solid var(--chat-them-border);
+  box-shadow: var(--shadow-sm);
   border-radius: 4px 12px 12px 12px;
   padding: 0.6rem 0.8rem;
+  color: var(--chat-them-text);
 }
-.received_withd_msg p { margin: 0; color: var(--terminal-text); font-size: 0.88rem; white-space: pre-wrap; word-break: break-word; }
+.received_withd_msg p { margin: 0; color: var(--chat-them-text); font-size: 0.88rem; white-space: pre-wrap; word-break: break-word; }
 
 /* outgoing (right) */
 .outgoing_msg { display: flex; justify-content: flex-end; margin-bottom: 0.6rem; }
 .sent_msg {
   max-width: 80%;
-  background: var(--color-blue-primary);
-  color: #fff;
+  background: var(--chat-me-bg);
+  color: var(--chat-me-text);
   border-radius: 12px 4px 12px 12px;
   padding: 0.6rem 0.8rem;
 }
-.sent_msg p { margin: 0; color: #fff; font-size: 0.88rem; white-space: pre-wrap; word-break: break-word; }
+.sent_msg p { margin: 0; color: var(--chat-me-text); font-size: 0.88rem; white-space: pre-wrap; word-break: break-word; }
 
 /* admin-authored bubbles → gold with an "Admin" tag */
 .sent_msg, .received_withd_msg { position: relative; }
@@ -203,7 +205,7 @@
 }
 
 .time_date { display: block; margin-top: 0.3rem; font-size: 0.66rem; opacity: 0.7; }
-.received_withd_msg .time_date { color: var(--terminal-text-muted); }
+.received_withd_msg .time_date { color: var(--chat-them-muted); }
 
 .msg-from-line { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.2rem; flex-wrap: wrap; }
 .msg-from-name { font-weight: 700; font-size: 0.78rem; color: var(--terminal-accent-secondary); }
