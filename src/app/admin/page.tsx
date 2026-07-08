@@ -391,7 +391,7 @@ function AdminInner() {
                 <span className="run-detail">{a.jobTitle} — {a.company}</span>
               </div>
             ))}
-            {detail.applied.length === 0 && <p className="muted">No applications.</p>}
+            {detail.applied.length === 0 && <div className="empty-panel"><p>No applications.</p></div>}
           </section>
         </>
       )}

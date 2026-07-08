@@ -220,7 +220,7 @@ export default function JfsPage() {
       {error && <div className="auth-error">{error}</div>}
 
       {sets.length === 0 ? (
-        <p className="muted">No filter sets yet. Create one to start routing matches to your filtered channel.</p>
+        <div className="empty-panel"><p>No filter sets yet. Create one to start routing matches to your filtered channel.</p></div>
       ) : (
         <div className="jfs-set-list">
           {sets.map((fs) => (

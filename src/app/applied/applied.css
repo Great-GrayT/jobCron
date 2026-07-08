@@ -386,12 +386,29 @@
 
 /* Empty State */
 .empty-state {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 4rem 2rem;
   text-align: center;
+}
+/* ceramic watermark behind the empty state */
+.empty-state::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--ceramic-pattern);
+  background-repeat: repeat;
+  background-size: 320px;
+  opacity: calc(var(--ceramic-opacity) * 1.7);
+  -webkit-mask-image: radial-gradient(85% 85% at 50% 50%, #000 0%, transparent 80%);
+          mask-image: radial-gradient(85% 85% at 50% 50%, #000 0%, transparent 80%);
 }
 
 .empty-state svg {

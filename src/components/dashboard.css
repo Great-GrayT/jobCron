@@ -15,6 +15,40 @@
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ---- reusable empty-state panel with ceramic watermark ---- */
+.empty-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+  min-height: 160px;
+  padding: 2.5rem 1.5rem;
+  color: var(--terminal-text-muted);
+  border: 1px dashed var(--terminal-border);
+  border-radius: 8px;
+}
+.empty-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--ceramic-pattern);
+  background-repeat: repeat;
+  background-size: 300px;
+  opacity: calc(var(--ceramic-opacity) * 1.7);
+  -webkit-mask-image: radial-gradient(90% 90% at 50% 50%, #000 0%, transparent 82%);
+          mask-image: radial-gradient(90% 90% at 50% 50%, #000 0%, transparent 82%);
+}
+.empty-panel svg { color: var(--terminal-accent); opacity: 0.55; }
+.empty-panel h3 { margin: 0; font-size: 0.95rem; letter-spacing: 0.02em; color: var(--terminal-text-secondary); }
+.empty-panel p { margin: 0; max-width: 42ch; font-size: 0.86rem; }
+
 /* ---- auth card ---- */
 .auth-wrap {
   min-height: 100vh;

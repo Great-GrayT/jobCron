@@ -170,7 +170,7 @@ export default function SchedulesPage() {
       {loading ? (
         <div className="muted"><Loader2 className="spin" size={16} /> loading…</div>
       ) : list.length === 0 ? (
-        <p className="muted">No schedules yet.</p>
+        <div className="empty-panel"><p>No schedules yet. Create one to start monitoring your feeds.</p></div>
       ) : (
         <table className="dash-table">
           <thead>

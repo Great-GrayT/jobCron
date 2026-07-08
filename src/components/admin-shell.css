@@ -190,6 +190,23 @@
   overflow-y: auto;
   transition: transform var(--transition-base);
 }
+/* ceramic watermark in the empty lower area of the (always-dark) sidebar */
+.admin-aside::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 65%;
+  z-index: 0;
+  pointer-events: none;
+  background: url("/ornate/premium-ceramic-teal.png") repeat;
+  background-size: 240px;
+  opacity: 0.07;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
+          mask-image: linear-gradient(to bottom, transparent, #000 45%);
+}
+.admin-aside > * { position: relative; z-index: 1; }
 .aside-tools {
   height: var(--navbar-height);
   flex: 0 0 var(--navbar-height);

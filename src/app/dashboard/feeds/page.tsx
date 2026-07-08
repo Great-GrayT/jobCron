@@ -161,7 +161,7 @@ export default function FeedsPage() {
       {loading ? (
         <div className="muted"><Loader2 className="spin" size={16} /> loading…</div>
       ) : list.length === 0 ? (
-        <p className="muted">No feeds yet.</p>
+        <div className="empty-panel"><p>No feeds yet. Add an RSS feed to begin.</p></div>
       ) : (
         <table className="dash-table">
           <thead>
