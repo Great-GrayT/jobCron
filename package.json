@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "A Next.js cron job that monitors RSS feeds for job postings and sends notifications to Telegram",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/copy-pdf-worker.js && next dev",
+    "build": "node scripts/copy-pdf-worker.js && next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"

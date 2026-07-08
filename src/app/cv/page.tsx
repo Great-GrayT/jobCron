@@ -221,15 +221,15 @@ function CvInner() {
             </div>
             <div className="cv-score-side">
               <p className="cv-score-lead">
-                Your CV covers <b>{Math.round(analysis.overall)}%</b> of the demand-weighted skills in this
-                market ({marketTotal.toLocaleString()} postings).
+                Alignment score <b>{analysis.overall}/100</b> — 100 means your CV covers the highest-demand
+                ~80% of this market ({marketTotal.toLocaleString()} postings). Section scores:
               </p>
               <div className="cv-cat-scores">
                 {analysis.categories.map((c) => (
                   <div key={c.key} className="cv-cat-score">
                     <span className="cv-cat-score-label">{c.label}</span>
                     <div className="cv-cat-bar"><span style={{ width: `${c.score}%` }} /></div>
-                    <span className="cv-cat-score-num">{c.score}% · {c.matchedCount}/{c.total}</span>
+                    <span className="cv-cat-score-num" title={`${c.coverage}% of this section's total demand`}>{c.score}% · {c.matchedCount} hit</span>
                   </div>
                 ))}
               </div>

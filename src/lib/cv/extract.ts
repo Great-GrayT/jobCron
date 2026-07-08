@@ -22,11 +22,10 @@ async function extractDocx(file: File): Promise<string> {
 
 async function extractPdf(file: File): Promise<string> {
   const pdfjs = await import("pdfjs-dist");
-  // Bundled worker (no external CDN) — webpack turns this URL into an asset.
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url,
-  ).toString();
+  // Worker is served as a static ES module from /public (copied by
+  // scripts/copy-pdf-worker.js) — bundling it breaks Terser on the worker's
+  // import.meta. Same-origin, so it satisfies the worker-src CSP.
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
   const data = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data }).promise;

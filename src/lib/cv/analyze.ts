@@ -21,8 +21,10 @@ export interface ItemMatch {
 export interface CategoryResult {
   key: string;
   label: string;
-  items: ItemMatch[];
-  score: number; // 0-100, demand-weighted coverage
+  items: ItemMatch[]; // top items for display
+  missing: ItemMatch[]; // highest-demand items absent from the CV
+  score: number; // 0-100 (100 = covering FULL_COVERAGE of the section's demand)
+  coverage: number; // raw % of the section's total demand the CV covers
   matchedCount: number;
   total: number;
 }
@@ -44,6 +46,10 @@ export function mentions(text: string, term: string): number {
   return m ? m.length : 0;
 }
 
+// Covering this fraction of a section's TOTAL demand counts as a full (100%) match
+// — e.g. if certs total 100 postings and CFA alone is 80, having CFA = 100%.
+const FULL_COVERAGE = 0.8;
+
 const CATEGORY_META: { key: keyof MarketFacets; label: string; topN: number; weight: number }[] = [
   { key: "keywords", label: "In-demand skills", topN: 30, weight: 0.4 },
   { key: "programming", label: "Programming languages", topN: 20, weight: 0.25 },
@@ -58,18 +64,29 @@ function analyzeCategory(
   text: string,
   topN: number,
 ): CategoryResult {
-  const items: ItemMatch[] = Object.entries(facet ?? {})
+  // Score over the WHOLE section (every returned item), demand-weighted.
+  const all: ItemMatch[] = Object.entries(facet ?? {})
     .sort((a, b) => b[1] - a[1])
-    .slice(0, topN)
     .map(([name, demand]) => {
       const count = mentions(text, name);
       return { name, demand, count, matched: count > 0, category: label };
     });
 
-  const totalDemand = items.reduce((s, i) => s + i.demand, 0) || 1;
-  const matchedDemand = items.filter((i) => i.matched).reduce((s, i) => s + i.demand, 0);
-  const score = Math.round((matchedDemand / totalDemand) * 100);
-  return { key, label, items, score, matchedCount: items.filter((i) => i.matched).length, total: items.length };
+  const totalDemand = all.reduce((s, i) => s + i.demand, 0) || 1;
+  const matchedDemand = all.filter((i) => i.matched).reduce((s, i) => s + i.demand, 0);
+  const coverage = matchedDemand / totalDemand; // 0..1 of the market's demand your CV covers
+  const score = Math.min(100, Math.round((coverage / FULL_COVERAGE) * 100));
+
+  return {
+    key,
+    label,
+    items: all.slice(0, topN), // top items for display
+    missing: all.filter((i) => !i.matched).slice(0, 25),
+    score,
+    matchedCount: all.filter((i) => i.matched).length,
+    total: all.length,
+    coverage: Math.round(coverage * 100),
+  };
 }
 
 export function analyzeCv(cvText: string, facets: MarketFacets): CvAnalysis {
@@ -89,7 +106,7 @@ export function analyzeCv(cvText: string, facets: MarketFacets): CvAnalysis {
   const overall = wSum ? Math.round(acc / wSum) : 0;
 
   const suggestions = categories
-    .flatMap((c) => c.items.filter((i) => !i.matched))
+    .flatMap((c) => c.missing)
     .sort((a, b) => b.demand - a.demand)
     .slice(0, 12);
 
