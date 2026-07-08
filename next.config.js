@@ -15,6 +15,7 @@ const csp = [
   "frame-ancestors 'none'",
   "form-action 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
@@ -40,6 +41,12 @@ const nextConfig = {
   poweredByHeader: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  webpack: (config) => {
+    // pdfjs-dist lists an optional `canvas` (node-only) dependency; it's unused in
+    // the browser build, so stub it to avoid a "module not found" during bundling.
+    config.resolve.alias = { ...config.resolve.alias, canvas: false };
+    return config;
   },
 };
 

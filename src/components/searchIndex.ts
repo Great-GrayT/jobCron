@@ -20,6 +20,7 @@ export const SEARCH_INDEX: SearchEntry[] = [
   { label: "Schedules", href: "/dashboard/schedules", hint: "Settings", section: "settings", keywords: ["schedule", "cron", "interval", "scrape", "check jobs", "cron builder"] },
   { label: "RSS App", href: "/rss", hint: "Feature", section: "features", keywords: ["rss", "feed", "call", "send", "run feed"] },
   { label: "Stats", href: "/stats", hint: "Feature", section: "features", keywords: ["stats", "analytics", "charts", "salary", "skills", "industry", "treemap", "heatmap"] },
+  { label: "CV Analysis", href: "/cv", hint: "Feature", section: "features", keywords: ["cv", "resume", "cv analysis", "resume analysis", "score", "skills gap", "ats", "alignment", "upload cv"] },
   { label: "Tracking", href: "/applied", hint: "Feature", section: "features", keywords: ["tracking", "applied", "applications", "velocity", "company"] },
   { label: "Messages", href: "/messages", hint: "Feature", section: "features", keywords: ["message", "chat", "conversation", "inbox", "reply", "admin query"] },
   { label: "Admin", href: "/admin", hint: "Feature", section: "features", keywords: ["admin", "user management", "delete user", "ban", "role", "users"] },

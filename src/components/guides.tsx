@@ -65,6 +65,14 @@ export const AppliedGuide = (
   <p>When you click a job link from a Telegram post, it&apos;s counted as <strong>applied</strong> and logged here — with the job details and how long you took to apply. So please apply using those links.</p>
 );
 
+export const CvGuide = (
+  <>
+    <p>Upload your CV (<strong>PDF</strong> or <strong>Word .docx</strong>) — it&apos;s parsed in your browser and <strong>never sent to our server</strong>.</p>
+    <p>Pick a target market (industry, category, seniority, country…). We pull that slice&apos;s in-demand skills, keywords, programming languages, software and certificates from the live data, then check how many your CV covers.</p>
+    <p>You get a demand-weighted <strong>alignment score</strong> and the highest-demand items you&apos;re missing — good candidates to add to your resume.</p>
+  </>
+);
+
 export const MessagesGuide = (
   <>
     <p>Press <strong>New</strong>, enter a username or email, and your message is delivered. It&apos;s not a live chat — refresh to see the latest.</p>

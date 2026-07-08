@@ -1,4 +1,4 @@
-import { User, Rss, Send, Target, Clock, BarChart3, CheckSquare, MessageSquare, Shield, Home, LayoutDashboard, type LucideIcon } from "lucide-react";
+import { User, Rss, Send, Target, Clock, BarChart3, CheckSquare, MessageSquare, Shield, Home, LayoutDashboard, FileSearch, type LucideIcon } from "lucide-react";
 import type { MenuSection } from "@/components/AdminShell";
 
 export interface NavLink {
@@ -34,6 +34,7 @@ export function featuresMenu(role?: string): MenuSection[] {
       items: [
         { href: "/rss", label: "RSS App", icon: Rss },
         { href: "/stats", label: "Stats", icon: BarChart3 },
+        { href: "/cv", label: "CV Analysis", icon: FileSearch },
         { href: "/applied", label: "Tracking", icon: CheckSquare },
         { href: "/messages", label: "Messages", icon: MessageSquare, messagesBadge: true },
         ...(role === "admin" ? [{ href: "/admin", label: "Admin", icon: Shield }] : []),
@@ -52,6 +53,7 @@ export function navbarLinks(role?: string): NavLink[] {
     { href: "/dashboard/account", label: "Dashboard", icon: LayoutDashboard },
     { href: "/rss", label: "RSS App", icon: Rss },
     { href: "/stats", label: "Stats", icon: BarChart3 },
+    { href: "/cv", label: "CV Analysis", icon: FileSearch },
     { href: "/applied", label: "Tracking", icon: CheckSquare },
     { href: "/messages", label: "Messages", icon: MessageSquare },
     ...(role === "admin" ? [{ href: "/admin", label: "Admin", icon: Shield }] : []),
