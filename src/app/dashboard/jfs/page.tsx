@@ -1,9 +1,12 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Plus, Trash2, Save, Pencil, Play, Pause, X } from "lucide-react";
-import { filters, dictionaries } from "@/lib/api/me";
+import Link from "next/link";
+import { Loader2, Plus, Trash2, Save, Pencil, Play, Pause, X, AlertTriangle } from "lucide-react";
+import { filters, dictionaries, channels } from "@/lib/api/me";
 import type { Connector, FieldMeta, FilterCondition, FilterSet } from "@/lib/api/types";
+import { PageGuide } from "@/components/PageGuide";
+import { JfsGuide } from "@/components/guides";
 
 const OP_LABEL: Record<string, string> = { is: "is", has: "has", contains: "contains", gte: "≥", lte: "≤" };
 
@@ -80,6 +83,7 @@ export default function JfsPage() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [hasFiltered, setHasFiltered] = useState(true); // default true → no warning flash
 
   const load = () =>
     filters
@@ -88,7 +92,11 @@ export default function JfsPage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => {
+    load();
+    channels.list().then((c) => setHasFiltered(c.some((ch) => ch.kind === "filtered"))).catch(() => {});
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, []);
 
   const fieldMeta = (name: string): FieldMeta => fields.find((f) => f.field === name) ?? fields[0];
 
@@ -211,12 +219,20 @@ export default function JfsPage() {
   return (
     <section className="panel">
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2>JOB FILTERING SYSTEM</h2>
+        <h2>JOB FILTERING SYSTEM <PageGuide>{JfsGuide}</PageGuide></h2>
         <button type="button" className="btn" onClick={newSet}><Plus size={16} /> New filter set</button>
       </div>
       <p className="hint">
         Build one or more filter sets. A job matching <b>any</b> enabled set is posted to your <b>Filtered</b> Telegram channel.
       </p>
+
+      {!hasFiltered && (
+        <div className="warn-banner">
+          <AlertTriangle size={16} />
+          <span>No <b>Filtered</b> Telegram channel set — matched jobs have nowhere to go. <Link href="/dashboard/telegram">Add a Filtered channel</Link>.</span>
+        </div>
+      )}
+
       {error && <div className="auth-error">{error}</div>}
 
       {sets.length === 0 ? (

@@ -31,6 +31,8 @@ interface AdminShellProps {
   menu: MenuSection[];
   breadcrumb: string[];
   title: string;
+  /** Optional help guide rendered next to the title. */
+  titleGuide?: ReactNode;
   brand?: string;
   actions?: ReactNode;
   /** Back target. `false` hides the button; a string is used as href; otherwise router.back(). */
@@ -44,6 +46,7 @@ export function AdminShell({
   menu,
   breadcrumb,
   title,
+  titleGuide,
   brand = "JOBCRON",
   actions,
   back,
@@ -283,7 +286,10 @@ export function AdminShell({
                 <ArrowLeft size={14} /> Back
               </button>
             )}
-            <h1 className="hero-title">{title}</h1>
+            <span className="hero-title-row">
+              <h1 className="hero-title">{title}</h1>
+              {titleGuide}
+            </span>
           </div>
           {actions ? <div className="hero-actions">{actions}</div> : null}
         </section>

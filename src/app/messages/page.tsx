@@ -7,6 +7,8 @@ import { users } from "@/lib/api/users";
 import type { Message } from "@/lib/api/types";
 import { AuthGuard } from "@/components/AuthGuard";
 import { AdminShell } from "@/components/AdminShell";
+import { PageGuide } from "@/components/PageGuide";
+import { MessagesGuide } from "@/components/guides";
 import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
 import { useTimezone } from "@/context/TimezoneContext";
@@ -290,7 +292,7 @@ function MessagesInner() {
   };
 
   return (
-    <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Features", "Messages"]} title="Messages">
+    <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Features", "Messages"]} title="Messages" titleGuide={<PageGuide>{MessagesGuide}</PageGuide>}>
       <div className="chat">
         {/* ---- conversation list ---- */}
         <aside className="chat-list">

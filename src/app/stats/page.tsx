@@ -17,6 +17,8 @@ import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
 import { useTimezone } from "@/context/TimezoneContext";
 import { offsetMinutes } from "@/lib/timezone";
+import { PageGuide } from "@/components/PageGuide";
+import { StatsGuide } from "@/components/guides";
 import { SearchFilterPanel } from "@/components/SearchFilterPanel";
 import {
   fetchStatistics,
@@ -809,7 +811,7 @@ export default function StatsPage() {
   );
 
   return (
-    <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Features", "Stats"]} title="Job Market Analytics" actions={heroActions}>
+    <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Features", "Stats"]} title="Job Market Analytics" titleGuide={<PageGuide>{StatsGuide}</PageGuide>} actions={heroActions}>
       {/* Status Bar */}
       {statsData && (
         <div className="terminal-statusbar">

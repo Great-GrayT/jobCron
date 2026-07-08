@@ -1193,3 +1193,68 @@ code {
 .ceramic-option.active { background: var(--terminal-accent); color: var(--terminal-bg-header); }
 .ceramic-option-label { flex: 1; }
 .ceramic-check { flex-shrink: 0; }
+
+/* ========================================
+   PAGE GUIDE (help popover after a title)
+   ======================================== */
+.page-guide { position: relative; display: inline-flex; vertical-align: middle; margin-left: 0.5rem; }
+.page-guide-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--terminal-text-muted);
+  cursor: help;
+  transition: color var(--transition-fast);
+}
+.page-guide-btn:hover, .page-guide-btn:focus-visible { color: var(--terminal-accent); outline: none; }
+.page-guide-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1200;
+  display: block;
+  width: 340px;
+  max-width: min(340px, 86vw);
+  padding: 0.85rem 1rem;
+  background: var(--terminal-bg-panel);
+  border: 1px solid var(--terminal-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--terminal-text-secondary);
+  white-space: normal;
+  animation: fadeIn 0.14s ease-out;
+  cursor: default;
+}
+.page-guide-pop::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 10px;
+  width: 9px;
+  height: 9px;
+  background: var(--terminal-bg-panel);
+  border-left: 1px solid var(--terminal-border);
+  border-top: 1px solid var(--terminal-border);
+  transform: rotate(45deg);
+}
+.page-guide-pop p { margin: 0 0 0.55rem; }
+.page-guide-pop p:last-child { margin-bottom: 0; }
+.page-guide-pop ul { margin: 0.3rem 0 0.55rem; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.page-guide-pop strong, .page-guide-pop b { color: var(--terminal-text); font-weight: 700; }
+.page-guide-pop a { color: var(--color-blue-accent); text-decoration: underline; }
+.page-guide-pop code { font-family: var(--font-code); font-size: 0.76rem; background: var(--terminal-hover); padding: 1px 5px; border-radius: 3px; color: var(--terminal-text); }
+/* right-align the popover when the guide sits near the right edge */
+.page-guide.align-right .page-guide-pop { left: auto; right: 0; }
+.page-guide.align-right .page-guide-pop::before { left: auto; right: 10px; }
+/* keep the hero title + guide on one line */
+.hero-title-row { display: inline-flex; align-items: center; }

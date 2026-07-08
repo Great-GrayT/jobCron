@@ -6,6 +6,8 @@ import { channels } from "@/lib/api/me";
 import type { Channel, ChannelKind, LogLine } from "@/lib/api/types";
 import { StatusDot } from "@/components/StatusDot";
 import { LogPanel } from "@/components/LogPanel";
+import { PageGuide } from "@/components/PageGuide";
+import { TelegramGuide, BotTokenGuide, ChatIdGuide } from "@/components/guides";
 
 export default function TelegramPage() {
   const [list, setList] = useState<Channel[]>([]);
@@ -70,7 +72,7 @@ export default function TelegramPage() {
 
   return (
     <section className="panel">
-      <h2>TELEGRAM CHANNELS</h2>
+      <h2>TELEGRAM CHANNELS <PageGuide>{TelegramGuide}</PageGuide></h2>
       <p className="hint">
         One <b>main</b> and one <b>filtered</b> channel per account. The bot token is write-only — it&apos;s
         encrypted server-side and only ever shown back masked.
@@ -87,11 +89,11 @@ export default function TelegramPage() {
           </select>
         </div>
         <div className="field" style={{ flex: 2 }}>
-          <label htmlFor="token">Bot Token</label>
+          <label htmlFor="token">Bot Token <PageGuide label="How to get a bot token">{BotTokenGuide}</PageGuide></label>
           <input id="token" type="password" placeholder="123456:ABC…" value={botToken} onChange={(e) => setBotToken(e.target.value)} autoComplete="off" />
         </div>
         <div className="field" style={{ flex: 1 }}>
-          <label htmlFor="chat">Chat ID</label>
+          <label htmlFor="chat">Chat ID <PageGuide label="How to get a chat ID">{ChatIdGuide}</PageGuide></label>
           <input id="chat" value={chatId} onChange={(e) => setChatId(e.target.value)} placeholder="-1001…" />
         </div>
         <button className="btn" type="submit" disabled={saving}>

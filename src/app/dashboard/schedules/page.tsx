@@ -10,6 +10,8 @@ import { CronBuilder } from "@/components/CronBuilder";
 import { useTimezone } from "@/context/TimezoneContext";
 import { offsetMinutes } from "@/lib/timezone";
 import { cronToLocal, cronToUtc } from "@/lib/cron";
+import { PageGuide } from "@/components/PageGuide";
+import { SchedulesGuide } from "@/components/guides";
 
 const JOBS: ScheduleJob[] = ["check-jobs", "stats-ingest", "scrape"];
 
@@ -122,7 +124,7 @@ export default function SchedulesPage() {
 
   return (
     <section className="panel">
-      <h2>SCHEDULES</h2>
+      <h2>SCHEDULES <PageGuide>{SchedulesGuide}</PageGuide></h2>
       <p className="hint">One schedule per job. Interval is how often it runs (min 5 minutes). The scrape fields apply only to the <b>scrape</b> job.</p>
 
       {error && <div className="auth-error">{error}</div>}

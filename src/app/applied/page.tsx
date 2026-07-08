@@ -36,6 +36,8 @@ import { AdminShell } from "@/components/AdminShell";
 import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
 import { useTimezone } from "@/context/TimezoneContext";
+import { PageGuide } from "@/components/PageGuide";
+import { AppliedGuide } from "@/components/guides";
 import { applied as appliedApi } from "@/lib/api/applied";
 import "./applied.css";
 
@@ -381,7 +383,7 @@ function AppliedJobsInner() {
   );
 
   return (
-    <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Features", "Tracking"]} title="Application Tracker" actions={heroActions}>
+    <AdminShell menu={featuresMenu(user?.role)} breadcrumb={["Features", "Tracking"]} title="Application Tracker" titleGuide={<PageGuide>{AppliedGuide}</PageGuide>} actions={heroActions}>
       {/* Status Bar */}
       {stats && (
         <div className="terminal-statusbar">

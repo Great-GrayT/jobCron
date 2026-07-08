@@ -7,6 +7,8 @@ import { AvatarPicker } from "@/components/AvatarPicker";
 import { PasswordForm } from "@/components/PasswordForm";
 import { COUNTRY_NAMES, SPECIALITIES } from "@/lib/profile-options";
 import { DialCodeSelect } from "@/components/DialCodeSelect";
+import { PageGuide } from "@/components/PageGuide";
+import { AccountGuide } from "@/components/guides";
 import type { ProfileInput } from "@/lib/api/types";
 
 export default function AccountPage() {
@@ -67,7 +69,7 @@ export default function AccountPage() {
   return (
     <>
     <section className="panel">
-      <h2>ACCOUNT</h2>
+      <h2>ACCOUNT <PageGuide>{AccountGuide}</PageGuide></h2>
 
       <div className="row acct-id-row">
         <div className="avatar-wrap">

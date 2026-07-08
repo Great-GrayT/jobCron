@@ -1,11 +1,14 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { Loader2, Plus, Trash2, Plug, Send, CheckCircle2 } from "lucide-react";
-import { feeds } from "@/lib/api/me";
+import Link from "next/link";
+import { Loader2, Plus, Trash2, Plug, Send, CheckCircle2, AlertTriangle } from "lucide-react";
+import { feeds, channels } from "@/lib/api/me";
 import type { Feed, LogLine } from "@/lib/api/types";
 import { StatusDot } from "@/components/StatusDot";
 import { LogPanel } from "@/components/LogPanel";
+import { PageGuide } from "@/components/PageGuide";
+import { FeedsGuide } from "@/components/guides";
 
 /** Confirmation message shown after a toggle is saved on the server. */
 function toggleMessage(body: { notify?: boolean; shareToStats?: boolean; active?: boolean }): string | null {
@@ -34,6 +37,7 @@ export default function FeedsPage() {
   const [notify, setNotify] = useState(true);
   const [shareToStats, setShareToStats] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [hasChannel, setHasChannel] = useState(true); // default true → no warning flash
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (msg: string) => {
@@ -55,6 +59,7 @@ export default function FeedsPage() {
   };
   useEffect(() => {
     load();
+    channels.list().then((c) => setHasChannel(c.length > 0)).catch(() => {});
   }, []);
 
   const add = async (e: React.FormEvent) => {
@@ -135,10 +140,17 @@ export default function FeedsPage() {
 
   return (
     <section className="panel">
-      <h2>RSS FEEDS</h2>
+      <h2>RSS FEEDS <PageGuide>{FeedsGuide}</PageGuide></h2>
       <p className="hint">
         <b>notify</b> = send matches to your Telegram. <b>share to stats</b> = feed&apos;s jobs appear on the public Stats page.
       </p>
+
+      {!hasChannel && (
+        <div className="warn-banner">
+          <AlertTriangle size={16} />
+          <span>You haven&apos;t set up a Telegram channel yet — feed output can&apos;t be delivered. <Link href="/dashboard/telegram">Set one up</Link>.</span>
+        </div>
+      )}
 
       {error && <div className="auth-error">{error}</div>}
 
