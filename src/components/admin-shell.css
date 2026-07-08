@@ -236,7 +236,12 @@
           mask-repeat: repeat, no-repeat;
   -webkit-mask-composite: source-in;
           mask-composite: intersect;
-  animation: aside-sheen 18s linear infinite;
+  /* idle off-screen; one sweep runs only while .sheen-run is set (JS toggles it
+     with a random 7–57s gap between sweeps — see AdminShell). */
+  background-position: 140% 140%;
+}
+.admin-aside.sheen-run::after {
+  animation: aside-sheen 18s linear 1;
 }
 @keyframes aside-sheen {
   0% { background-position: 140% 140%; }

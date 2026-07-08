@@ -61,8 +61,32 @@ export function AdminShell({
   const [searchOpen, setSearchOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
 
   const results = searchPages(query);
+
+  // Sidebar pattern sheen: one sweep, then a random 7–57s pause, repeat. CSS can't
+  // randomise the gap, so drive it here by toggling `.sheen-run` (which runs the
+  // ::after animation once). Honors reduced-motion.
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const el = asideRef.current;
+    if (!el) return;
+    const SWEEP_MS = 18000;
+    let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
+    const sweep = () => {
+      if (cancelled) return;
+      el.classList.add("sheen-run");
+      timer = setTimeout(() => {
+        el.classList.remove("sheen-run");
+        const gap = (7 + Math.random() * 50) * 1000; // 7–57s
+        timer = setTimeout(sweep, gap);
+      }, SWEEP_MS);
+    };
+    timer = setTimeout(sweep, 1500);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, []);
 
   const goTo = (href: string) => {
     setQuery("");
@@ -202,7 +226,7 @@ export function AdminShell({
         </div>
       </nav>
 
-      <aside className="admin-aside">
+      <aside className="admin-aside" ref={asideRef}>
         <div className="aside-tools">
           <span>
             <b>◆</b> {brand}
