@@ -47,8 +47,8 @@ export function mentions(text: string, term: string): number {
 }
 
 // Covering this fraction of a section's TOTAL demand counts as a full (100%) match
-// — e.g. if certs total 100 postings and CFA alone is 80, having CFA = 100%.
-const FULL_COVERAGE = 0.8;
+// — e.g. if certs total 100 postings and CFA alone is 60, having CFA = 100%.
+const FULL_COVERAGE = 0.6;
 
 const CATEGORY_META: { key: keyof MarketFacets; label: string; topN: number; weight: number }[] = [
   { key: "keywords", label: "In-demand skills", topN: 30, weight: 0.4 },
