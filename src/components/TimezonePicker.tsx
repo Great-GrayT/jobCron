@@ -4,12 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { useTimezone } from "@/context/TimezoneContext";
 import { browserTz, listZones } from "@/lib/timezone";
+import { Flag } from "@/components/Flag";
 
 // Global timezone selector shown in the top bar. Picking a zone re-renders every
 // date in the app (see useTimezone().format). Flags come from the zone's country.
 
 export function TimezonePicker() {
-  const { timezone, setTimezone, flag, offset } = useTimezone();
+  const { timezone, setTimezone, countryCode, offset } = useTimezone();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const ref = useRef<HTMLDivElement>(null);
@@ -42,7 +43,7 @@ export function TimezonePicker() {
         aria-expanded={open}
         title={`${timezone} (UTC${offset})`}
       >
-        <span className="tz-flag" aria-hidden="true">{flag}</span>
+        <Flag code={countryCode} className="tz-flag" />
         <span className="tz-name">{shortName}</span>
         <span className="tz-offset">UTC{offset}</span>
       </button>
@@ -72,7 +73,7 @@ export function TimezonePicker() {
                 aria-selected={z.name === timezone}
                 onClick={() => { setTimezone(z.name); setOpen(false); }}
               >
-                <span className="tz-flag" aria-hidden="true">{z.flag}</span>
+                <Flag code={z.country} className="tz-flag" />
                 <span className="tz-option-name">{z.name.replace(/_/g, " ")}</span>
                 <span className="tz-option-offset">UTC{z.offsetLabel}</span>
                 {z.name === timezone && <Check size={13} className="tz-check" />}

@@ -1056,7 +1056,16 @@ code {
   font-family: var(--font-sans);
 }
 .tz-picker-btn:hover { background: var(--color-blue-primary); border-color: var(--color-blue-primary); color: #fff; }
-.tz-flag { font-size: 1rem; line-height: 1; }
+.tz-flag { font-size: 0.95rem; line-height: 1; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12); }
+/* neutral placeholder when a zone/country has no flag (e.g. UTC) */
+.flag-blank {
+  display: inline-block;
+  width: 1.333em;
+  height: 1em;
+  border-radius: 2px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--terminal-border);
+}
 .tz-name { max-width: 9ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tz-offset { font-variant-numeric: tabular-nums; opacity: 0.75; font-size: 0.68rem; }
 
@@ -1110,3 +1119,60 @@ code {
 .tz-check { flex-shrink: 0; }
 .tz-detect { color: var(--color-blue-primary); font-weight: 600; margin-bottom: 0.25rem; }
 .tz-empty { padding: 0.6rem; color: var(--terminal-text-muted); font-size: 0.78rem; text-align: center; }
+
+/* ========================================
+   CERAMIC PATTERN PICKER (global, top bar)
+   ======================================== */
+.ceramic-picker { position: relative; }
+.ceramic-picker-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--terminal-bg-panel);
+  border: 1px solid var(--color-border-light);
+  color: var(--terminal-text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.ceramic-picker-btn:hover { background: var(--color-blue-primary); border-color: var(--color-blue-primary); color: #fff; }
+.ceramic-swatch {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+.ceramic-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  background: var(--terminal-bg-panel);
+  border: 1px solid var(--terminal-border);
+  box-shadow: var(--shadow-lg);
+  border-radius: 6px;
+  z-index: 1000;
+  padding: 0.35rem;
+  animation: fadeIn 0.15s ease-out;
+}
+.ceramic-option {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--terminal-text);
+  font-size: 0.78rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+.ceramic-option:hover { background: var(--terminal-hover); }
+.ceramic-option.active { background: var(--terminal-accent); color: var(--terminal-bg-header); }
+.ceramic-option-label { flex: 1; }
+.ceramic-check { flex-shrink: 0; }

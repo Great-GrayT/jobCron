@@ -5,7 +5,8 @@ import { Loader2, Save, ShieldCheck, ShieldAlert, Camera } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { PasswordForm } from "@/components/PasswordForm";
-import { COUNTRY_NAMES, SPECIALITIES, UNIQUE_DIAL_CODES } from "@/lib/profile-options";
+import { COUNTRY_NAMES, SPECIALITIES } from "@/lib/profile-options";
+import { DialCodeSelect } from "@/components/DialCodeSelect";
 import type { ProfileInput } from "@/lib/api/types";
 
 export default function AccountPage() {
@@ -112,20 +113,14 @@ export default function AccountPage() {
         <div className="field">
           <label>Phone</label>
           <div className="phone-row">
-            <select aria-label="Phone dial code" value={form.phoneDialCode ?? ""} onChange={(e) => set("phoneDialCode", e.target.value)}>
-              <option value="">+</option>
-              {UNIQUE_DIAL_CODES.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
+            <DialCodeSelect ariaLabel="Phone dial code" value={form.phoneDialCode ?? ""} onChange={(v) => set("phoneDialCode", v)} />
             <input inputMode="tel" value={form.phoneNumber ?? ""} onChange={(e) => set("phoneNumber", e.target.value)} />
           </div>
         </div>
         <div className="field">
           <label>Mobile</label>
           <div className="phone-row">
-            <select aria-label="Mobile dial code" value={form.mobileDialCode ?? ""} onChange={(e) => set("mobileDialCode", e.target.value)}>
-              <option value="">+</option>
-              {UNIQUE_DIAL_CODES.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
+            <DialCodeSelect ariaLabel="Mobile dial code" value={form.mobileDialCode ?? ""} onChange={(v) => set("mobileDialCode", v)} />
             <input inputMode="tel" value={form.mobileNumber ?? ""} onChange={(e) => set("mobileNumber", e.target.value)} />
           </div>
         </div>

@@ -9,7 +9,8 @@ import { Camera } from "lucide-react";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { useAuth } from "@/context/AuthContext";
 import { oauthUrl, resendVerification } from "@/lib/api/auth";
-import { COUNTRY_NAMES, SPECIALITIES, UNIQUE_DIAL_CODES } from "@/lib/profile-options";
+import { COUNTRY_NAMES, SPECIALITIES } from "@/lib/profile-options";
+import { DialCodeSelect } from "@/components/DialCodeSelect";
 import "@/components/dashboard.css";
 
 // Optional profile fields — empty ones trigger the "are you a spy?" saga.
@@ -192,10 +193,7 @@ export default function RegisterPage() {
             <div className={cls("phoneNumber")}>
               <label>Phone</label>
               <div className="phone-row">
-                <select aria-label="Phone dial code" value={form.phoneDialCode} onChange={(e) => set("phoneDialCode", e.target.value)}>
-                  <option value="">+</option>
-                  {UNIQUE_DIAL_CODES.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
+                <DialCodeSelect ariaLabel="Phone dial code" value={form.phoneDialCode} onChange={(v) => set("phoneDialCode", v)} />
                 <input inputMode="tel" value={form.phoneNumber} onChange={(e) => set("phoneNumber", e.target.value)} />
               </div>
               {errors.has("phoneNumber") && <span className="err-label">missing</span>}
@@ -203,10 +201,7 @@ export default function RegisterPage() {
             <div className={cls("mobileNumber")}>
               <label>Mobile</label>
               <div className="phone-row">
-                <select aria-label="Mobile dial code" value={form.mobileDialCode} onChange={(e) => set("mobileDialCode", e.target.value)}>
-                  <option value="">+</option>
-                  {UNIQUE_DIAL_CODES.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
+                <DialCodeSelect ariaLabel="Mobile dial code" value={form.mobileDialCode} onChange={(v) => set("mobileDialCode", v)} />
                 <input inputMode="tel" value={form.mobileNumber} onChange={(e) => set("mobileNumber", e.target.value)} />
               </div>
               {errors.has("mobileNumber") && <span className="err-label">missing</span>}

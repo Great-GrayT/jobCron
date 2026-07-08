@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
-import { browserTz, formatInZone, formatInZoneFmt, offsetLabel, zoneFlag } from "@/lib/timezone";
+import { browserTz, formatInZone, formatInZoneFmt, offsetLabel, zoneCountry } from "@/lib/timezone";
 
 interface TimezoneContextType {
   /** Active IANA zone applied to every date in the app. */
@@ -9,7 +9,8 @@ interface TimezoneContextType {
   setTimezone: (tz: string) => void;
   /** True until the persisted preference has been read on the client. */
   ready: boolean;
-  flag: string;
+  /** ISO-3166 alpha-2 country code for the active zone (for a flag), or null. */
+  countryCode: string | null;
   offset: string;
   /** Render an instant in the active zone: default "Mon Jul 07, 11:05". */
   format: (date: Date | string | number, fmt?: string) => string;
@@ -51,7 +52,7 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
       timezone,
       setTimezone,
       ready,
-      flag: zoneFlag(timezone),
+      countryCode: zoneCountry(timezone),
       offset: offsetLabel(timezone),
       format,
     }),

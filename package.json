@@ -27,6 +27,7 @@
     "countries-and-timezones": "^3.9.0",
     "d3-cloud": "^1.2.8",
     "exceljs": "^4.4.0",
+    "flag-icons": "^7.5.0",
     "form-data": "^4.0.5",
     "framer-motion": "^12.27.0",
     "lucide-react": "^0.562.0",

@@ -5,6 +5,7 @@ import { AlertCircle, CheckCircle2, Clock, Globe } from "lucide-react";
 import { CRON_PRESET_GROUPS, describeCron, isValidCron, nextRuns } from "@/lib/cron";
 import { localTimeToUtc } from "@/lib/timezone";
 import { useTimezone } from "@/context/TimezoneContext";
+import { Flag } from "@/components/Flag";
 
 // Visual builder for a 5-field cron ("m h dom mon dow"). Presets and toggles
 // compose the expression; the raw field is also directly editable (source of
@@ -31,7 +32,7 @@ export function CronBuilder({ value, onChange }: { value: string; onChange: (v: 
   const [months, setMonths] = useState<number[]>([]);
   const [dows, setDows] = useState<number[]>([]);
   const [localTime, setLocalTime] = useState("09:00");
-  const { timezone, flag, offset, format } = useTimezone();
+  const { timezone, countryCode, offset, format } = useTimezone();
 
   const push = (m = minute, h = hour, d = dom, mo = months, dw = dows) =>
     onChange(compose(m, h, d, mo, dw));
@@ -101,7 +102,7 @@ export function CronBuilder({ value, onChange }: { value: string; onChange: (v: 
       <div className="cron-tz">
         <span className="cron-tz-head">
           <Globe size={13} /> Set by your local time
-          <span className="cron-tz-zone">{flag} {timezone.replace(/_/g, " ")} · UTC{offset}</span>
+          <span className="cron-tz-zone"><Flag code={countryCode} /> {timezone.replace(/_/g, " ")} · UTC{offset}</span>
         </span>
         <div className="cron-tz-row">
           <input
@@ -155,7 +156,7 @@ export function CronBuilder({ value, onChange }: { value: string; onChange: (v: 
       {runs.length > 0 && (
         <div className="cron-next">
           <span className="cron-next-head">
-            <Clock size={13} /> Next runs · <span className="cron-next-zone">{flag} your time</span> / UTC
+            <Clock size={13} /> Next runs · <span className="cron-next-zone"><Flag code={countryCode} /> your time</span> / UTC
           </span>
           <ul>
             {runs.map((r, i) => (

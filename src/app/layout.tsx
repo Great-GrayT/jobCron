@@ -1,6 +1,8 @@
 import './globals.css';
+import 'flag-icons/css/flag-icons.min.css';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { TimezoneProvider } from '@/context/TimezoneContext';
+import { CeramicProvider } from '@/context/CeramicContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { RouteGuard } from '@/components/RouteGuard';
 import { Arimo, Nunito } from 'next/font/google';
@@ -34,11 +36,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${arimo.variable} ${nunito.variable}`}>
       <body suppressHydrationWarning>
         <ThemeProvider>
-          <TimezoneProvider>
-            <AuthProvider>
-              <RouteGuard>{children}</RouteGuard>
-            </AuthProvider>
-          </TimezoneProvider>
+          <CeramicProvider>
+            <TimezoneProvider>
+              <AuthProvider>
+                <RouteGuard>{children}</RouteGuard>
+              </AuthProvider>
+            </TimezoneProvider>
+          </CeramicProvider>
         </ThemeProvider>
       </body>
     </html>

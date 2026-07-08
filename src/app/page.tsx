@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimezonePicker } from "@/components/TimezonePicker";
+import { CeramicPicker } from "@/components/CeramicPicker";
 import "./home.css";
 
 export default function Home() {
@@ -95,6 +96,7 @@ export default function Home() {
               </Link>
             </>
           )}
+          <CeramicPicker />
           <TimezonePicker />
           <ThemeToggle />
         </div>

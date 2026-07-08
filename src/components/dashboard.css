@@ -552,6 +552,74 @@ table.dash-table tbody tr:hover { background: var(--terminal-hover); }
 .phone-row { display: flex; gap: 0.4rem; }
 .phone-row select { flex: 0 0 84px; }
 .phone-row input { flex: 1; min-width: 0; }
+.phone-row .dial-select { flex: 0 0 auto; }
+
+/* dial-code picker (flags in phone/mobile) */
+.dial-select { position: relative; }
+.dial-select-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 0 9px;
+  background: var(--terminal-bg-secondary);
+  border: 1px solid var(--terminal-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dial-select-btn:hover { border-color: var(--terminal-accent); }
+.dial-code { font-variant-numeric: tabular-nums; }
+.dial-chevron { opacity: 0.55; }
+.dial-select .fi, .dial-option .fi { border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.dial-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 260px;
+  max-width: 82vw;
+  background: var(--terminal-bg-panel);
+  border: 1px solid var(--terminal-border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  padding: 0.4rem;
+}
+.dial-search {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  background: var(--terminal-bg-secondary);
+  border: 1px solid var(--terminal-border);
+  border-radius: 5px;
+  color: var(--color-text-primary);
+  font-size: 0.8rem;
+  margin-bottom: 0.35rem;
+}
+.dial-search:focus { outline: none; border-color: var(--terminal-accent); }
+.dial-list { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; }
+.dial-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.42rem 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--color-text-primary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+}
+.dial-option:hover { background: var(--terminal-hover); }
+.dial-option.active { background: var(--terminal-accent); color: var(--terminal-bg-header); }
+.dial-option-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dial-option-code { font-variant-numeric: tabular-nums; opacity: 0.7; }
+.dial-check { flex-shrink: 0; }
+.dial-empty { padding: 0.6rem; text-align: center; color: var(--terminal-text-muted); font-size: 0.8rem; }
 
 /* ---- modal saga ---- */
 .modal-overlay {

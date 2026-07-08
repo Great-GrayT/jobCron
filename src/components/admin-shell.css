@@ -206,6 +206,30 @@
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
           mask-image: linear-gradient(to bottom, transparent, #000 45%);
 }
+/* diagonal "wave" — a soft bright band that sweeps corner-to-corner over the
+   ceramic pattern. Oversized + off-screen at the extremes so the loop is seamless. */
+.admin-aside::after {
+  content: "";
+  position: absolute;
+  inset: -60%;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent 44%,
+    rgba(120, 230, 245, 0.12) 50%,
+    transparent 56%
+  );
+  will-change: transform;
+  animation: aside-sheen 7s linear infinite;
+}
+@keyframes aside-sheen {
+  0% { transform: translate(-55%, -55%); }
+  100% { transform: translate(55%, 55%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-aside::after { animation: none; }
+}
 .admin-aside > * { position: relative; z-index: 1; }
 .aside-tools {
   height: var(--navbar-height);

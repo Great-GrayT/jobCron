@@ -80,7 +80,19 @@
 }
 
 /* ---------- thread / main ---------- */
-.chat-main { display: flex; flex-direction: column; min-width: 0; }
+.chat-main { display: flex; flex-direction: column; min-width: 0; position: relative; isolation: isolate; overflow: hidden; background: var(--terminal-bg-secondary); }
+/* ceramic watermark behind the conversation (fixed while messages scroll) */
+.chat-main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--ceramic-pattern);
+  background-repeat: repeat;
+  background-size: 300px;
+  opacity: calc(var(--ceramic-opacity) * 1.4);
+}
 .chat-thread-head {
   display: flex;
   align-items: center;
@@ -112,9 +124,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  background:
-    radial-gradient(circle at 100% 0, var(--terminal-hover) 0, transparent 28%),
-    var(--terminal-bg-secondary);
+  /* transparent base so the .chat-main ceramic watermark shows through */
+  background: radial-gradient(circle at 100% 0, var(--terminal-hover) 0, transparent 28%);
 }
 
 /* incoming (left, with avatar) */
