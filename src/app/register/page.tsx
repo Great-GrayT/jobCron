@@ -13,7 +13,7 @@ import { COUNTRY_NAMES, SPECIALITIES } from "@/lib/profile-options";
 import { DialCodeSelect } from "@/components/DialCodeSelect";
 import "@/components/dashboard.css";
 
-// Optional profile fields — empty ones trigger the "are you a spy?" saga.
+// Optional profile fields | empty ones trigger the "are you a spy?" saga.
 const OPTIONAL = [
   "firstName", "lastName", "phoneDialCode", "phoneNumber",
   "mobileDialCode", "mobileNumber", "speciality", "country", "city",
@@ -113,7 +113,7 @@ export default function RegisterPage() {
         <div className="auth-card">
           <h1><MailCheck size={18} /> CHECK YOUR EMAIL</h1>
           <p className="sub">
-            We sent a verification link to <b>{registeredEmail}</b>. Click it to activate your account —
+            We sent a verification link to <b>{registeredEmail}</b>. Click it to activate your account |
             you can&apos;t log in until your email is verified. Unverified accounts are removed after 7 days.
           </p>
           <button className="btn block" onClick={() => resendVerification(registeredEmail)}>
@@ -144,7 +144,7 @@ export default function RegisterPage() {
             <button type="button" className="btn ghost sm" onClick={() => setAvatarOpen((v) => !v)}>
               <Camera size={14} /> {avatarOpen ? "Close" : avatarPreview ? "Change avatar" : "Choose avatar"}
             </button>
-            <div className="muted">Optional — or pick one later.</div>
+            <div className="muted">Optional | or pick one later.</div>
           </div>
         </div>
         {avatarOpen && (
@@ -239,7 +239,7 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <div className="divider">— OR —</div>
+        <div className="divider">| OR |</div>
         <div className="oauth-row">
           <a className="btn ghost block" href={oauthUrl("google")}><FcGoogle size={16} /> Google</a>
           <a className="btn ghost block" href={oauthUrl("github")}><FaGithub size={16} /> GitHub</a>

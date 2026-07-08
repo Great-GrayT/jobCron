@@ -71,7 +71,7 @@ export default function StatsPage() {
   const [statsData, setStatsData] = useState<StatsData | null>(null);
   // Filtered aggregates that drive every chart (server already applied filters).
   const [filteredStatistics, setFilteredStatistics] = useState<MonthlyStatistics | null>(null);
-  // Unfiltered aggregates for the current view — powers the filter dropdowns.
+  // Unfiltered aggregates for the current view | powers the filter dropdowns.
   const [baseStatistics, setBaseStatistics] = useState<MonthlyStatistics | null>(null);
   const [jobs, setJobs] = useState<JobStatistic[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export default function StatsPage() {
   const [hoveredJob, setHoveredJob] = useState<JobStatistic | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveringJobId, setHoveringJobId] = useState<string | null>(null);
-  // Ref mirror of "mouse is over popup" — the cell's mouse-leave timeout reads this,
+  // Ref mirror of "mouse is over popup" | the cell's mouse-leave timeout reads this,
   // and a state value would be captured stale in that closure (the "only works
   // the second time" bug). The ref always holds the latest value.
   const isMouseOverPopupRef = useRef(false);
@@ -106,7 +106,7 @@ export default function StatsPage() {
   const [loadingStep, setLoadingStep] = useState<string>('INITIALIZING...');
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
 
-  // Manual refresh (LOAD DATA button) — bumps the key both data effects watch.
+  // Manual refresh (LOAD DATA button) | bumps the key both data effects watch.
   const loadStatistics = () => setReloadKey(k => k + 1);
 
   // Debounce text search to avoid refetching on every keystroke
@@ -124,7 +124,7 @@ export default function StatsPage() {
   }, [loadingProgress]);
 
   // Summary cards + month list. These depend ONLY on scope (all-time total, this
-  // month's count, the archive list) — not on filters/view/date/search — so they
+  // month's count, the archive list) | not on filters/view/date/search | so they
   // refetch only when scope (or a manual reload) changes, instead of piggy-
   // backing on every filter tweak like before.
   useEffect(() => {
@@ -152,7 +152,7 @@ export default function StatsPage() {
   // Chart aggregates. Fetches the FILTERED view (drives every chart). The
   // unfiltered "base" that powers the filter dropdowns is identical when no
   // facet filter is active, so we only issue that second request when filters
-  // ARE active — eliminating the duplicate bundle that fired on every load.
+  // ARE active | eliminating the duplicate bundle that fired on every load.
   useEffect(() => {
     let cancelled = false;
     const initial = !filteredStatistics;
@@ -166,7 +166,7 @@ export default function StatsPage() {
       .then(([stats, base]) => {
         if (cancelled) return;
         setFilteredStatistics(stats);
-        setBaseStatistics(base ?? stats); // reuse when unfiltered — no 2nd call
+        setBaseStatistics(base ?? stats); // reuse when unfiltered | no 2nd call
         setLoadingStep('READY'); setLoadingProgress(100);
       })
       .catch(err => { if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load statistics'); })
@@ -182,7 +182,7 @@ export default function StatsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilters, viewMode, selectedDate, debouncedTextSearch, scope]);
 
-  // Paginated jobs for the table — server-side page/pageSize, descriptions
+  // Paginated jobs for the table | server-side page/pageSize, descriptions
   // omitted (fetched on demand when a row is hovered).
   useEffect(() => {
     let cancelled = false;
@@ -334,7 +334,7 @@ export default function StatsPage() {
       .map(([name, value]) => ({ name, value }));
   };
 
-  // Full timeline — the <Brush> under the chart handles windowing (drag the grey
+  // Full timeline | the <Brush> under the chart handles windowing (drag the grey
   // scrollbar handles), so we no longer slice here.
   const getDateChartData = () => {
     const stats = filteredStatistics;
@@ -750,7 +750,7 @@ export default function StatsPage() {
     if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
     setHoveringJobId(null);
     // Delay close so the mouse can reach the popup. Read the REF (not state) so
-    // this closure sees the live value — the stale-state read was why the popup
+    // this closure sees the live value | the stale-state read was why the popup
     // only stayed on the second hover.
     setTimeout(() => {
       if (!isMouseOverPopupRef.current) {
@@ -872,7 +872,7 @@ export default function StatsPage() {
         </div>
       )}
 
-      {/* Refetch overlay — transparent animated pop-up shown while new data is
+      {/* Refetch overlay | transparent animated pop-up shown while new data is
           loading after a filter/view change (item 6). */}
       {!loading && (statsUpdating || jobsLoading) && (
         <div className="refetch-overlay" aria-live="polite">
@@ -1430,7 +1430,7 @@ export default function StatsPage() {
                         onMouseEnter={(e) => openJobHover(job, e)}
                         onMouseLeave={closeJobHover}
                       >
-                        {/* Loading circle — spins while the description is fetching */}
+                        {/* Loading circle | spins while the description is fetching */}
                         {hoveringJobId === job.id && !hoveredJob && (
                           <svg width="20" height="20" viewBox="0 0 20 20" className="cell-loading-circle">
                             <circle cx="10" cy="10" r="8" fill="none" className="loading-circle-bg" strokeWidth="2" />

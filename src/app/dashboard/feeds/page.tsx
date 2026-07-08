@@ -14,14 +14,14 @@ import { FeedsGuide } from "@/components/guides";
 function toggleMessage(body: { notify?: boolean; shareToStats?: boolean; active?: boolean }): string | null {
   if (body.shareToStats !== undefined)
     return body.shareToStats
-      ? "Sharing on — this feed's posts are now saved to the public stats and their info is visible to all users."
-      : "Sharing off — this feed's posts stay private; only you will see them in your own stats.";
+      ? "Sharing on | this feed's posts are now saved to the public stats and their info is visible to all users."
+      : "Sharing off | this feed's posts stay private; only you will see them in your own stats.";
   if (body.notify !== undefined)
     return body.notify
-      ? "Notify on — this feed is analysed on every check-jobs run and matching posts are sent to the Telegram channel you've set (if any)."
-      : "Notify off — this feed will no longer send posts to your Telegram channel.";
+      ? "Notify on | this feed is analysed on every check-jobs run and matching posts are sent to the Telegram channel you've set (if any)."
+      : "Notify off | this feed will no longer send posts to your Telegram channel.";
   if (body.active !== undefined)
-    return body.active ? "Feed enabled." : "Feed paused — it won't run until you re-enable it.";
+    return body.active ? "Feed enabled." : "Feed paused | it won't run until you re-enable it.";
   return null;
 }
 
@@ -64,7 +64,7 @@ export default function FeedsPage() {
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Accept a comma-separated list of URLs — each becomes its own feed.
+    // Accept a comma-separated list of URLs | each becomes its own feed.
     const urls = Array.from(
       new Set(url.split(",").map((u) => u.trim()).filter(Boolean)),
     );
@@ -148,7 +148,7 @@ export default function FeedsPage() {
       {!hasChannel && (
         <div className="warn-banner">
           <AlertTriangle size={16} />
-          <span>You haven&apos;t set up a Telegram channel yet — feed output can&apos;t be delivered. <Link href="/dashboard/telegram">Set one up</Link>.</span>
+          <span>You haven&apos;t set up a Telegram channel yet | feed output can&apos;t be delivered. <Link href="/dashboard/telegram">Set one up</Link>.</span>
         </div>
       )}
 
@@ -156,7 +156,7 @@ export default function FeedsPage() {
 
       <form className="toolbar" onSubmit={add}>
         <div className="field" style={{ flex: 2 }}>
-          <label htmlFor="url">Feed URL(s) <span className="muted">— comma-separated for bulk add</span></label>
+          <label htmlFor="url">Feed URL(s) <span className="muted">| comma-separated for bulk add</span></label>
           <input id="url" required placeholder="https://rss.com/a, https://rss.com/b" value={url} onChange={(e) => setUrl(e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1 }}>
@@ -185,7 +185,7 @@ export default function FeedsPage() {
                 <tr>
                   <td><StatusDot status={f.lastStatus ?? null} title="Last test/send" /></td>
                   <td>
-                    <div>{f.name || "—"}</div>
+                    <div>{f.name || "|"}</div>
                     <div className="muted" style={{ wordBreak: "break-all" }}>{f.url}</div>
                   </td>
                   <td><input type="checkbox" aria-label="Notify" checked={f.notify} onChange={(e) => patch(f.id, { notify: e.target.checked })} /></td>

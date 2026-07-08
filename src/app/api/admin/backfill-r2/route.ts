@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
  * browser.
  *
  * The import is async on the cron-server: POST starts it (returns a jobId),
- * GET ?jobId=... polls progress. This proxy just forwards both — no long-held
+ * GET ?jobId=... polls progress. This proxy just forwards both | no long-held
  * request, so no gateway 502.
  */
 export const runtime = "nodejs";

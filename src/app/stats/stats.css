@@ -1283,7 +1283,7 @@
 }
 
 /* ============================================================
-   Admin One reskin overrides — render inside AdminShell main.
+   Admin One reskin overrides | render inside AdminShell main.
    ============================================================ */
 .terminal-page {
   min-height: 0;
@@ -1355,7 +1355,7 @@
 .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .page-gap { padding: 0 4px; color: var(--terminal-text-muted, #7a8aa0); }
 
-/* Refetch overlay — transparent animated popup during filter/view refetch */
+/* Refetch overlay | transparent animated popup during filter/view refetch */
 .refetch-overlay { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 900; pointer-events: none; animation: refetch-in 0.18s ease-out; }
 .refetch-card { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--terminal-bg-panel); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1px solid var(--terminal-accent); border-radius: 8px; color: var(--color-text-secondary); font-size: 12px; box-shadow: var(--shadow-lg); }
 .refetch-bar { width: 90px; height: 3px; background: var(--color-bg-tertiary); border-radius: 2px; overflow: hidden; }
@@ -1363,7 +1363,7 @@
 @keyframes refetch-in { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 @keyframes refetch-slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
 
-/* Recharts brush ("slider") under Posting Velocity — theme-aware (CSS beats the
+/* Recharts brush ("slider") under Posting Velocity | theme-aware (CSS beats the
    inline SVG presentation attributes recharts sets). */
 .recharts-brush > rect { fill: var(--terminal-bg-secondary); stroke: var(--terminal-border); }
 .recharts-brush-traveller rect { fill: var(--color-bg-tertiary); stroke: var(--terminal-accent); }

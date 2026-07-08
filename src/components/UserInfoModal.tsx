@@ -106,14 +106,14 @@ export function UserInfoModal({ userId, fallbackName, fallbackAvatar, viewerIsAd
           <div className="auth-error">{error}</div>
         ) : (
           <div className="ui-body">
-            <Row icon={AtSign} label="Username" value={u?.username || "—"} />
+            <Row icon={AtSign} label="Username" value={u?.username || "|"} />
             <Row icon={Mail} label="Email" value={u?.email} />
-            <Row icon={MapPin} label="Address" value={address || "—"} />
-            <Row icon={Briefcase} label="Speciality" value={u?.speciality || "—"} />
+            <Row icon={MapPin} label="Address" value={address || "|"} />
+            <Row icon={Briefcase} label="Speciality" value={u?.speciality || "|"} />
 
             {detail && (
               <>
-                <Row icon={Phone} label="Phone" value={phone || "—"} />
+                <Row icon={Phone} label="Phone" value={phone || "|"} />
                 <Row
                   icon={ShieldCheck}
                   label="Status"

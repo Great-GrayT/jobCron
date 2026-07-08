@@ -85,7 +85,7 @@ export const admin = {
     return data as BackfillStatus;
   },
 
-  // DESTRUCTIVE — empties selected datasets. Server re-verifies admin role AND
+  // DESTRUCTIVE | empties selected datasets. Server re-verifies admin role AND
   // the acting admin's password; datasets are an allowlist (no table names sent).
   cleanDb: (datasets: CleanDataset[], password: string) =>
     api.post<CleanResult>("/api/admin/clean-db", { datasets, password }),

@@ -51,7 +51,7 @@ function makeAutoReply(meId: string): Message {
     toUserId: meId,
     toAdmin: false,
     subject: null,
-    body: "Thanks for reaching out — an admin will contact you surely.",
+    body: "Thanks for reaching out | an admin will contact you surely.",
     readAt: now,
     createdAt: now,
     from: { id: "system", email: "", username: "Admin", name: "Admin", avatarUrl: null, role: "admin" },
@@ -85,7 +85,7 @@ function MessagesInner() {
   const [note, setNote] = useState<string | null>(null);
 
   // Info popup + avatar resolution (uploaded avatars live in avatarData, which the
-  // messages payload omits — resolve those once per partner via the card endpoint).
+  // messages payload omits | resolve those once per partner via the card endpoint).
   const [infoUser, setInfoUser] = useState<{ id: string; name: string; avatar?: string | null } | null>(null);
   const [avatarCache, setAvatarCache] = useState<Record<string, string>>({});
   const viewerIsAdmin = isAdminUser(user);
@@ -114,7 +114,7 @@ function MessagesInner() {
   }, []);
 
   // Resolve avatars for partners who have no avatarUrl (i.e. an uploaded base64
-  // avatar) — one card fetch per unique partner, cached.
+  // avatar) | one card fetch per unique partner, cached.
   useEffect(() => {
     const need = new Map<string, void>();
     const collect = (u: { id: string; avatarUrl: string | null } | null) => {
@@ -223,7 +223,7 @@ function MessagesInner() {
   const doDelete = async (m: Message) => {
     setCtx(null);
     if (m.id.startsWith("auto-")) {
-      // Front-end-only auto message — just drop it locally.
+      // Front-end-only auto message | just drop it locally.
       setAutoReplies((prev) => {
         const next: Record<string, Message[]> = {};
         for (const k of Object.keys(prev)) next[k] = prev[k].filter((x) => x.id !== m.id);
@@ -308,7 +308,7 @@ function MessagesInner() {
             ) : (
               conversations.map((c) => {
                 const name = partnerName(c);
-                const preview = c.last ? c.last.body : "No messages yet — say hi";
+                const preview = c.last ? c.last.body : "No messages yet | say hi";
                 return (
                   <button
                     type="button"
@@ -345,7 +345,7 @@ function MessagesInner() {
               <form className="chat-compose" onSubmit={sendNew}>
                 {note && <div className="auth-error">{note}</div>}
                 <div className="field">
-                  <label>To — email or username</label>
+                  <label>To | email or username</label>
                   <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="someone@example.com" required />
                 </div>
                 <div className="field">

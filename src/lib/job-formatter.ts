@@ -103,7 +103,7 @@ export function formatJobMessage(
     metadata.industry,
   );
 
-  // Validate yearsExperience — discard unrealistically large values (>15 years)
+  // Validate yearsExperience | discard unrealistically large values (>15 years)
   let validatedExperience: string | null = null;
   if (analysis.yearsExperience) {
     const yearsMatch = analysis.yearsExperience.match(/(\d+)/);

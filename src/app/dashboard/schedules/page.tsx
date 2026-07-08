@@ -190,7 +190,7 @@ export default function SchedulesPage() {
                   <td>{s.job}</td>
                   <td>
                     {s.cronExpr ? (
-                      <code className="muted" title={`Stored (UTC): ${s.cronExpr} — shown in your timezone`}>{cronToLocal(s.cronExpr, offMin)}</code>
+                      <code className="muted" title={`Stored (UTC): ${s.cronExpr} | shown in your timezone`}>{cronToLocal(s.cronExpr, offMin)}</code>
                     ) : (
                       <input
                         type="number"
@@ -204,8 +204,8 @@ export default function SchedulesPage() {
                   </td>
                   <td className="muted">
                     {s.job === "scrape"
-                      ? [s.scrapeSearch, s.scrapeCountries, s.scrapeTimeFilter ? `${s.scrapeTimeFilter}s` : null].filter(Boolean).join(" · ") || "—"
-                      : "—"}
+                      ? [s.scrapeSearch, s.scrapeCountries, s.scrapeTimeFilter ? `${s.scrapeTimeFilter}s` : null].filter(Boolean).join(" · ") || "|"
+                      : "|"}
                   </td>
                   <td><input type="checkbox" aria-label="Enabled" checked={s.enabled} onChange={(e) => patch(s.id, { enabled: e.target.checked })} /></td>
                   <td>
@@ -235,7 +235,7 @@ export default function SchedulesPage() {
                               <StatusDot status={r.ok ? "success" : "fail"} />
                               <span className="run-when">{format(r.createdAt)}</span>
                               <span className="muted">{r.trigger} · {r.durationMs}ms</span>
-                              <span className="run-detail">{r.error ?? r.summary ?? "—"}</span>
+                              <span className="run-detail">{r.error ?? r.summary ?? "|"}</span>
                             </div>
                           ))
                         )}

@@ -383,7 +383,7 @@ export class LocationExtractor {
     const tokens: string[] = [];
 
     // Split on common delimiters
-    const basicTokens = text.split(/[\s\-–—_|:;()[\]{}""''«»「」『』]+/);
+    const basicTokens = text.split(/[\s\-–|_|:;()[\]{}""''«»「」『』]+/);
 
     for (const token of basicTokens) {
       if (!token) continue;

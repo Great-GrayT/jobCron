@@ -25,7 +25,7 @@ export function SetPasswordPrompt() {
       <div className="modal-card avatar-modal">
         <h3 className="modal-title"><ShieldAlert size={18} /> Set an account password</h3>
         <p className="muted set-pw-note">
-          Admin accounts must be secured with a password. You signed in without one — please set it now.
+          Admin accounts must be secured with a password. You signed in without one | please set it now.
         </p>
         <PasswordForm onDone={() => setOpen(false)} />
         <div className="modal-actions">

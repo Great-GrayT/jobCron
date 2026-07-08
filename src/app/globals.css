@@ -4,19 +4,19 @@
    Font: Computer/Terminal Style
    ======================================== */
 
-/* Arimo is loaded via next/font/google in layout.tsx — no @import needed */
+/* Arimo is loaded via next/font/google in layout.tsx | no @import needed */
 
 /* Import component styles */
 @import "../components/SearchFilterPanel.css";
 
 :root {
-  /* ===== Admin One (Bulma) palette — LIGHT is the default look ===== */
+  /* ===== Admin One (Bulma) palette | LIGHT is the default look ===== */
   /* Core Colors */
   --color-bg-primary: #f8f8f8; /* body background */
   --color-bg-secondary: #ffffff; /* cards / sections */
   --color-bg-tertiary: #f5f6f7; /* hover / inset surfaces */
 
-  /* "blue-primary" tokens drive the main action buttons — template primary is turquoise */
+  /* "blue-primary" tokens drive the main action buttons | template primary is turquoise */
   --color-blue-primary: #00d1b2; /* turquoise primary */
   --color-blue-secondary: #00c4a7; /* darker turquoise - hover */
   --color-blue-accent: #3273dc; /* template link blue */
@@ -63,7 +63,7 @@
   --terminal-scanline: transparent;
   --terminal-grid-opacity: 0;
 
-  /* Font Stack — Nunito to match the template */
+  /* Font Stack | Nunito to match the template */
   --font-sans: var(--font-nunito), "Nunito", "Arimo", sans-serif;
   --font-mono: var(--font-nunito), "Nunito", "Arimo", sans-serif;
   --font-display: var(--font-nunito), "Nunito", "Arimo", sans-serif;
@@ -96,12 +96,12 @@
   --shadow-blue: 0 0 20px var(--color-blue-glow);
   --shadow-success: 0 0 20px var(--color-success-glow);
 
-  /* Ceramic ornament pattern — subtle theme-aware watermark. Light = porcelain navy. */
+  /* Ceramic ornament pattern | subtle theme-aware watermark. Light = porcelain navy. */
   --ceramic-pattern: url("/ornate/premium-ceramic-navy.png");
   --ceramic-opacity: 0.06;
   --ceramic-size: 340px;
 
-  /* Chat bubbles — theme-aware with deliberate contrast. "me" = outgoing (deep
+  /* Chat bubbles | theme-aware with deliberate contrast. "me" = outgoing (deep
      teal + white), "them" = incoming (surface that separates from the thread bg). */
   --chat-me-bg: #0f766e;
   --chat-me-text: #ffffff;
@@ -111,7 +111,7 @@
   --chat-them-muted: #6b7280;
 }
 
-/* Light Theme (explicit) — mirrors :root template defaults */
+/* Light Theme (explicit) | mirrors :root template defaults */
 [data-theme="light"] {
   --color-bg-primary: #f8f8f8;
   --color-bg-secondary: #ffffff;
@@ -158,7 +158,7 @@
   --shadow-success: 0 0 16px var(--color-success-glow);
 }
 
-/* Dark Theme — kept for the toggle. Sidebar still uses --aside-* (dark) from :root. */
+/* Dark Theme | kept for the toggle. Sidebar still uses --aside-* (dark) from :root. */
 [data-theme="dark"] {
   --color-bg-primary: #0f1419;
   --color-bg-secondary: #1a1f2e;
@@ -204,7 +204,7 @@
   --shadow-blue: 0 0 20px var(--color-blue-glow);
   --shadow-success: 0 0 20px var(--color-success-glow);
 
-  /* Ceramic ornament pattern — dark theme uses the gold tint. */
+  /* Ceramic ornament pattern | dark theme uses the gold tint. */
   --ceramic-pattern: url("/ornate/premium-ceramic-gold.png");
   --ceramic-opacity: 0.07;
 
@@ -217,7 +217,7 @@
   --chat-them-muted: #98a2b3;
 }
 
-/* Shared ceramic watermark — layers the pattern behind content, opacity-controlled.
+/* Shared ceramic watermark | layers the pattern behind content, opacity-controlled.
    Applied to a few calm surfaces only (auth backdrop, empty states). Never on data panels. */
 .ceramic-surface { position: relative; isolation: isolate; }
 .ceramic-surface::before {

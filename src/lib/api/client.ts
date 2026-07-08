@@ -94,8 +94,8 @@ export async function apiFetch<T = unknown>(
     throw new ApiError(
       429,
       retry
-        ? `Rate limit reached — wait ${retry}s and try again.`
-        : "Rate limit reached — wait a moment and try again.",
+        ? `Rate limit reached | wait ${retry}s and try again.`
+        : "Rate limit reached | wait a moment and try again.",
     );
   }
 

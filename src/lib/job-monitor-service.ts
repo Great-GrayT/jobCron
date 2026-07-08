@@ -27,7 +27,7 @@ export interface JobMonitorConfig {
   appliedNamespace: AppliedNamespace;
   /** When false, jobs of any industry can qualify for GOAT (main pipeline keeps Finance-only). */
   goatRequireIndustry: boolean;
-  /** When false, the Path-B category check is skipped — Mid/Entry alone passes. */
+  /** When false, the Path-B category check is skipped | Mid/Entry alone passes. */
   goatRequireCategory: boolean;
 }
 
@@ -94,8 +94,8 @@ interface GoatRules {
 
 /**
  * Returns true if the job meets the GOAT channel criteria:
- * 1. UK location or title — mandatory
- * 2. Finance industry — mandatory unless rules.requireIndustry is false
+ * 1. UK location or title | mandatory
+ * 2. Finance industry | mandatory unless rules.requireIndustry is false
  * 3. Path A: title or company contains a VIP company name
  *    OR
  *    Path B: seniority is Mid/Entry AND
@@ -124,7 +124,7 @@ function isGoatEligible(job: JobItem, rules: GoatRules): boolean {
     url: job.link,
   });
 
-  // Finance industry — optional per rules
+  // Finance industry | optional per rules
   if (rules.requireIndustry && !GOAT_INDUSTRY.has(metadata.industry)) {
     return false;
   }
@@ -149,7 +149,7 @@ function isGoatEligible(job: JobItem, rules: GoatRules): boolean {
     return true;
   }
 
-  // Path B-2: category check is optional — when off, Mid/Entry alone passes.
+  // Path B-2: category check is optional | when off, Mid/Entry alone passes.
   if (!rules.requireCategory) {
     return true;
   }

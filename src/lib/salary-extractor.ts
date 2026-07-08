@@ -35,13 +35,13 @@ export class SalaryExtractor {
   private static readonly SALARY_PATTERNS = [
     // Range patterns: $50,000 - $70,000, £45k-60k, 100-120K USD
     {
-      regex: /([£$€¥₹]|USD|EUR|GBP|CAD|AUD)\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*[-–—to]\s*([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand|mil|million)?/g,
+      regex: /([£$€¥₹]|USD|EUR|GBP|CAD|AUD)\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*[-–|to]\s*([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?)\s*(k|K|thousand|mil|million)?/g,
       type: 'range',
       confidence: 'high' as const,
     },
     // Range with k suffix on both numbers: $50k - $70k, £45k-£60k
     {
-      regex: /([£$€¥₹]|USD|EUR|GBP|CAD|AUD)\s*(\d{1,3}(?:\.\d{1,2})?)\s*(k|K)\s*[-–—to]\s*([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:\.\d{1,2})?)\s*(k|K)/gi,
+      regex: /([£$€¥₹]|USD|EUR|GBP|CAD|AUD)\s*(\d{1,3}(?:\.\d{1,2})?)\s*(k|K)\s*[-–|to]\s*([£$€¥₹]|USD|EUR|GBP|CAD|AUD)?\s*(\d{1,3}(?:\.\d{1,2})?)\s*(k|K)/gi,
       type: 'range-k-both',
       confidence: 'high' as const,
     },

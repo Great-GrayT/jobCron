@@ -1,5 +1,5 @@
 /* ============================================================
-   AdminShell — "Admin One (Bulma)" style chrome
+   AdminShell | "Admin One (Bulma)" style chrome
    Fixed top navbar + dark left aside + title-bar + hero-bar.
    The aside stays dark in both light/dark themes (template signature).
    ============================================================ */
@@ -206,7 +206,7 @@
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
           mask-image: linear-gradient(to bottom, transparent, #000 45%);
 }
-/* diagonal "wave" — a bright band that drifts ONLY across the pattern's filigree,
+/* diagonal "wave" | a bright band that drifts ONLY across the pattern's filigree,
    never the sidebar itself. The band is a moving gradient masked by the SAME ceramic
    tile (intersected with the lower-area fade), aligned to the ::before pattern, so
    only the flag/filigree strokes brighten as the wave passes. Stays inside the
@@ -237,7 +237,7 @@
   -webkit-mask-composite: source-in;
           mask-composite: intersect;
   /* idle off-screen; one sweep runs only while .sheen-run is set (JS toggles it
-     with a random 7–57s gap between sweeps — see AdminShell). */
+     with a random 7–57s gap between sweeps | see AdminShell). */
   background-position: 140% 140%;
 }
 .admin-aside.sheen-run::after {

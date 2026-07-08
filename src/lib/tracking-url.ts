@@ -122,7 +122,7 @@ export function validateTrackingUrl(
   const candidates: string[] = [
     createSignature(jobId, ts, namespace === 'default' ? '' : namespace),
   ];
-  // Legacy format (no namespace component) — only valid for the default namespace.
+  // Legacy format (no namespace component) | only valid for the default namespace.
   if (namespace === 'default') {
     candidates.push(
       crypto

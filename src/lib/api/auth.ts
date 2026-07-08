@@ -2,7 +2,7 @@ import { api, API_BASE, setToken, clearToken } from "./client";
 import type { AuthResponse, User, ProfileInput, RegisterResponse } from "./types";
 
 /**
- * Register an account. Does NOT log the user in — the server emails a
+ * Register an account. Does NOT log the user in | the server emails a
  * verification link and login is blocked until the email is confirmed.
  */
 export function register(body: { email: string; password: string; name?: string } & ProfileInput) {

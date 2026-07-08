@@ -60,7 +60,7 @@ function CvInner() {
     try {
       const text = await extractCvText(file);
       if (text.trim().length < 40) {
-        throw new Error("Couldn't read enough text — is this a scanned/image PDF? Try the .docx version.");
+        throw new Error("Couldn't read enough text | is this a scanned/image PDF? Try the .docx version.");
       }
       setCvText(text);
     } catch (e) {
@@ -141,7 +141,7 @@ function CvInner() {
             <button type="button" className="cv-drop" onClick={() => inputRef.current?.click()}>
               <Upload size={22} />
               <span>Upload your CV</span>
-              <small>PDF or Word (.docx) — parsed in your browser, never uploaded.</small>
+              <small>PDF or Word (.docx) | parsed in your browser, never uploaded.</small>
             </button>
           ) : (
             <div className="cv-file">
@@ -221,7 +221,7 @@ function CvInner() {
             </div>
             <div className="cv-score-side">
               <p className="cv-score-lead">
-                Alignment score <b>{analysis.overall}/100</b> — 100 means your CV covers the highest-demand
+                Alignment score <b>{analysis.overall}/100</b> | 100 means your CV covers the highest-demand
                 ~80% of this market ({marketTotal.toLocaleString()} postings). Section scores:
               </p>
               <div className="cv-cat-scores">
@@ -235,7 +235,7 @@ function CvInner() {
               </div>
               {analysis.suggestions.length > 0 && (
                 <div className="cv-suggest">
-                  <span className="cv-suggest-head"><Lightbulb size={14} /> Add these — highest demand you&apos;re missing</span>
+                  <span className="cv-suggest-head"><Lightbulb size={14} /> Add these | highest demand you&apos;re missing</span>
                   <div className="cv-suggest-chips">
                     {analysis.suggestions.map((s) => (
                       <span key={`${s.category}-${s.name}`} className="cv-chip missing" title={`${s.category} · ${s.demand} postings`}>

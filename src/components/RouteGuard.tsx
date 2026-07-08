@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import "@/components/dashboard.css";
 
 // Routes reachable while logged out. Everything else requires a session.
-// (Home + the auth flow pages — which must stay open so users CAN log in.)
+// (Home + the auth flow pages | which must stay open so users CAN log in.)
 const PUBLIC_ROUTES = new Set<string>([
   "/",
   "/login",

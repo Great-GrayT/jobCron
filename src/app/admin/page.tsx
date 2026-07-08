@@ -45,7 +45,7 @@ function AdminInner() {
   const [cleanPw, setCleanPw] = useState("");
   const [cleanErr, setCleanErr] = useState<string | null>(null);
   const [cleanBusy, setCleanBusy] = useState(false);
-  // Rebuild / repair modal — pick which maintenance operations to run.
+  // Rebuild / repair modal | pick which maintenance operations to run.
   const [rebuildOpen, setRebuildOpen] = useState(false);
   const [rebuildSel, setRebuildSel] = useState<Set<RebuildOp>>(
     () => new Set(REBUILD_OPS.filter((o) => o.default).map((o) => o.key)),
@@ -65,7 +65,7 @@ function AdminInner() {
       if (!start.jobId) throw new Error(start.error || "failed to start backfill");
 
       // Poll the async job until it finishes; render a live header + log tail.
-      // The worker runs server-side regardless — polling only reflects it.
+      // The worker runs server-side regardless | polling only reflects it.
       for (;;) {
         let s;
         try {
@@ -78,7 +78,7 @@ function AdminInner() {
           if (failures >= MAX_FAILURES) {
             setOpLogs([
               ...lastGood,
-              { level: "error", message: `Lost contact with the server (${why}). The import may still be running — reopen this page to re-attach.` },
+              { level: "error", message: `Lost contact with the server (${why}). The import may still be running | reopen this page to re-attach.` },
             ]);
             break;
           }
@@ -92,7 +92,7 @@ function AdminInner() {
 
         const header: LogLine = {
           level: s.status === "failed" ? "error" : s.status === "done" ? "success" : "info",
-          message: `[${s.status}] ${s.phase} — ${s.inserted} inserted / ${s.read} read · ${s.daysDone} day(s), ${s.monthsDone} month(s)`,
+          message: `[${s.status}] ${s.phase} | ${s.inserted} inserted / ${s.read} read · ${s.daysDone} day(s), ${s.monthsDone} month(s)`,
         };
         const tail: LogLine[] = (s.logs || [])
           .slice(-14)
@@ -110,7 +110,7 @@ function AdminInner() {
         await new Promise((r) => setTimeout(r, 1500));
       }
     } catch (e) {
-      // Start failed, or something unexpected — append, don't wipe prior context.
+      // Start failed, or something unexpected | append, don't wipe prior context.
       setOpLogs([...lastGood, { level: "error", message: e instanceof Error ? e.message : "backfill failed" }]);
     } finally {
       setG2Busy(false);
@@ -256,7 +256,7 @@ function AdminInner() {
             <h2>g2 DATA IMPORT</h2>
             <p className="hint">
               One-time import of historical jobs from the old R2 store into the stats database.
-              Idempotent — safe to re-run; already-imported jobs are skipped. May take a while.
+              Idempotent | safe to re-run; already-imported jobs are skipped. May take a while.
             </p>
             <div className="row">
               <button type="button" className="btn" disabled={g2Busy} onClick={runBackfill}>
@@ -388,7 +388,7 @@ function AdminInner() {
             {detail.applied.slice(0, 30).map((a) => (
               <div key={a.id} className="run-row">
                 <span className="run-when">{format(a.appliedAt, "dd LLL yyyy")}</span>
-                <span className="run-detail">{a.jobTitle} — {a.company}</span>
+                <span className="run-detail">{a.jobTitle} | {a.company}</span>
               </div>
             ))}
             {detail.applied.length === 0 && <div className="empty-panel"><p>No applications.</p></div>}
@@ -437,7 +437,7 @@ function AdminInner() {
               Clean database
               <br />
               <span className="muted">
-                Permanently empties the selected datasets. This cannot be undone — job data is
+                Permanently empties the selected datasets. This cannot be undone | job data is
                 recreatable via the g2 import, but tracking/dedup history is not.
               </span>
             </p>

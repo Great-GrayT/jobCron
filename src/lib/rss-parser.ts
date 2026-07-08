@@ -12,7 +12,7 @@ export class RSSParseError extends Error {
  *
  * Survives between invocations of the same warm function instance, dies on
  * cold start. Vercel Fluid keeps functions warm during cron streaks so this
- * pays off heavily — most ticks fetch nothing and re-emit the cached job
+ * pays off heavily | most ticks fetch nothing and re-emit the cached job
  * list, skipping cheerio/regex parsing entirely.
  *
  * Safety: the server only returns 304 when the response body byte-equals
@@ -53,12 +53,12 @@ async function parseSingleFeed(url: string): Promise<JobItem[]> {
 
     const response = await fetch(url, {
       headers,
-      // No browser/Next cache layer — we manage staleness ourselves above.
+      // No browser/Next cache layer | we manage staleness ourselves above.
       cache: 'no-store',
       next: { revalidate: 0 },
     });
 
-    // 304 Not Modified — server confirms our cached body is still current.
+    // 304 Not Modified | server confirms our cached body is still current.
     // Return the cached jobs and avoid the parse cost entirely.
     if (response.status === 304 && cached) {
       console.log(`[RSS] 304 cached (${cached.jobs.length} jobs): ${url.substring(0, 60)}...`);

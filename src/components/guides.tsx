@@ -3,7 +3,7 @@
 
 export const AccountGuide = (
   <>
-    <p>Your details and profile picture — used to pre-fill and personalise the rest of your setup.</p>
+    <p>Your details and profile picture | used to pre-fill and personalise the rest of your setup.</p>
     <p>If you signed in with <strong>Google</strong> or <strong>GitHub</strong>, don&apos;t forget to also <strong>set a password</strong> below so you can log in directly too.</p>
   </>
 );
@@ -12,8 +12,8 @@ export const FeedsGuide = (
   <>
     <p>Add feeds from <a href="https://rss.app" target="_blank" rel="noopener noreferrer">rss.app</a>. Raw posts are pulled in, processed, and pushed to your Stats page and Telegram (if set up).</p>
     <ul>
-      <li><strong>Share</strong> — processed data is shared on the public <strong>Stats</strong> page for all users. If off, it only appears under <strong>Personal</strong> in Stats.</li>
-      <li><strong>Notify</strong> — lets this feed&apos;s output be sent to your Telegram channel (if configured).</li>
+      <li><strong>Share</strong> | processed data is shared on the public <strong>Stats</strong> page for all users. If off, it only appears under <strong>Personal</strong> in Stats.</li>
+      <li><strong>Notify</strong> | lets this feed&apos;s output be sent to your Telegram channel (if configured).</li>
     </ul>
   </>
 );
@@ -32,7 +32,7 @@ export const TelegramGuide = (
 );
 
 export const BotTokenGuide = (
-  <p>Message the official <strong>@BotFather</strong> on Telegram, send the <code>/newbot</code> command, and follow the prompts to choose a name and username — it then generates your API token.</p>
+  <p>Message the official <strong>@BotFather</strong> on Telegram, send the <code>/newbot</code> command, and follow the prompts to choose a name and username | it then generates your API token.</p>
 );
 
 export const ChatIdGuide = (
@@ -47,9 +47,9 @@ export const SchedulesGuide = (
   <>
     <p>Add schedules so your feeds run on a cadence and the matching job runs. Jobs:</p>
     <ul>
-      <li><strong>check-jobs</strong> — call feeds → process → filter (if set) → save to Stats (public if the feed is <strong>Share</strong>, else Personal) → send to Telegram.</li>
-      <li><strong>stats-ingest</strong> — same as check-jobs, but never sends to Telegram.</li>
-      <li><strong>scrape</strong> — query LinkedIn by location, time window and keywords, then send the raw results to Telegram as an Excel file.</li>
+      <li><strong>check-jobs</strong> | call feeds → process → filter (if set) → save to Stats (public if the feed is <strong>Share</strong>, else Personal) → send to Telegram.</li>
+      <li><strong>stats-ingest</strong> | same as check-jobs, but never sends to Telegram.</li>
+      <li><strong>scrape</strong> | query LinkedIn by location, time window and keywords, then send the raw results to Telegram as an Excel file.</li>
     </ul>
   </>
 );
@@ -57,25 +57,25 @@ export const SchedulesGuide = (
 export const StatsGuide = (
   <>
     <p>Statistics for every post we&apos;ve received. <strong>Total</strong> = your Share feeds plus every user&apos;s Share feeds; <strong>Personal</strong> = only your own feeds&apos; output.</p>
-    <p>Every component is filterable and interactive — don&apos;t hesitate to play around :)</p>
+    <p>Every component is filterable and interactive | don&apos;t hesitate to play around :)</p>
   </>
 );
 
 export const AppliedGuide = (
-  <p>When you click a job link from a Telegram post, it&apos;s counted as <strong>applied</strong> and logged here — with the job details and how long you took to apply. So please apply using those links.</p>
+  <p>When you click a job link from a Telegram post, it&apos;s counted as <strong>applied</strong> and logged here | with the job details and how long you took to apply. So please apply using those links.</p>
 );
 
 export const CvGuide = (
   <>
-    <p>Upload your CV (<strong>PDF</strong> or <strong>Word .docx</strong>) — it&apos;s parsed in your browser and <strong>never sent to our server</strong>.</p>
+    <p>Upload your CV (<strong>PDF</strong> or <strong>Word .docx</strong>) | it&apos;s parsed in your browser and <strong>never sent to our server</strong>.</p>
     <p>Pick a target market (industry, category, seniority, country…). We pull that slice&apos;s in-demand skills, keywords, programming languages, software and certificates from the live data, then check how many your CV covers.</p>
-    <p>You get a demand-weighted <strong>alignment score</strong> and the highest-demand items you&apos;re missing — good candidates to add to your resume.</p>
+    <p>You get a demand-weighted <strong>alignment score</strong> and the highest-demand items you&apos;re missing | good candidates to add to your resume.</p>
   </>
 );
 
 export const MessagesGuide = (
   <>
-    <p>Press <strong>New</strong>, enter a username or email, and your message is delivered. It&apos;s not a live chat — refresh to see the latest.</p>
+    <p>Press <strong>New</strong>, enter a username or email, and your message is delivered. It&apos;s not a live chat | refresh to see the latest.</p>
     <p><strong>General Admin Query</strong> reaches the admins, so chuck anything you need there.</p>
   </>
 );

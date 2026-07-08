@@ -229,7 +229,7 @@ export default function JfsPage() {
       {!hasFiltered && (
         <div className="warn-banner">
           <AlertTriangle size={16} />
-          <span>No <b>Filtered</b> Telegram channel set — matched jobs have nowhere to go. <Link href="/dashboard/telegram">Add a Filtered channel</Link>.</span>
+          <span>No <b>Filtered</b> Telegram channel set | matched jobs have nowhere to go. <Link href="/dashboard/telegram">Add a Filtered channel</Link>.</span>
         </div>
       )}
 

@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await refresh();
   }, [refresh]);
 
-  // Register does NOT establish a session — the user must verify their email.
+  // Register does NOT establish a session | the user must verify their email.
   const register = useCallback(
     (body: { email: string; password: string; name?: string } & ProfileInput) => auth.register(body),
     [],

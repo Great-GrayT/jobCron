@@ -62,7 +62,7 @@ export function CronBuilder({ value, onChange }: { value: string; onChange: (v: 
                 type="button"
                 key={p.expr}
                 className={`chip-toggle ${value.trim() === p.expr ? "on" : ""}`}
-                title={`${p.expr} — ${describeCron(p.expr)}`}
+                title={`${p.expr} | ${describeCron(p.expr)}`}
                 onClick={() => onChange(p.expr)}
               >
                 {p.label}
@@ -90,7 +90,7 @@ export function CronBuilder({ value, onChange }: { value: string; onChange: (v: 
       {/* Times below are in your timezone; saved to the server as UTC. */}
       <div className="cron-tz-note-row">
         <Flag code={countryCode} />
-        <span>Times are in <b>{timezone.replace(/_/g, " ")}</b> (UTC{offset}) — converted to UTC when saved. Change your zone from the top-bar picker.</span>
+        <span>Times are in <b>{timezone.replace(/_/g, " ")}</b> (UTC{offset}) | converted to UTC when saved. Change your zone from the top-bar picker.</span>
       </div>
 
       <label className="cron-label">Days of week</label>
@@ -124,7 +124,7 @@ export function CronBuilder({ value, onChange }: { value: string; onChange: (v: 
       {/* live feedback */}
       <div className={`cron-summary ${valid ? "ok" : "bad"}`}>
         {valid ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-        <span>{valid ? summary : "Invalid cron — need 5 fields: minute hour day-of-month month day-of-week."}</span>
+        <span>{valid ? summary : "Invalid cron | need 5 fields: minute hour day-of-month month day-of-week."}</span>
       </div>
 
       {runs.length > 0 && (

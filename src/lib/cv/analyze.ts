@@ -1,5 +1,5 @@
 // Compare a CV against the live market (the same facets the Stats page uses) and
-// score how well it aligns. All client-side — the CV text never leaves the browser.
+// score how well it aligns. All client-side | the CV text never leaves the browser.
 
 export type Facet = Record<string, number>;
 
@@ -47,7 +47,7 @@ export function mentions(text: string, term: string): number {
 }
 
 // Covering this fraction of a section's TOTAL demand counts as a full (100%) match
-// — e.g. if certs total 100 postings and CFA alone is 60, having CFA = 100%.
+// | e.g. if certs total 100 postings and CFA alone is 60, having CFA = 100%.
 const FULL_COVERAGE = 0.6;
 
 const CATEGORY_META: { key: keyof MarketFacets; label: string; topN: number; weight: number }[] = [

@@ -74,7 +74,7 @@ export default function TelegramPage() {
     <section className="panel">
       <h2>TELEGRAM CHANNELS <PageGuide>{TelegramGuide}</PageGuide></h2>
       <p className="hint">
-        One <b>main</b> and one <b>filtered</b> channel per account. The bot token is write-only — it&apos;s
+        One <b>main</b> and one <b>filtered</b> channel per account. The bot token is write-only | it&apos;s
         encrypted server-side and only ever shown back masked.
       </p>
 

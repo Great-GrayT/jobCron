@@ -12,7 +12,7 @@ import type {
   ScheduleRun,
 } from "./types";
 
-// Test/send/run actions return {ok,logs} and use 422 for "ran but failed" — we
+// Test/send/run actions return {ok,logs} and use 422 for "ran but failed" | we
 // still want the logs in that case, so unwrap the ApiError body instead of throwing.
 async function action(path: string): Promise<ActionResult> {
   try {

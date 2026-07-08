@@ -30,7 +30,7 @@ export function AvatarPicker({ current, onPick, busy }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [working, setWorking] = useState<string | null>(null);
 
-  // Presets are hosted assets — store the relative URL so it also shows up in
+  // Presets are hosted assets | store the relative URL so it also shows up in
   // chat (the messages API only exposes avatarUrl, not base64 avatarData).
   const pickPreset = async (src: string) => {
     setWorking(src);
@@ -43,7 +43,7 @@ export function AvatarPicker({ current, onPick, busy }: Props) {
 
   const onUpload = async (file: File) => {
     if (file.size > 2 * 1024 * 1024) {
-      alert("Image too large — max 2MB.");
+      alert("Image too large | max 2MB.");
       return;
     }
     setWorking("upload");

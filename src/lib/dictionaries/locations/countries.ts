@@ -4247,7 +4247,7 @@ export const COUNTRIES: CountryData[] = [
     // Spanish
     'Papúa Nueva Guinea',
     // Russian
-    'Папуа — Новая Гвинея',
+    'Папуа | Новая Гвинея',
     // Japanese
     'パプアニューギニア',
     // Korean

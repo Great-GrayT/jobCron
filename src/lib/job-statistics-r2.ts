@@ -875,7 +875,7 @@ export class JobStatisticsCacheR2 {
 
   /**
    * Return current month stats without downloading any job files.
-   * Safe to call right after load() — uses data already in memory.
+   * Safe to call right after load() | uses data already in memory.
    */
   getCurrentMonthSummary(): {
     month: string;
@@ -968,7 +968,7 @@ export class JobStatisticsCacheR2 {
       return { archives: cached.archives, aggregated: cached.aggregated, totalJobs: cached.totalJobs };
     }
 
-    logger.info('Aggregated stats cache miss — computing from individual month files...');
+    logger.info('Aggregated stats cache miss | computing from individual month files...');
     const result = await this.computeAggregatedStats();
 
     // Persist so next request hits the cache
@@ -1158,14 +1158,14 @@ export class JobStatisticsCacheR2 {
 
   /**
    * Cheap lookup against the in-memory URL index for "is this job already
-   * stored?" — without running addJob's full path.
+   * stored?" | without running addJob's full path.
    *
    * Lets callers (the cron route) short-circuit the heavy metadata/salary/
    * location/role-type extractor pipeline for jobs we're about to reject as
    * duplicates anyway. The 95%+ of RSS items that are duplicates on every
    * tick become free this way.
    *
-   * Returns false if the cache hasn't loaded yet — callers will then run
+   * Returns false if the cache hasn't loaded yet | callers will then run
    * the full path and `addJob` will catch any duplicates that slip through.
    */
   isKnownUrl(url: string): boolean {

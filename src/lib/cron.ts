@@ -1,7 +1,7 @@
 /**
  * Frontend cron helpers for the schedule builder. Mirrors the server matcher
- * (cron-server/src/lib/FUNC-cron.ts) exactly — same 5-field grammar, same UTC
- * semantics — so the live description and "next runs" preview match what the
+ * (cron-server/src/lib/FUNC-cron.ts) exactly | same 5-field grammar, same UTC
+ * semantics | so the live description and "next runs" preview match what the
  * backend will actually do. All times are UTC.
  */
 
@@ -159,7 +159,7 @@ function compressField(vals: number[], max: number): string {
 function shiftDayField(field: string, dd: number, min: number, max: number, isDow: boolean): string {
   const vals = [...parseField(field, min, max)].map((v) => {
     if (isDow) return (((v + dd) % 7) + 7) % 7; // 0-6
-    let n = v + dd; // dom 1-31, wrap (month length ignored — approximate)
+    let n = v + dd; // dom 1-31, wrap (month length ignored | approximate)
     while (n < 1) n += 31;
     while (n > 31) n -= 31;
     return n;
@@ -170,7 +170,7 @@ function shiftDayField(field: string, dd: number, min: number, max: number, isDo
 /**
  * Shift a cron's time-of-day by `deltaMin` minutes, used to convert between the
  * user's timezone and the UTC the server matches on. Day-of-week / day-of-month
- * roll over when the shift crosses midnight (best-effort — a schedule whose hour
+ * roll over when the shift crosses midnight (best-effort | a schedule whose hour
  * list straddles midnight while days are restricted can't be represented exactly,
  * so days are left as-is there). Non-time-bearing shapes are returned unchanged.
  */

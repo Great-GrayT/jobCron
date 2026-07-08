@@ -15,17 +15,20 @@ Complete guide for deploying the LinkedIn Jobs Monitor to Vercel.
 ### 1. Prepare Telegram Bot
 
 #### Create Bot
+
 1. Open Telegram and search for [@BotFather](https://t.me/BotFather)
 2. Send `/newbot`
 3. Follow prompts to name your bot
 4. **Save the bot token** (format: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
 
 #### Get Chat ID
+
 1. Search for [@userinfobot](https://t.me/userinfobot)
 2. Start a chat
 3. **Save your ID** (format: `123456789`)
 
 #### Start Your Bot
+
 1. Search for your bot in Telegram
 2. Click "Start" or send `/start`
 3. This allows the bot to send you messages
@@ -35,6 +38,7 @@ Complete guide for deploying the LinkedIn Jobs Monitor to Vercel.
 #### Method A: Deploy via GitHub (Recommended)
 
 1. **Push code to GitHub:**
+
    ```bash
    git init
    git add .
@@ -52,13 +56,13 @@ Complete guide for deploying the LinkedIn Jobs Monitor to Vercel.
 3. **Configure Environment Variables:**
    In the Vercel import screen, add:
 
-   | Name | Value | Description |
-   |------|-------|-------------|
-   | `TELEGRAM_BOT_TOKEN` | Your bot token | Required |
-   | `TELEGRAM_CHAT_ID` | Your chat ID | Required |
-   | `CRON_SECRET` | Random secure string | Optional but recommended |
-   | `RSS_FEED_URLS` | Comma-separated URLs | Optional (has defaults) |
-   | `CHECK_INTERVAL_MINUTES` | `5` | Optional (default: 5) |
+   | Name                     | Value                | Description              |
+   | ------------------------ | -------------------- | ------------------------ |
+   | `TELEGRAM_BOT_TOKEN`     | Your bot token       | Required                 |
+   | `TELEGRAM_CHAT_ID`       | Your chat ID         | Required                 |
+   | `CRON_SECRET`            | Random secure string | Optional but recommended |
+   | `RSS_FEED_URLS`          | Comma-separated URLs | Optional (has defaults)  |
+   | `CHECK_INTERVAL_MINUTES` | `5`                  | Optional (default: 5)    |
 
 4. **Deploy:**
    - Click "Deploy"
@@ -68,17 +72,20 @@ Complete guide for deploying the LinkedIn Jobs Monitor to Vercel.
 #### Method B: Deploy via Vercel CLI
 
 1. **Install Vercel CLI:**
+
    ```bash
    npm i -g vercel
    ```
 
 2. **Login:**
+
    ```bash
    vercel login
    ```
 
 3. **Set up environment variables:**
    Create `.env` file:
+
    ```bash
    cp .env.example .env
    ```
@@ -86,6 +93,7 @@ Complete guide for deploying the LinkedIn Jobs Monitor to Vercel.
    Edit `.env` and fill in your values.
 
 4. **Deploy:**
+
    ```bash
    vercel
    ```
@@ -99,6 +107,7 @@ Complete guide for deploying the LinkedIn Jobs Monitor to Vercel.
    - Want to override settings? **N**
 
 5. **Add environment variables to Vercel:**
+
    ```bash
    vercel env add TELEGRAM_BOT_TOKEN production
    # Paste your bot token when prompted
@@ -120,6 +129,7 @@ Complete guide for deploying the LinkedIn Jobs Monitor to Vercel.
 ### Environment Variables
 
 All environment variables can be set in the Vercel dashboard:
+
 1. Go to your project
 2. Click "Settings"
 3. Click "Environment Variables"
@@ -164,9 +174,10 @@ The schedule is **not** in `vercel.json` (that file is empty). The pipeline is
 driven by an **external scheduler** that calls `GET /api/cron/check-jobs` with
 the `CRON_SECRET` Bearer token. Current schedule: `*/5 8-21 * * *`.
 
-**Schedule Format:** `minute hour day month weekday` — evaluated in **UTC**.
+**Schedule Format:** `minute hour day month weekday` | evaluated in **UTC**.
 
 Examples:
+
 - `*/5 * * * *` - Every 5 minutes
 - `*/5 8-21 * * *` - Every 5 minutes, 08:00–21:59 UTC (the current setting)
 - `0 * * * *` - Every hour at minute 0
@@ -177,7 +188,7 @@ Examples:
 scheduler runs in local time, convert your intended window to UTC.
 
 **Optional server-side guard:** set `CRON_ACTIVE_HOURS` (UTC hour spec, e.g.
-`8-21`) to enforce the window in-code — calls outside it return
+`8-21`) to enforce the window in-code | calls outside it return
 `200 { skipped: true }` and do no work.
 
 **Important:** If you change the cadence, update `CHECK_INTERVAL_MINUTES` to match!
@@ -193,17 +204,20 @@ vercel ls
 ### 2. Test the Endpoint
 
 Without authentication:
+
 ```bash
 curl https://your-app.vercel.app/api/cron/check-jobs
 ```
 
 With authentication:
+
 ```bash
 curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
      https://your-app.vercel.app/api/cron/check-jobs
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -226,6 +240,7 @@ You should receive job notifications in your Telegram chat.
 4. Filter by function: `/api/cron/check-jobs`
 
 Look for:
+
 - `[INFO] Cron job started`
 - `[INFO] Fetched X total jobs from Y feeds`
 - `[INFO] Found X recent jobs`
@@ -236,24 +251,30 @@ Look for:
 ### No Telegram Messages
 
 **Check 1: Bot token is valid**
+
 ```bash
 curl https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getMe
 ```
+
 Should return bot information.
 
 **Check 2: Chat ID is correct**
+
 ```bash
 curl https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage \
      -d "chat_id=<YOUR_CHAT_ID>&text=Test"
 ```
+
 Should send you a test message.
 
 **Check 3: You started the bot**
+
 - Open Telegram
 - Search for your bot
 - Click "Start"
 
 **Check 4: Environment variables are set**
+
 - Go to Vercel project settings
 - Check "Environment Variables"
 - Verify `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are present
@@ -261,17 +282,21 @@ Should send you a test message.
 ### Cron Job Not Running
 
 **Check 1: Vercel Crons are enabled**
+
 - Free tier: 1 cron per project
 - Pro tier: Multiple crons allowed
 - Ensure you haven't exceeded limits
 
 **Check 2: vercel.json is correct**
+
 ```bash
 cat vercel.json
 ```
+
 Should show the cron configuration.
 
 **Check 3: View cron logs**
+
 - Vercel Dashboard → Your Project → Logs
 - Filter by time range when cron should have run
 - Look for execution logs
@@ -281,6 +306,7 @@ Should show the cron configuration.
 **Solution:** Check `CRON_SECRET` configuration
 
 If `CRON_SECRET` is set in environment variables, you must include it in requests:
+
 ```bash
 curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
      https://your-app.vercel.app/api/cron/check-jobs
@@ -291,6 +317,7 @@ Note: Vercel Cron automatically includes the authorization header.
 ### 500 Internal Server Error
 
 **Check logs:**
+
 1. Vercel Dashboard → Logs
 2. Look for error messages
 3. Common issues:
@@ -299,6 +326,7 @@ Note: Vercel Cron automatically includes the authorization header.
    - Network timeouts
 
 **Test locally:**
+
 ```bash
 npm install
 npm run dev
@@ -308,10 +336,12 @@ curl http://localhost:3000/api/cron/check-jobs
 ### Rate Limited by Telegram
 
 **Symptoms:**
+
 - 429 errors in logs
 - Not all messages sent
 
 **Solutions:**
+
 1. Reduce RSS feeds being monitored
 2. Increase rate limit delay in [constants.ts](src/config/constants.ts):
    ```typescript
@@ -334,12 +364,14 @@ Vercel will automatically deploy the changes.
 ### Update Environment Variables
 
 **Via Dashboard:**
+
 1. Vercel project → Settings → Environment Variables
 2. Edit the variable
 3. Click "Save"
 4. Redeploy for changes to take effect
 
 **Via CLI:**
+
 ```bash
 vercel env rm VARIABLE_NAME production
 vercel env add VARIABLE_NAME production
@@ -370,6 +402,7 @@ vercel logs --follow
 ```
 
 Or in the dashboard:
+
 1. Project → Logs
 2. Filter: `/api/cron/check-jobs`
 3. View execution history
@@ -377,11 +410,13 @@ Or in the dashboard:
 ### Monitor Telegram Bot
 
 Check bot status:
+
 ```bash
 curl https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getMe
 ```
 
 View recent updates:
+
 ```bash
 curl https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
 ```
@@ -424,6 +459,7 @@ curl https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
 - 1 cron per project
 
 **Estimated usage for this app:**
+
 - Cron runs: ~8,640 per month (every 5 minutes)
 - Execution time: ~2 seconds per run
 - Total: ~4.8 hours per month
@@ -432,6 +468,7 @@ curl https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
 ### Scaling Up
 
 If you need more:
+
 - **Pro tier** ($20/month): Unlimited crons, more execution time
 - **Enterprise**: Custom limits and SLAs
 
@@ -440,6 +477,7 @@ If you need more:
 ### Backup Configuration
 
 Save your environment variables:
+
 ```bash
 vercel env pull .env.backup
 ```

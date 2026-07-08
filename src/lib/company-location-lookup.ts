@@ -122,7 +122,7 @@ export function getCountryFromUrlTLD(url: string): string | null {
       if (hostname.endsWith(tld)) return country;
     }
   } catch {
-    // Invalid URL — skip
+    // Invalid URL | skip
   }
   return null;
 }

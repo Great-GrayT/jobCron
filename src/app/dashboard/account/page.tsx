@@ -85,9 +85,9 @@ export default function AccountPage() {
         </div>
         <div>
           {user.emailVerified ? (
-            <span className="ok"><ShieldCheck size={14} /> {user.email} — verified</span>
+            <span className="ok"><ShieldCheck size={14} /> {user.email} | verified</span>
           ) : (
-            <span className="warn-text"><ShieldAlert size={14} /> {user.email} — not verified</span>
+            <span className="warn-text"><ShieldAlert size={14} /> {user.email} | not verified</span>
           )}
           <div className="muted">role: {user.role}</div>
         </div>
@@ -157,7 +157,7 @@ export default function AccountPage() {
       <p className="hint">
         {user.hasPassword
           ? "Update your account password."
-          : "You signed in without a local password — set one so you can log in with email/username too."}
+          : "You signed in without a local password | set one so you can log in with email/username too."}
       </p>
       <PasswordForm />
     </section>

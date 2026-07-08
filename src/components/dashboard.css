@@ -79,7 +79,7 @@
   overflow: hidden;
   isolation: isolate;
 }
-/* ceramic ornament watermark behind the auth card — vignette keeps the card area clean */
+/* ceramic ornament watermark behind the auth card | vignette keeps the card area clean */
 .auth-wrap::before {
   content: "";
   position: absolute;

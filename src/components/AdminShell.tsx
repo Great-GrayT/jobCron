@@ -37,7 +37,7 @@ interface AdminShellProps {
   actions?: ReactNode;
   /** Back target. `false` hides the button; a string is used as href; otherwise router.back(). */
   back?: string | false;
-  /** Which main area this page belongs to — drives the Settings/Features switcher. */
+  /** Which main area this page belongs to | drives the Settings/Features switcher. */
   section?: "settings" | "features";
   children: ReactNode;
 }
@@ -179,7 +179,7 @@ export function AdminShell({
         </div>
 
         <div className="navbar-right" ref={dropRef}>
-          {/* Template-style "Menu" dropdown — jump to any page */}
+          {/* Template-style "Menu" dropdown | jump to any page */}
           <div className="navbar-dropdown-wrap">
             <button type="button" className="navbar-item-btn" onClick={() => { setNavOpen((v) => !v); setUserOpen(false); }}>
               <Menu size={16} />

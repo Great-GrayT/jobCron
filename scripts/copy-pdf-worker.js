@@ -1,5 +1,5 @@
 // Copy pdfjs-dist's worker into /public so it's served as a static ES module and
-// loaded by URL at runtime — bundling it (via new URL(import.meta.url)) makes
+// loaded by URL at runtime | bundling it (via new URL(import.meta.url)) makes
 // webpack/Terser choke on the worker's `import.meta`. Runs before `next build`
 // (and can be run manually) so the file always matches the installed pdfjs version.
 const fs = require("fs");

@@ -8,7 +8,7 @@ export interface NavLink {
 }
 
 /**
- * Dashboard aside — ONLY pages that write a variable to the DB (settings).
+ * Dashboard aside | ONLY pages that write a variable to the DB (settings).
  * Everything else is a "feature" and lives in featuresMenu().
  */
 export function settingsMenu(): MenuSection[] {
@@ -26,7 +26,7 @@ export function settingsMenu(): MenuSection[] {
   ];
 }
 
-/** Standalone "feature" apps — their own pages, navigated independently. */
+/** Standalone "feature" apps | their own pages, navigated independently. */
 export function featuresMenu(role?: string): MenuSection[] {
   return [
     {
@@ -34,7 +34,7 @@ export function featuresMenu(role?: string): MenuSection[] {
       items: [
         { href: "/rss", label: "RSS App", icon: Rss },
         { href: "/stats", label: "Stats", icon: BarChart3 },
-        { href: "/cv", label: "CV Analysis", icon: FileSearch },
+        { href: "/cv", label: "CV Keyword Analysis", icon: FileSearch },
         { href: "/applied", label: "Tracking", icon: CheckSquare },
         { href: "/messages", label: "Messages", icon: MessageSquare, messagesBadge: true },
         ...(role === "admin" ? [{ href: "/admin", label: "Admin", icon: Shield }] : []),
@@ -44,7 +44,7 @@ export function featuresMenu(role?: string): MenuSection[] {
 }
 
 /**
- * Flat cross-app link list for the template-style navbar "Menu" dropdown —
+ * Flat cross-app link list for the template-style navbar "Menu" dropdown |
  * lets users jump anywhere from any page.
  */
 export function navbarLinks(role?: string): NavLink[] {

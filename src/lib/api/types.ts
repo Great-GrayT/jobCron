@@ -162,7 +162,7 @@ export interface MessageUser {
   username: string | null;
   name: string | null;
   avatarUrl: string | null;
-  /** Optional — present when the API exposes the sender's role (used to gild admin bubbles). */
+  /** Optional | present when the API exposes the sender's role (used to gild admin bubbles). */
   role?: string | null;
 }
 export interface Message {

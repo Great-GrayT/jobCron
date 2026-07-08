@@ -1,4 +1,4 @@
-// Client-side CV text extraction. Nothing is uploaded to the server — PDF and
+// Client-side CV text extraction. Nothing is uploaded to the server | PDF and
 // Word (.docx) are parsed in the browser. Legacy .doc isn't supported.
 
 /** Extract plain text from an uploaded CV file (PDF or .docx). */
@@ -7,9 +7,9 @@ export async function extractCvText(file: File): Promise<string> {
   if (name.endsWith(".pdf")) return extractPdf(file);
   if (name.endsWith(".docx")) return extractDocx(file);
   if (name.endsWith(".doc")) {
-    throw new Error("Legacy .doc isn't supported — please re-save as PDF or .docx and try again.");
+    throw new Error("Legacy .doc isn't supported | please re-save as PDF or .docx and try again.");
   }
-  throw new Error("Unsupported file — upload a PDF or Word (.docx) file.");
+  throw new Error("Unsupported file | upload a PDF or Word (.docx) file.");
 }
 
 async function extractDocx(file: File): Promise<string> {
@@ -23,7 +23,7 @@ async function extractDocx(file: File): Promise<string> {
 async function extractPdf(file: File): Promise<string> {
   const pdfjs = await import("pdfjs-dist");
   // Worker is served as a static ES module from /public (copied by
-  // scripts/copy-pdf-worker.js) — bundling it breaks Terser on the worker's
+  // scripts/copy-pdf-worker.js) | bundling it breaks Terser on the worker's
   // import.meta. Same-origin, so it satisfies the worker-src CSP.
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 

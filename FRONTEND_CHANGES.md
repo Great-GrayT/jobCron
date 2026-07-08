@@ -1,4 +1,4 @@
-# Frontend Changes — Multi-Tenant Migration
+# Frontend Changes | Multi-Tenant Migration
 
 This document tells the frontend what changes for the move from the old
 single-user, cloud-(R2)-backed app to the new **multi-tenant server API**. Hand
@@ -7,14 +7,14 @@ this to the frontend agent.
 > **Big picture:** the app is now multi-user. Every user has an account, logs in,
 > and manages their **own** RSS feeds, Telegram channels, GOAT filters, and cron
 > schedules in a **dashboard**. The public **Stats page** shows the union of all
-> feeds users chose to share. The frontend no longer reads from R2/cloud — it
+> feeds users chose to share. The frontend no longer reads from R2/cloud | it
 > calls this server's REST API with a JWT.
 
 ---
 
 ## Live URLs
 
-- **API base (production):** `https://cron.polarislab.ir` — all calls go here, e.g.
+- **API base (production):** `https://cron.polarislab.ir` | all calls go here, e.g.
   `https://cron.polarislab.ir/api/v1/stats/summary`. Put it in `NEXT_PUBLIC_API_BASE`.
 - **Frontend origin:** `https://jobcron.vercel.app` (already in the server's
   `CORS_ALLOW_ORIGINS`).
@@ -35,10 +35,10 @@ this to the frontend agent.
 ### Auth endpoints
 
 | Method | Path                 | Body                         | Returns               |
-| ------ | -------------------- | ---------------------------- | --------------------- |
+| ------ | -------------------- | ---------------------------- | --------------------- | ---------- |
 | POST   | `/api/auth/register` | `{ email, password, name? }` | `201 { token, user }` |
 | POST   | `/api/auth/login`    | `{ email, password }`        | `200 { token, user }` |
-| GET    | `/api/auth/me`       | — (Bearer)                   | `{ user }`            |
+| GET    | `/api/auth/me`       |                              | (Bearer)              | `{ user }` |
 
 `user = { id, email, name, role }`.
 
@@ -46,7 +46,7 @@ this to the frontend agent.
 
 - Send the user to **`https://cron.polarislab.ir/api/auth/oauth/google`** or
   **`/api/auth/oauth/github`** (full-page navigation, not fetch). The server
-  redirects to the provider. _(Only active once `GOOGLE\__`/`GITHUB\__` env vars are set.)_
+  redirects to the provider. \_(Only active once `GOOGLE\__`/`GITHUB\__` env vars are set.)\_
 - After consent, the server redirects back to:
   **`https://jobcron.vercel.app/auth/callback#token=<jwt>`** (or `#error=<msg>`).
 - Build a `/auth/callback` page that reads the URL **fragment** (`window.location.hash`),
@@ -69,14 +69,14 @@ A proper authenticated dashboard with tabs/pages. Suggested structure:
 
 All dashboard calls require the `Authorization` header. A 401 = redirect to login.
 
-### Feeds — `/api/me/feeds`
+### Feeds | `/api/me/feeds`
 
-| Method | Path                 | Body                                         | Notes             |
-| ------ | -------------------- | -------------------------------------------- | ----------------- |
-| GET    | `/api/me/feeds`      | —                                            | list user's feeds |
-| POST   | `/api/me/feeds`      | `{ url, name?, notify?, shareToStats? }`     | add feed          |
-| PATCH  | `/api/me/feeds/{id}` | `{ name?, notify?, shareToStats?, active? }` | update            |
-| DELETE | `/api/me/feeds/{id}` | —                                            | remove            |
+| Method | Path                 | Body                                         | Notes    |
+| ------ | -------------------- | -------------------------------------------- | -------- | ----------------- |
+| GET    | `/api/me/feeds`      |                                              |          | list user's feeds |
+| POST   | `/api/me/feeds`      | `{ url, name?, notify?, shareToStats? }`     | add feed |
+| PATCH  | `/api/me/feeds/{id}` | `{ name?, notify?, shareToStats?, active? }` | update   |
+| DELETE | `/api/me/feeds/{id}` |                                              |          | remove            |
 
 `feed = { id, url, name, notify, shareToStats, active, createdAt }`.
 
@@ -84,24 +84,24 @@ All dashboard calls require the `Authorization` header. A 401 = redirect to logi
 - `shareToStats` = this feed's jobs appear in the **public** Stats page ("stat rss").
   Off = "personal rss" (private to the user).
 
-### Telegram channels — `/api/me/channels`
+### Telegram channels | `/api/me/channels`
 
-| Method | Path                    | Body                                  | Notes                           |
-| ------ | ----------------------- | ------------------------------------- | ------------------------------- |
-| GET    | `/api/me/channels`      | —                                     | tokens returned **masked** only |
-| POST   | `/api/me/channels`      | `{ kind, botToken, chatId, active? }` | create/replace                  |
-| DELETE | `/api/me/channels/{id}` | —                                     | remove                          |
+| Method | Path                    | Body                                  | Notes          |
+| ------ | ----------------------- | ------------------------------------- | -------------- | ------------------------------- |
+| GET    | `/api/me/channels`      |                                       |                | tokens returned **masked** only |
+| POST   | `/api/me/channels`      | `{ kind, botToken, chatId, active? }` | create/replace |
+| DELETE | `/api/me/channels/{id}` |                                       |                | remove                          |
 
 - `kind` = `"main"` or `"goat"`. One of each per user.
-- `botToken` is write-only — the server encrypts it; GET returns `botTokenMasked`
+- `botToken` is write-only | the server encrypts it; GET returns `botTokenMasked`
   (e.g. `1234…abcd`). Never display or expect the raw token back.
 
-### GOAT filters — `/api/me/goat`
+### GOAT filters | `/api/me/goat`
 
-| Method | Path           | Body                                 |
-| ------ | -------------- | ------------------------------------ |
-| GET    | `/api/me/goat` | — → `{ config }` (or `config: null`) |
-| PUT    | `/api/me/goat` | full config object (below)           |
+| Method | Path           | Body                       |
+| ------ | -------------- | -------------------------- | ---------------------------------- |
+| GET    | `/api/me/goat` |                            | → `{ config }` (or `config: null`) |
+| PUT    | `/api/me/goat` | full config object (below) |
 
 ```ts
 {
@@ -119,14 +119,14 @@ All dashboard calls require the `Authorization` header. A 401 = redirect to logi
 
 UI: toggles for the booleans + tag/chip inputs for the arrays.
 
-### Schedules — `/api/me/schedules`
+### Schedules | `/api/me/schedules`
 
 | Method | Path                     | Body                                                                                     |
-| ------ | ------------------------ | ---------------------------------------------------------------------------------------- |
-| GET    | `/api/me/schedules`      | —                                                                                        |
+| ------ | ------------------------ | ---------------------------------------------------------------------------------------- | --- |
+| GET    | `/api/me/schedules`      |                                                                                          |     |
 | POST   | `/api/me/schedules`      | `{ job, intervalMinutes, enabled?, scrapeSearch?, scrapeCountries?, scrapeTimeFilter? }` |
 | PATCH  | `/api/me/schedules/{id}` | partial                                                                                  |
-| DELETE | `/api/me/schedules/{id}` | —                                                                                        |
+| DELETE | `/api/me/schedules/{id}` |                                                                                          |     |
 
 - `job` = `"check-jobs"` | `"stats-ingest"` | `"scrape"` (one schedule each).
 - `intervalMinutes` = how often it runs (min 5).
@@ -169,7 +169,7 @@ free-text `q` (matches a word inside title/company/location/description);
 
 Response shape: `{ success: true, metric, data }` for stats, `{ success, total, page, pageSize, totalPages, jobs }` for `/jobs`.
 
-> **Scope (live):** every stats + `/jobs` endpoint takes `scope=public` (default —
+> **Scope (live):** every stats + `/jobs` endpoint takes `scope=public` (default |
 > the shared "stat rss" union across all users, deduped by job URL) or `scope=me`
 > (the logged-in user's own jobs; requires the `Authorization` header). Use
 > `scope=me` for a personal stats view, `public` for the global Stats page.

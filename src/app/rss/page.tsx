@@ -54,7 +54,7 @@ function RssAppInner() {
   const checkJob = schedules.find((s) => s.job === "check-jobs");
   const activeCount = feeds.filter((f) => f.active).length;
   const cronLabel = checkJob
-    ? (checkJob.cronExpr || `every ${checkJob.intervalMinutes}m`) + (checkJob.enabled ? "" : " — disabled")
+    ? (checkJob.cronExpr || `every ${checkJob.intervalMinutes}m`) + (checkJob.enabled ? "" : " | disabled")
     : "not scheduled";
 
   const actions = (

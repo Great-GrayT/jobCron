@@ -162,7 +162,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick Actions — only for logged-in users (these routes are gated) */}
+        {/* Quick Actions | only for logged-in users (these routes are gated) */}
         {authenticated && (
         <>
         <div className="terminal-panel">

@@ -104,16 +104,19 @@ CHECK_INTERVAL_MINUTES=5
 ### 4. Getting Telegram Credentials
 
 #### Create a Telegram Bot:
+
 1. Open Telegram and search for [@BotFather](https://t.me/BotFather)
 2. Send `/newbot` and follow the instructions
 3. Copy the bot token provided
 
 #### Get Your Chat ID:
+
 1. Search for [@userinfobot](https://t.me/userinfobot) on Telegram
 2. Start a chat with it
 3. Copy your user ID (this is your chat ID)
 
 Alternatively, to send to a group:
+
 1. Add your bot to a group
 2. Send a message in the group
 3. Visit `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
@@ -157,7 +160,7 @@ vercel
 4. Deploy
 
 The pipeline is triggered by an **external scheduler** (e.g. cron-job.org) that
-calls `GET /api/cron/check-jobs` on a schedule — it is **not** run from
+calls `GET /api/cron/check-jobs` on a schedule | it is **not** run from
 `vercel.json`. The current schedule is `*/5 8-21 * * *` (every 5 minutes,
 08:00–21:59 **UTC**, daily). Point your scheduler at the deployed endpoint and
 send the `CRON_SECRET` as a Bearer token (see Security below).
@@ -180,6 +183,7 @@ Without this setup, the cache will still work but only within a single execution
 ### RSS Feed URLs
 
 By default, the application monitors these feeds:
+
 - `https://rss.app/feeds/w4Ru4NAR9U7AN4DZ.xml`
 - `https://rss.app/feeds/lp93S41J4onjcEC8.xml`
 - `https://rss.app/feeds/KcrfO8VmpGzIV7hV.xml`
@@ -195,7 +199,7 @@ editing the schedule in that scheduler's dashboard (cron format
 value is `*/5 8-21 * * *`.
 
 **Server-side window (optional):** set `CRON_ACTIVE_HOURS` (a UTC hour spec such
-as `8-21`) and the endpoint will skip — returning `200 { skipped: true }` —
+as `8-21`) and the endpoint will skip | returning `200 { skipped: true }` |
 outside that window, regardless of how the scheduler is configured. Leave it
 unset to always run when called.
 
@@ -216,9 +220,11 @@ This prevents unauthorized access to your cron endpoint.
 Main cron endpoint that checks for new jobs and sends notifications.
 
 **Headers:**
+
 - `Authorization: Bearer <CRON_SECRET>` (if CRON_SECRET is set)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -236,11 +242,13 @@ Same as GET, useful for manual testing.
 ## Monitoring and Logs
 
 View logs in the Vercel dashboard:
+
 1. Go to your project in Vercel
 2. Navigate to the "Logs" tab
 3. Filter by function: `/api/cron/check-jobs`
 
 All logs include timestamps and structured information about:
+
 - Jobs fetched
 - Jobs filtered
 - Messages sent
@@ -271,6 +279,7 @@ The default rate limit delay is 2 seconds between messages. If you're still gett
 ### Authorization errors
 
 If you set `CRON_SECRET`, make sure:
+
 1. It's set in your Vercel environment variables
 2. The cron request includes the correct `Authorization` header
 3. There are no extra spaces in the token
@@ -322,6 +331,7 @@ The application uses a smart caching system to prevent duplicate job postings:
 - **Production (Vercel)**: Cache stored in **GitHub Gist** for persistence
 
 **Key Benefits:**
+
 - ✅ Eliminates duplicate notifications across all cron runs
 - ✅ Survives serverless function cold starts forever
 - ✅ 100% free with GitHub
@@ -329,6 +339,7 @@ The application uses a smart caching system to prevent duplicate job postings:
 - ✅ Automatically logs all cached URLs for debugging
 
 **Learn More:**
+
 - [GitHub Gist Setup Guide](./GITHUB_GIST_SETUP.md) - 3-minute setup instructions
 - [Cache Documentation](./CACHE.md) - Detailed explanation of how the cache works
 

@@ -86,7 +86,7 @@ function LoginForm() {
           <Link href="/forgot-password">Forgot password?</Link>
         </p>
 
-        <div className="divider">— OR —</div>
+        <div className="divider">| OR |</div>
         <div className="oauth-row">
           <a className="btn ghost block" href={oauthUrl("google")}><FcGoogle size={16} /> Google</a>
           <a className="btn ghost block" href={oauthUrl("github")}><FaGithub size={16} /> GitHub</a>

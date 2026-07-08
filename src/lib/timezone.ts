@@ -73,7 +73,7 @@ export function listZones(date: Date = new Date()): ZoneInfo[] {
 /**
  * Convert a local wall-clock time in `zone` to the UTC hour/minute a cron field
  * needs, DST-correct for `ref`'s date. (Cron is UTC-fixed, so a schedule that
- * crosses a DST boundary will shift by an hour in local terms — unavoidable.)
+ * crosses a DST boundary will shift by an hour in local terms | unavoidable.)
  */
 export function localTimeToUtc(
   hour: number,
