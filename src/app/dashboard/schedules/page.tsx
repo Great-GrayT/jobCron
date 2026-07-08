@@ -8,11 +8,14 @@ import { StatusDot } from "@/components/StatusDot";
 import { LogPanel } from "@/components/LogPanel";
 import { CronBuilder } from "@/components/CronBuilder";
 import { useTimezone } from "@/context/TimezoneContext";
+import { offsetMinutes } from "@/lib/timezone";
+import { cronToLocal, cronToUtc } from "@/lib/cron";
 
 const JOBS: ScheduleJob[] = ["check-jobs", "stats-ingest", "scrape"];
 
 export default function SchedulesPage() {
-  const { format } = useTimezone();
+  const { format, timezone } = useTimezone();
+  const offMin = offsetMinutes(timezone);
   const [list, setList] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +55,8 @@ export default function SchedulesPage() {
       await schedules.create({
         job,
         intervalMinutes: Math.max(5, intervalMinutes),
-        cronExpr: mode === "cron" ? cronExpr.trim() : null,
+        // Builder value is in the user's timezone; store as UTC (server matches UTC).
+        cronExpr: mode === "cron" ? cronToUtc(cronExpr.trim(), offMin) : null,
         enabled: true,
         ...(job === "scrape"
           ? {
@@ -184,7 +188,7 @@ export default function SchedulesPage() {
                   <td>{s.job}</td>
                   <td>
                     {s.cronExpr ? (
-                      <code className="muted" title="cron expression">{s.cronExpr}</code>
+                      <code className="muted" title={`Stored (UTC): ${s.cronExpr} — shown in your timezone`}>{cronToLocal(s.cronExpr, offMin)}</code>
                     ) : (
                       <input
                         type="number"

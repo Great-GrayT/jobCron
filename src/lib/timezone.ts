@@ -43,6 +43,12 @@ export function offsetLabel(zone: string, date: Date = new Date()): string {
   return dt.isValid ? dt.toFormat("ZZ") : "+00:00";
 }
 
+/** Minutes the zone is ahead of UTC at `date` (e.g. +180, -300, +330). DST-aware. */
+export function offsetMinutes(zone: string, date: Date = new Date()): number {
+  const dt = DateTime.fromJSDate(date).setZone(zone);
+  return dt.isValid ? dt.offset : 0;
+}
+
 /** All known zones with flag + current offset, sorted by offset then name. */
 export function listZones(date: Date = new Date()): ZoneInfo[] {
   let names: string[];

@@ -428,6 +428,21 @@ table.dash-table tbody tr:hover { background: var(--terminal-hover); }
   font-family: var(--font-code);
 }
 .cron-tz-note { font-size: 0.68rem; color: var(--terminal-text-muted); line-height: 1.4; }
+.cron-tz-note-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border-left: 2px solid var(--terminal-accent);
+  background: rgba(0, 209, 178, 0.05);
+  border-radius: 0 4px 4px 0;
+  font-size: 0.78rem;
+  color: var(--terminal-text-muted);
+  line-height: 1.4;
+}
+.cron-tz-note-row b { color: var(--terminal-text-secondary); font-weight: 600; }
+.cron-tz-note-row .fi { flex-shrink: 0; border-radius: 2px; }
 
 /* next-runs preview */
 .cron-next { margin-top: 0.6rem; }

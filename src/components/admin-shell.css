@@ -206,26 +206,31 @@
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
           mask-image: linear-gradient(to bottom, transparent, #000 45%);
 }
-/* diagonal "wave" — a soft bright band that sweeps corner-to-corner over the
-   ceramic pattern. Oversized + off-screen at the extremes so the loop is seamless. */
+/* diagonal "wave" — a very soft bright band that drifts over the ceramic pattern.
+   Stays INSIDE the sidebar (inset:0, no oversizing) so it never adds a scrollbar;
+   the sweep is done by moving the gradient position, and it's masked to the lower
+   pattern area so only the pattern lifts, subtly. */
 .admin-aside::after {
   content: "";
   position: absolute;
-  inset: -60%;
+  inset: 0;
   z-index: 0;
   pointer-events: none;
   background: linear-gradient(
-    120deg,
-    transparent 44%,
-    rgba(120, 230, 245, 0.12) 50%,
-    transparent 56%
+    115deg,
+    transparent 43%,
+    rgba(150, 235, 250, 0.05) 50%,
+    transparent 57%
   );
-  will-change: transform;
-  animation: aside-sheen 7s linear infinite;
+  background-size: 250% 250%;
+  background-repeat: no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 55%);
+          mask-image: linear-gradient(to bottom, transparent, #000 55%);
+  animation: aside-sheen 11s linear infinite;
 }
 @keyframes aside-sheen {
-  0% { transform: translate(-55%, -55%); }
-  100% { transform: translate(55%, 55%); }
+  0% { background-position: 130% -30%; }
+  100% { background-position: -30% 130%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .admin-aside::after { animation: none; }

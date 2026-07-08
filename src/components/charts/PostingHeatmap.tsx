@@ -12,6 +12,8 @@ interface PostingHeatmapProps {
   jobs: Job[];
   // Optional aggregated data (day-hour combinations, e.g., "0-14" for Sunday 2PM UTC)
   byDayHour?: Record<string, number>;
+  // Minutes to shift UTC buckets by for display (the viewer's timezone offset).
+  offsetMinutes?: number;
 }
 
 // Day names for the Y axis
@@ -35,7 +37,7 @@ const LIGHT_GRADIENT = {
   gradient: ['#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669'],
 };
 
-export function PostingHeatmap({ jobs, byDayHour }: PostingHeatmapProps) {
+export function PostingHeatmap({ jobs, byDayHour, offsetMinutes = 0 }: PostingHeatmapProps) {
   const [themeColors, setThemeColors] = useState(getThemeColors());
   const [gradientColors, setGradientColors] = useState(DARK_GRADIENT);
 
@@ -62,15 +64,23 @@ export function PostingHeatmap({ jobs, byDayHour }: PostingHeatmapProps) {
     // Create a 7x24 grid (days x hours)
     const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
 
+    // Shift a UTC (day, hour) bucket into the viewer's timezone. Crossing midnight
+    // rolls the day-of-week accordingly.
+    const shiftH = Math.round(offsetMinutes / 60);
+    const place = (day: number, hour: number, count: number) => {
+      const total = hour + shiftH;
+      const newHour = ((total % 24) + 24) % 24;
+      const newDay = (((day + Math.floor(total / 24)) % 7) + 7) % 7;
+      grid[newDay][newHour] += count;
+    };
+
     // Use aggregated byDayHour data if available
     if (byDayHour && Object.keys(byDayHour).length > 0) {
       for (const [key, count] of Object.entries(byDayHour)) {
         const [dayStr, hourStr] = key.split('-');
         const day = parseInt(dayStr, 10);
         const hour = parseInt(hourStr, 10);
-        if (day >= 0 && day < 7 && hour >= 0 && hour < 24) {
-          grid[day][hour] += count;
-        }
+        if (day >= 0 && day < 7 && hour >= 0 && hour < 24) place(day, hour, count);
       }
       return grid;
     }
@@ -78,13 +88,11 @@ export function PostingHeatmap({ jobs, byDayHour }: PostingHeatmapProps) {
     // Fall back to computing from individual jobs
     jobs.forEach(job => {
       const date = new Date(job.postedDate);
-      const day = date.getUTCDay();
-      const hour = date.getUTCHours();
-      grid[day][hour]++;
+      place(date.getUTCDay(), date.getUTCHours(), 1);
     });
 
     return grid;
-  }, [jobs, byDayHour]);
+  }, [jobs, byDayHour, offsetMinutes]);
 
   const maxValue = useMemo(() => {
     return Math.max(...heatmapData.flat(), 1);

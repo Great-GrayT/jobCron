@@ -1,16 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, Clock, Globe } from "lucide-react";
-import { CRON_PRESET_GROUPS, describeCron, isValidCron, nextRuns } from "@/lib/cron";
-import { localTimeToUtc } from "@/lib/timezone";
+import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { CRON_PRESET_GROUPS, cronToUtc, describeCron, isValidCron, nextRuns } from "@/lib/cron";
+import { offsetMinutes } from "@/lib/timezone";
 import { useTimezone } from "@/context/TimezoneContext";
 import { Flag } from "@/components/Flag";
 
 // Visual builder for a 5-field cron ("m h dom mon dow"). Presets and toggles
-// compose the expression; the raw field is also directly editable (source of
-// truth on edit). A live summary + next-run preview derive from the raw value.
-// All times are UTC — that is what the server matches on.
+// compose the expression; the raw field is also directly editable. Every time in
+// this builder is the USER'S timezone; the schedules page converts it to UTC on
+// save (cronToUtc), because the server matches in UTC. The next-run preview runs
+// on the UTC-converted expression, so it mirrors exactly what the server will do.
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -31,24 +32,11 @@ export function CronBuilder({ value, onChange }: { value: string; onChange: (v: 
   const [dom, setDom] = useState("*");
   const [months, setMonths] = useState<number[]>([]);
   const [dows, setDows] = useState<number[]>([]);
-  const [localTime, setLocalTime] = useState("09:00");
   const { timezone, countryCode, offset, format } = useTimezone();
+  const offMin = useMemo(() => offsetMinutes(timezone), [timezone]);
 
   const push = (m = minute, h = hour, d = dom, mo = months, dw = dows) =>
     onChange(compose(m, h, d, mo, dw));
-
-  // Convert the entered local wall-clock time (in the user's global zone) to UTC
-  // and drop it into the minute/hour fields — the server matches in UTC.
-  const applyLocalTime = () => {
-    const [hStr, mStr] = localTime.split(":");
-    const h = parseInt(hStr, 10);
-    const m = parseInt(mStr, 10);
-    if (Number.isNaN(h) || Number.isNaN(m)) return;
-    const utc = localTimeToUtc(h, m, timezone);
-    setMinute(String(utc.minute));
-    setHour(String(utc.hour));
-    push(String(utc.minute), String(utc.hour));
-  };
 
   const toggle = (arr: number[], v: number, set: (a: number[]) => void, after: (a: number[]) => void) => {
     const next = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v].sort((a, b) => a - b);
@@ -58,7 +46,8 @@ export function CronBuilder({ value, onChange }: { value: string; onChange: (v: 
 
   const valid = useMemo(() => isValidCron(value), [value]);
   const summary = useMemo(() => describeCron(value), [value]);
-  const runs = useMemo(() => (valid ? nextRuns(value, 3) : []), [value, valid]);
+  // Preview runs on the UTC-converted expression (what the server stores/matches).
+  const runs = useMemo(() => (valid ? nextRuns(cronToUtc(value, offMin), 3) : []), [value, valid, offMin]);
 
   return (
     <div className="cron-builder">
@@ -98,25 +87,10 @@ export function CronBuilder({ value, onChange }: { value: string; onChange: (v: 
         </div>
       </div>
 
-      {/* location / timezone helper — uses the global zone from the top bar */}
-      <div className="cron-tz">
-        <span className="cron-tz-head">
-          <Globe size={13} /> Set by your local time
-          <span className="cron-tz-zone"><Flag code={countryCode} /> {timezone.replace(/_/g, " ")} · UTC{offset}</span>
-        </span>
-        <div className="cron-tz-row">
-          <input
-            type="time"
-            value={localTime}
-            onChange={(e) => setLocalTime(e.target.value)}
-            aria-label="Local time"
-          />
-          <button type="button" className="btn sm" onClick={applyLocalTime}>Apply</button>
-        </div>
-        <span className="cron-tz-note">
-          Converts to UTC for the schedule (cron runs in UTC). Change your zone from the
-          timezone picker in the top bar. Across daylight-saving changes the local time may shift by an hour.
-        </span>
+      {/* Times below are in your timezone; saved to the server as UTC. */}
+      <div className="cron-tz-note-row">
+        <Flag code={countryCode} />
+        <span>Times are in <b>{timezone.replace(/_/g, " ")}</b> (UTC{offset}) — converted to UTC when saved. Change your zone from the top-bar picker.</span>
       </div>
 
       <label className="cron-label">Days of week</label>

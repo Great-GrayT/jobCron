@@ -136,8 +136,93 @@ export function describeCron(expr: string): string {
       ? " every day"
       : "";
 
-  return `${time}${window}${dayClause} (UTC)`;
+  return `${time}${window}${dayClause}`;
 }
+
+const uniqSort = (a: number[]) => [...new Set(a)].sort((x, y) => x - y);
+
+/** Re-compress a value set back to compact cron notation: wildcard, range, step, or list. */
+function compressField(vals: number[], max: number): string {
+  const v = uniqSort(vals);
+  if (v.length === 0) return "*";
+  if (v.length === max + 1) return "*";
+  const contiguous = v.every((x, i) => i === 0 || x === v[i - 1] + 1);
+  if (contiguous) return v.length === 1 ? String(v[0]) : `${v[0]}-${v[v.length - 1]}`;
+  const step = v[1] - v[0];
+  if (v[0] === 0 && step > 1 && v.every((x, i) => x === i * step) && v[v.length - 1] + step > max) {
+    return `*/${step}`;
+  }
+  return v.join(",");
+}
+
+/** Shift the day-of-week / day-of-month field by whole days (best-effort). */
+function shiftDayField(field: string, dd: number, min: number, max: number, isDow: boolean): string {
+  const vals = [...parseField(field, min, max)].map((v) => {
+    if (isDow) return (((v + dd) % 7) + 7) % 7; // 0-6
+    let n = v + dd; // dom 1-31, wrap (month length ignored — approximate)
+    while (n < 1) n += 31;
+    while (n > 31) n -= 31;
+    return n;
+  });
+  return isDow ? compressField(vals, 6) : uniqSort(vals).join(",");
+}
+
+/**
+ * Shift a cron's time-of-day by `deltaMin` minutes, used to convert between the
+ * user's timezone and the UTC the server matches on. Day-of-week / day-of-month
+ * roll over when the shift crosses midnight (best-effort — a schedule whose hour
+ * list straddles midnight while days are restricted can't be represented exactly,
+ * so days are left as-is there). Non-time-bearing shapes are returned unchanged.
+ */
+export function cronShiftMinutes(expr: string, deltaMin: number): string {
+  const f = expr.trim().split(/\s+/);
+  if (f.length !== 5 || !Number.isFinite(deltaMin) || deltaMin === 0) return expr;
+  const [minF, hourF, domF, monF, dowF] = f;
+
+  // Hour = * : runs every hour, so only the minute-within-hour shifts.
+  if (hourF === "*") {
+    if (minF === "*" || minF.includes("/")) return expr; // every minute / every-N-min is tz-invariant
+    const mins = [...parseField(minF, 0, 59)].map((m) => (((m + deltaMin) % 60) + 60) % 60);
+    return `${compressField(mins, 59)} * ${domF} ${monF} ${dowF}`;
+  }
+
+  const hours = [...parseField(hourF, 0, 23)];
+  const minuteStar = minF === "*";
+  const minutes = minuteStar ? Array.from({ length: 60 }, (_, i) => i) : [...parseField(minF, 0, 59)];
+  if (hours.length === 0 || minutes.length === 0) return expr;
+
+  const newHours = new Set<number>();
+  const newMins = new Set<number>();
+  const dayDeltas = new Set<number>();
+  for (const h of hours) {
+    for (const m of minutes) {
+      let total = h * 60 + m + deltaMin;
+      dayDeltas.add(Math.floor(total / 1440));
+      total = ((total % 1440) + 1440) % 1440;
+      newHours.add(Math.floor(total / 60));
+      newMins.add(total % 60);
+    }
+  }
+
+  const newMinF = minuteStar ? "*" : compressField([...newMins], 59);
+  const newHourF = compressField([...newHours], 23);
+
+  let newDom = domF;
+  let newDow = dowF;
+  if (dayDeltas.size === 1) {
+    const dd = [...dayDeltas][0];
+    if (dd !== 0) {
+      if (dowF !== "*") newDow = shiftDayField(dowF, dd, 0, 6, true);
+      if (domF !== "*") newDom = shiftDayField(domF, dd, 1, 31, false);
+    }
+  }
+  return `${newMinF} ${newHourF} ${newDom} ${monF} ${newDow}`;
+}
+
+/** Convert a cron the user built in their zone to the UTC the server stores/matches. */
+export const cronToUtc = (expr: string, offsetMin: number) => cronShiftMinutes(expr, -offsetMin);
+/** Convert a stored UTC cron back to the user's zone for display/editing. */
+export const cronToLocal = (expr: string, offsetMin: number) => cronShiftMinutes(expr, offsetMin);
 
 export type Preset = { label: string; expr: string };
 

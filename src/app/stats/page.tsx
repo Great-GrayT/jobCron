@@ -16,6 +16,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
 import { useTimezone } from "@/context/TimezoneContext";
+import { offsetMinutes } from "@/lib/timezone";
 import { SearchFilterPanel } from "@/components/SearchFilterPanel";
 import {
   fetchStatistics,
@@ -62,7 +63,8 @@ function currentMonthStr(): string {
 
 export default function StatsPage() {
   const { user } = useAuth();
-  const { format } = useTimezone();
+  const { format, timezone } = useTimezone();
+  const tzOffsetMin = offsetMinutes(timezone);
   const [loading, setLoading] = useState(true);
   const [statsData, setStatsData] = useState<StatsData | null>(null);
   // Filtered aggregates that drive every chart (server already applied filters).
@@ -697,15 +699,17 @@ export default function StatsPage() {
   const hasRoleCategoryData = filteredStats?.byRoleCategory && Object.keys(filteredStats.byRoleCategory).length > 0;
 
   // Publication times = the server-computed hourly histogram (byHour), keyed by
-  // the hour-of-day of posted_date (the real publication time shown in the table),
-  // aggregated over the FULL result set. Render all 24 hours (zero-filled) so the
-  // axis is a full day.
+  // the hour-of-day of posted_date (UTC). Rotate the buckets into the viewer's
+  // timezone so the axis matches the PUBLISHED column and the rest of the page.
   const getPublicationTimeData = () => {
     const byHour = filteredStats?.byHour ?? {};
-    return Array.from({ length: 24 }, (_, h) => {
-      const key = String(h).padStart(2, '0');
-      return { time: `${key}:00`, count: byHour[key] ?? 0 };
-    });
+    const shiftH = Math.round(tzOffsetMin / 60);
+    const local = Array<number>(24).fill(0);
+    for (let h = 0; h < 24; h++) {
+      const localH = (((h + shiftH) % 24) + 24) % 24;
+      local[localH] += byHour[String(h).padStart(2, '0')] ?? 0;
+    }
+    return local.map((count, h) => ({ time: `${String(h).padStart(2, '0')}:00`, count }));
   };
 
   // ---- jobs table hover popup (item 5) ---------------------------------------
@@ -768,17 +772,8 @@ export default function StatsPage() {
     return out;
   };
 
-  // Format date for display
-  const formatPublishDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // Publication date in the viewer's timezone (matches the rest of the page).
+  const formatPublishDate = (dateString: string) => format(dateString, "LLL dd, yyyy, HH:mm");
 
   const heroActions = (
     <>
@@ -1181,6 +1176,7 @@ export default function StatsPage() {
               <PostingHeatmap
                 jobs={filteredJobs}
                 byDayHour={filteredStats?.byDayHour}
+                offsetMinutes={tzOffsetMin}
               />
             </div>
           </div>
