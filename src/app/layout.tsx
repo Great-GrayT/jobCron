@@ -42,17 +42,6 @@ export default function RootLayout({
               <AuthProvider>
                 <RouteGuard>{children}</RouteGuard>
                 <FlourishFx />
-                {/* Gooey merge filter used by .btn-goo / .btn-goo-b1 (from the demos) */}
-                <svg aria-hidden="true" width="0" height="0" style={{ position: 'absolute' }}>
-                  <defs>
-                    {/* wide region so the blobs can grow OUT past the button box */}
-                    <filter id="goo" x="-75%" y="-75%" width="250%" height="250%">
-                      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
-                      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
-                      <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-                    </filter>
-                  </defs>
-                </svg>
               </AuthProvider>
             </TimezoneProvider>
           </CeramicProvider>
