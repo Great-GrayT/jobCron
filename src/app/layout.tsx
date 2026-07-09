@@ -5,6 +5,7 @@ import { TimezoneProvider } from '@/context/TimezoneContext';
 import { CeramicProvider } from '@/context/CeramicContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { RouteGuard } from '@/components/RouteGuard';
+import { FlourishFx } from '@/components/FlourishFx';
 import { Arimo, Nunito } from 'next/font/google';
 
 const arimo = Arimo({
@@ -40,6 +41,7 @@ export default function RootLayout({
             <TimezoneProvider>
               <AuthProvider>
                 <RouteGuard>{children}</RouteGuard>
+                <FlourishFx />
               </AuthProvider>
             </TimezoneProvider>
           </CeramicProvider>

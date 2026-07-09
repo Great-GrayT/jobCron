@@ -259,13 +259,13 @@ function AdminInner() {
               Idempotent | safe to re-run; already-imported jobs are skipped. May take a while.
             </p>
             <div className="row">
-              <button type="button" className="btn btn-fx-fill-up" disabled={g2Busy} onClick={runBackfill}>
+              <button type="button" className={`btn btn-sub ${g2Busy ? "is-loading" : ""}`} disabled={g2Busy} onClick={runBackfill}>
                 {g2Busy ? <Loader2 className="spin" size={14} /> : <Database size={14} />} Import g2 data
               </button>
-              <button type="button" className="btn ghost btn-fx-lift" disabled={busy === "rebuild"} onClick={() => setRebuildOpen(true)} title="Choose which stats/maintenance operations to run">
+              <button type="button" className="btn ghost btn-goo" disabled={busy === "rebuild"} onClick={() => setRebuildOpen(true)} title="Choose which stats/maintenance operations to run">
                 {busy === "rebuild" ? <Loader2 className="spin" size={14} /> : <Database size={14} />} Rebuild / repair
               </button>
-              <button type="button" className="btn danger btn-fx-press" onClick={() => { setCleanErr(null); setCleanOpen(true); }} title="Empty selected datasets so they can be re-imported (requires your password)">
+              <button type="button" className="btn danger btn-press" onClick={() => { setCleanErr(null); setCleanOpen(true); }} title="Empty selected datasets so they can be re-imported (requires your password)">
                 <Trash2 size={14} /> Clean database
               </button>
             </div>
@@ -305,10 +305,10 @@ function AdminInner() {
         // ---- selected user's settings ----
         <>
           <div className="row admin-detail-bar">
-            <button type="button" className="btn ghost sm btn-fx-lift" onClick={() => setDetail(null)}>
+            <button type="button" className="btn ghost sm btn-goo" onClick={() => setDetail(null)}>
               <ArrowLeft size={14} /> Back to users
             </button>
-            <button type="button" className="btn danger sm admin-delete-btn btn-fx-press" onClick={() => { setDelPw(""); setDelErr(null); setDelOpen(true); }}>
+            <button type="button" className="btn danger sm admin-delete-btn btn-press" onClick={() => { setDelPw(""); setDelErr(null); setDelOpen(true); }}>
               <Trash2 size={14} /> Delete user
             </button>
           </div>
@@ -344,8 +344,8 @@ function AdminInner() {
                 <span className="run-detail">{f.name || f.url}</span>
                 <span className="muted">{f.shareToStats ? "stat" : "personal"}</span>
                 <div className="cell-actions cell-actions-end">
-                  <button className="btn ghost sm btn-fx-lift" disabled={busy === `tf:${f.id}`} onClick={() => act(`tf:${f.id}`, () => admin.testFeed(f.id))}><Plug size={13} /> test</button>
-                  <button className="btn sm btn-fx-shine" disabled={busy === `sf:${f.id}`} onClick={() => act(`sf:${f.id}`, () => admin.sendFeed(f.id))}><Send size={13} /> send</button>
+                  <button className="btn ghost sm btn-goo" disabled={busy === `tf:${f.id}`} onClick={() => act(`tf:${f.id}`, () => admin.testFeed(f.id))}><Plug size={13} /> test</button>
+                  <button className="btn sm btn-goo-b1" disabled={busy === `sf:${f.id}`} onClick={() => act(`sf:${f.id}`, () => admin.sendFeed(f.id))}><Send size={13} /> send</button>
                 </div>
                 {logs[`tf:${f.id}`] && <div className="run-log-full"><LogPanel logs={logs[`tf:${f.id}`]} /></div>}
                 {logs[`sf:${f.id}`] && <div className="run-log-full"><LogPanel logs={logs[`sf:${f.id}`]} /></div>}
@@ -361,7 +361,7 @@ function AdminInner() {
                 <span>{c.kind}</span>
                 <span className="muted">{c.botTokenMasked} · {c.chatId}</span>
                 <div className="cell-actions cell-actions-end">
-                  <button className="btn ghost sm btn-fx-lift" disabled={busy === `tc:${c.id}`} onClick={() => act(`tc:${c.id}`, () => admin.testChannel(c.id))}><Plug size={13} /> test</button>
+                  <button className="btn ghost sm btn-goo" disabled={busy === `tc:${c.id}`} onClick={() => act(`tc:${c.id}`, () => admin.testChannel(c.id))}><Plug size={13} /> test</button>
                 </div>
                 {logs[`tc:${c.id}`] && <div className="run-log-full"><LogPanel logs={logs[`tc:${c.id}`]} /></div>}
               </div>
@@ -376,7 +376,7 @@ function AdminInner() {
                 <span>{s.job}</span>
                 <span className="muted">{s.cronExpr || `every ${s.intervalMinutes}m`} {s.enabled ? "" : "(off)"}</span>
                 <div className="cell-actions cell-actions-end">
-                  <button className="btn sm btn-fx-shine" disabled={busy === `rs:${s.id}`} onClick={() => act(`rs:${s.id}`, () => admin.runSchedule(s.id))}><Play size={13} /> run</button>
+                  <button className="btn sm btn-goo-b1" disabled={busy === `rs:${s.id}`} onClick={() => act(`rs:${s.id}`, () => admin.runSchedule(s.id))}><Play size={13} /> run</button>
                 </div>
                 {logs[`rs:${s.id}`] && <div className="run-log-full"><LogPanel logs={logs[`rs:${s.id}`]} /></div>}
               </div>
@@ -419,8 +419,8 @@ function AdminInner() {
                 ))}
               </div>
               <div className="modal-actions">
-                <button type="button" className="btn ghost btn-fx-lift" onClick={() => setRebuildOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-fx-fill-up" disabled={rebuildSel.size === 0}>
+                <button type="button" className="btn ghost btn-goo" onClick={() => setRebuildOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-flourish" disabled={rebuildSel.size === 0}>
                   <Database size={14} /> Run {rebuildSel.size || ""} operation{rebuildSel.size === 1 ? "" : "s"}
                 </button>
               </div>
@@ -457,8 +457,8 @@ function AdminInner() {
                 <input type="password" aria-label="account password" value={cleanPw} onChange={(e) => setCleanPw(e.target.value)} autoComplete="current-password" autoFocus required />
               </div>
               <div className="modal-actions">
-                <button type="button" className="btn ghost btn-fx-lift" onClick={() => setCleanOpen(false)} disabled={cleanBusy}>Cancel</button>
-                <button type="submit" className="btn danger btn-fx-press" disabled={cleanBusy || cleanSel.size === 0 || !cleanPw}>
+                <button type="button" className="btn ghost btn-goo" onClick={() => setCleanOpen(false)} disabled={cleanBusy}>Cancel</button>
+                <button type="submit" className="btn danger btn-press" disabled={cleanBusy || cleanSel.size === 0 || !cleanPw}>
                   {cleanBusy ? <Loader2 className="spin" size={14} /> : <Trash2 size={14} />} Empty {cleanSel.size || ""} dataset{cleanSel.size === 1 ? "" : "s"}
                 </button>
               </div>
@@ -486,8 +486,8 @@ function AdminInner() {
                 <input type="password" value={delPw} onChange={(e) => setDelPw(e.target.value)} autoComplete="current-password" autoFocus required />
               </div>
               <div className="modal-actions">
-                <button type="button" className="btn ghost btn-fx-lift" onClick={() => setDelOpen(false)}>Cancel</button>
-                <button type="submit" className="btn danger btn-fx-press" disabled={busy === "delete" || !delPw}>
+                <button type="button" className="btn ghost btn-goo" onClick={() => setDelOpen(false)}>Cancel</button>
+                <button type="submit" className="btn danger btn-press" disabled={busy === "delete" || !delPw}>
                   {busy === "delete" ? <Loader2 className="spin" size={14} /> : <Trash2 size={14} />} Delete
                 </button>
               </div>

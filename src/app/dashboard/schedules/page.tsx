@@ -166,7 +166,7 @@ export default function SchedulesPage() {
               </div>
             </>
           )}
-          <button className="btn btn-fx-fill-up" type="submit" disabled={adding}>
+          <button className={`btn btn-sub ${adding ? "is-loading" : ""}`} type="submit" disabled={adding}>
             {adding ? <Loader2 className="spin" size={16} /> : <Plus size={16} />} ADD
           </button>
         </div>
@@ -210,13 +210,13 @@ export default function SchedulesPage() {
                   <td><input type="checkbox" aria-label="Enabled" checked={s.enabled} onChange={(e) => patch(s.id, { enabled: e.target.checked })} /></td>
                   <td>
                     <div className="cell-actions">
-                      <button type="button" className="btn sm btn-fx-shine" onClick={() => run(s.id)} disabled={busy === `run:${s.id}`} title="Run now">
+                      <button type="button" className="btn sm btn-goo-b1" onClick={() => run(s.id)} disabled={busy === `run:${s.id}`} title="Run now">
                         {busy === `run:${s.id}` ? <Loader2 className="spin" size={14} /> : <Play size={14} />} RUN
                       </button>
-                      <button type="button" className="btn ghost sm btn-fx-lift" onClick={() => toggleHistory(s.id)} title="Run history">
+                      <button type="button" className="btn ghost sm btn-goo" onClick={() => toggleHistory(s.id)} title="Run history">
                         <History size={14} /> LOG
                       </button>
-                      <button type="button" className="btn danger sm btn-fx-press" onClick={() => remove(s.id)} title="Remove schedule"><Trash2 size={14} /></button>
+                      <button type="button" className="btn danger sm btn-press" onClick={() => remove(s.id)} title="Remove schedule"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>

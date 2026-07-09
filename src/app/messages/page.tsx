@@ -298,7 +298,7 @@ function MessagesInner() {
         <aside className="chat-list">
           <div className="chat-list-head">
             <span>Conversations</span>
-            <button type="button" className="button is-primary is-small btn-fx-fill-up" onClick={() => { setComposing(true); setNote(null); setBody(""); }}>
+            <button type="button" className="button is-primary is-small btn-flourish" onClick={() => { setComposing(true); setNote(null); setBody(""); }}>
               <Plus size={14} /> New
             </button>
           </div>
@@ -337,7 +337,7 @@ function MessagesInner() {
           {composing ? (
             <>
               <div className="chat-thread-head">
-                <button type="button" className="btn ghost sm chat-back btn-fx-lift" aria-label="Back" onClick={() => setComposing(false)}>
+                <button type="button" className="btn ghost sm chat-back btn-goo" aria-label="Back" onClick={() => setComposing(false)}>
                   <ArrowLeft size={14} />
                 </button>
                 <div className="chat-thread-who"><span className="chat-thread-name">New message</span></div>
@@ -356,7 +356,7 @@ function MessagesInner() {
                   <label>Message</label>
                   <textarea rows={5} value={body} onChange={(e) => setBody(e.target.value)} required />
                 </div>
-                <button className="button is-primary btn-fx-shine" type="submit" disabled={busy}>
+                <button className={`button is-primary btn-sub ${busy ? "is-loading" : ""}`} type="submit" disabled={busy}>
                   {busy ? <Loader2 className="spin" size={16} /> : <Send size={16} />} Send
                 </button>
               </form>
@@ -467,7 +467,7 @@ function MessagesInner() {
                   placeholder={replyingTo ? "Type your reply…" : `Message ${partnerName(selected)}…`}
                   aria-label="Reply"
                 />
-                <button className="button is-primary btn-fx-shine" type="submit" aria-label="Send message" disabled={busy || !body.trim()}>
+                <button className={`button is-primary btn-sub ${busy ? "is-loading" : ""}`} type="submit" aria-label="Send message" disabled={busy || !body.trim()}>
                   {busy ? <Loader2 className="spin" size={16} /> : <Send size={16} />}
                 </button>
               </form>

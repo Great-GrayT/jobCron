@@ -79,7 +79,7 @@ export default function AccountPage() {
           ) : (
             <div className="avatar-img avatar-fallback">{(user.name || user.email)[0]?.toUpperCase()}</div>
           )}
-          <button type="button" className="btn ghost sm btn-fx-lift" onClick={() => setPickerOpen((v) => !v)} disabled={avatarBusy}>
+          <button type="button" className="btn ghost sm btn-goo" onClick={() => setPickerOpen((v) => !v)} disabled={avatarBusy}>
             {avatarBusy ? <Loader2 className="spin" size={14} /> : <Camera size={14} />} {pickerOpen ? "CLOSE" : "CHANGE"}
           </button>
         </div>
@@ -144,11 +144,11 @@ export default function AccountPage() {
       </div>
 
       <div className="row" style={{ marginTop: "1rem" }}>
-        <button className="btn btn-fx-fill-up" onClick={save} disabled={busy}>
+        <button className={`btn btn-sub ${busy ? "is-loading" : ""} ${saved ? "is-done" : ""}`} onClick={save} disabled={busy}>
           {busy ? <Loader2 className="spin" size={16} /> : <Save size={16} />} SAVE
           {saved && <span className="ok"> ✓</span>}
         </button>
-        <button className="btn danger btn-fx-press" onClick={logout}>LOG OUT</button>
+        <button className="btn danger btn-press" onClick={logout}>LOG OUT</button>
       </div>
     </section>
 

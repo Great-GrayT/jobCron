@@ -165,7 +165,7 @@ export default function FeedsPage() {
         </div>
         <label className="switch"><input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /> notify</label>
         <label className="switch"><input type="checkbox" checked={shareToStats} onChange={(e) => setShareToStats(e.target.checked)} /> share</label>
-        <button className="btn btn-fx-fill-up" type="submit" disabled={adding}>
+        <button className={`btn btn-sub ${adding ? "is-loading" : ""}`} type="submit" disabled={adding}>
           {adding ? <Loader2 className="spin" size={16} /> : <Plus size={16} />} ADD
         </button>
       </form>
@@ -193,13 +193,13 @@ export default function FeedsPage() {
                   <td><input type="checkbox" aria-label="Active" checked={f.active} onChange={(e) => patch(f.id, { active: e.target.checked })} /></td>
                   <td>
                     <div className="cell-actions">
-                      <button type="button" className="btn ghost sm btn-fx-lift" onClick={() => test(f.id)} disabled={busy === `test:${f.id}`} title="Test feed fetch">
+                      <button type="button" className="btn ghost sm btn-goo" onClick={() => test(f.id)} disabled={busy === `test:${f.id}`} title="Test feed fetch">
                         {busy === `test:${f.id}` ? <Loader2 className="spin" size={14} /> : <Plug size={14} />} TEST
                       </button>
-                      <button type="button" className="btn sm btn-fx-shine" onClick={() => send(f.id)} disabled={busy === `send:${f.id}`} title="Send to Telegram + save">
+                      <button type="button" className="btn sm btn-goo-b1" onClick={() => send(f.id)} disabled={busy === `send:${f.id}`} title="Send to Telegram + save">
                         {busy === `send:${f.id}` ? <Loader2 className="spin" size={14} /> : <Send size={14} />} SEND
                       </button>
-                      <button type="button" className="btn danger sm btn-fx-press" onClick={() => remove(f.id)} title="Remove feed"><Trash2 size={14} /></button>
+                      <button type="button" className="btn danger sm btn-press" onClick={() => remove(f.id)} title="Remove feed"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>

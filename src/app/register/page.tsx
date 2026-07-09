@@ -116,7 +116,7 @@ export default function RegisterPage() {
             We sent a verification link to <b>{registeredEmail}</b>. Click it to activate your account |
             you can&apos;t log in until your email is verified. Unverified accounts are removed after 7 days.
           </p>
-          <button className="btn block btn-fx-shine" onClick={() => resendVerification(registeredEmail)}>
+          <button className="btn block btn-flourish" onClick={() => resendVerification(registeredEmail)}>
             RESEND EMAIL
           </button>
           <p className="auth-foot"><Link href="/login">Back to sign in</Link></p>
@@ -141,7 +141,7 @@ export default function RegisterPage() {
             <div className="avatar-img avatar-fallback"><Camera size={22} /></div>
           )}
           <div>
-            <button type="button" className="btn ghost sm btn-fx-lift" onClick={() => setAvatarOpen((v) => !v)}>
+            <button type="button" className="btn ghost sm btn-goo" onClick={() => setAvatarOpen((v) => !v)}>
               <Camera size={14} /> {avatarOpen ? "Close" : avatarPreview ? "Change avatar" : "Choose avatar"}
             </button>
             <div className="muted">Optional | or pick one later.</div>
@@ -233,7 +233,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <button className="btn block btn-fx-shine" type="submit" disabled={busy} style={{ marginTop: 8 }}>
+          <button className={`btn block btn-sub ${busy ? "is-loading" : ""}`} type="submit" disabled={busy} style={{ marginTop: 8 }}>
             {busy ? <Loader2 className="spin" size={16} /> : <UserPlus size={16} />}
             {busy ? "CREATING…" : "CREATE ACCOUNT"}
           </button>
@@ -252,26 +252,26 @@ export default function RegisterPage() {
       {/* ---- the "are you a spy?" saga ---- */}
       {saga === "warn" && (
         <Modal image="/saga/warning.png" title="The information is not provided. Are you sure you want to proceed?">
-          <button className="btn ghost btn-fx-lift" onClick={() => setSaga(null)}>No</button>
-          <button className="btn btn-fx-ripple" onClick={() => setSaga("spy")}>Yes</button>
+          <button className="btn ghost btn-goo" onClick={() => setSaga(null)}>No</button>
+          <button className="btn btn-flourish" onClick={() => setSaga("spy")}>Yes</button>
         </Modal>
       )}
       {saga === "spy" && (
         <Modal image="/saga/spy.png" title="What are you hiding? Are you a Spy?">
-          <button className="btn ghost btn-fx-lift" onClick={() => setSaga("mockNo")}>No</button>
-          <button className="btn btn-fx-ripple" onClick={() => setSaga("mockYes")}>Yes</button>
+          <button className="btn ghost btn-goo" onClick={() => setSaga("mockNo")}>No</button>
+          <button className="btn btn-flourish" onClick={() => setSaga("mockYes")}>Yes</button>
         </Modal>
       )}
       {saga === "mockYes" && (
         <Modal image="/saga/mockyes.png" title="Ha Ha, very funny. Now go back and fill out the form, good boy/girl.">
-          <button className="btn btn-fx-ripple" onClick={() => { setSaga(null); setBypassOptional(true); }}>
+          <button className="btn btn-flourish" onClick={() => { setSaga(null); setBypassOptional(true); }}>
             On my eyes, Kind Master
           </button>
         </Modal>
       )}
       {saga === "mockNo" && (
         <Modal image="/saga/mockno.png" title="That's what I thought. Now go back and fill out the form.">
-          <button className="btn btn-fx-ripple" onClick={() => { setSaga(null); setBypassOptional(true); }}>
+          <button className="btn btn-flourish" onClick={() => { setSaga(null); setBypassOptional(true); }}>
             On my eyes, Kind Master
           </button>
         </Modal>

@@ -166,7 +166,7 @@
 .btn.sm { padding: 0.4rem 0.7rem; font-size: 0.75rem; }
 
 /* btn-fx wiring: danger buttons press on a darker-red 3D shadow */
-.btn.danger.btn-fx-press { --fx-c2: color-mix(in srgb, var(--color-error) 62%, #000); }
+.btn.danger.btn-press { --fx-accent-deep: color-mix(in srgb, var(--color-error) 62%, #000); }
 
 .oauth-row { display: flex; gap: 0.5rem; margin: 1rem 0; }
 .divider {

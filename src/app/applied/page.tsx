@@ -375,7 +375,7 @@ function AppliedJobsInner() {
     <button
       onClick={() => fetchApplications(selectedMonth || undefined)}
       disabled={loading}
-      className="button is-primary is-small btn-fx-fill-up"
+      className="button is-primary is-small btn-flourish"
     >
       {loading ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}
       <span>Refresh</span>
@@ -434,7 +434,7 @@ function AppliedJobsInner() {
             {roleOptions.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           {(fq || fCompany || fIndustry || fRole) && (
-            <button className="btn ghost sm btn-fx-lift" onClick={() => { setFq(""); setFCompany(""); setFIndustry(""); setFRole(""); }}>CLEAR</button>
+            <button className="btn ghost sm btn-goo" onClick={() => { setFq(""); setFCompany(""); setFIndustry(""); setFRole(""); }}>CLEAR</button>
           )}
         </div>
       )}

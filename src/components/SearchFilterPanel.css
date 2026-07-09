@@ -149,8 +149,8 @@
   box-shadow: 0 0 10px var(--color-error-glow);
 }
 
-/* btn-fx wiring: red lift shadow matches the destructive intent */
-.clear-all-btn.btn-fx-lift { --fx-c1: var(--color-error); }
+/* btn-fx wiring: destructive clear presses on a red 3D shadow */
+.clear-all-btn.btn-press { --fx-accent-deep: color-mix(in srgb, var(--color-error) 62%, #000); }
 
 .filter-total-count {
   background: var(--terminal-accent);

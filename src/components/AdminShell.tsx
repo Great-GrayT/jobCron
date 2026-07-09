@@ -223,7 +223,7 @@ export function AdminShell({
             )}
           </div>
 
-          <button type="button" className="btn ghost sm navbar-logout btn-fx-lift" onClick={logout}>
+          <button type="button" className="btn ghost sm navbar-logout btn-goo" onClick={logout}>
             <LogOut size={14} /> Log out
           </button>
         </div>
@@ -282,7 +282,7 @@ export function AdminShell({
         <section className="hero-bar">
           <div className="hero-left">
             {back !== false && (
-              <button type="button" className="btn ghost sm hero-back btn-fx-lift" onClick={goBack}>
+              <button type="button" className="btn ghost sm hero-back btn-goo" onClick={goBack}>
                 <ArrowLeft size={14} /> Back
               </button>
             )}

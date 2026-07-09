@@ -38,7 +38,7 @@ function ResetForm() {
       <div className="auth-card">
         <h1>RESET PASSWORD</h1>
         <div className="auth-error">Missing or invalid reset link.</div>
-        <Link className="btn block btn-fx-shine" href="/forgot-password">REQUEST A NEW LINK</Link>
+        <Link className="btn block btn-flourish" href="/forgot-password">REQUEST A NEW LINK</Link>
       </div>
     );
   }
@@ -61,7 +61,7 @@ function ResetForm() {
               <label htmlFor="cf">Confirm password</label>
               <input id="cf" type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
             </div>
-            <button className="btn block btn-fx-shine" type="submit" disabled={busy}>
+            <button className={`btn block btn-sub ${busy ? "is-loading" : ""}`} type="submit" disabled={busy}>
               {busy ? <Loader2 className="spin" size={16} /> : <KeyRound size={16} />}
               {busy ? "UPDATING…" : "UPDATE PASSWORD"}
             </button>

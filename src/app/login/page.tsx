@@ -62,7 +62,7 @@ function LoginForm() {
 
         {error && <div className="auth-error">{error}</div>}
         {unverified && (
-          <button type="button" className="btn ghost block btn-fx-lift" onClick={resend} style={{ marginBottom: "1rem" }} disabled={resent}>
+          <button type="button" className="btn ghost block btn-goo" onClick={resend} style={{ marginBottom: "1rem" }} disabled={resent}>
             {resent ? "VERIFICATION EMAIL SENT" : "RESEND VERIFICATION EMAIL"}
           </button>
         )}
@@ -76,7 +76,7 @@ function LoginForm() {
             <label htmlFor="password">Password</label>
             <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
           </div>
-          <button className="btn block btn-fx-shine" type="submit" disabled={busy}>
+          <button className={`btn block btn-sub ${busy ? "is-loading" : ""}`} type="submit" disabled={busy}>
             {busy ? <Loader2 className="spin" size={16} /> : <LogIn size={16} />}
             {busy ? "SIGNING IN…" : "SIGN IN"}
           </button>
@@ -88,8 +88,8 @@ function LoginForm() {
 
         <div className="divider">| OR |</div>
         <div className="oauth-row">
-          <a className="btn ghost block btn-fx-lift" href={oauthUrl("google")}><FcGoogle size={16} /> Google</a>
-          <a className="btn ghost block btn-fx-lift" href={oauthUrl("github")}><FaGithub size={16} /> GitHub</a>
+          <a className="btn ghost block btn-goo" href={oauthUrl("google")}><FcGoogle size={16} /> Google</a>
+          <a className="btn ghost block btn-goo" href={oauthUrl("github")}><FaGithub size={16} /> GitHub</a>
         </div>
 
         <p className="auth-foot">No account? <Link href="/register">Create one</Link></p>

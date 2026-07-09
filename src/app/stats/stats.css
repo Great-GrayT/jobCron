@@ -453,7 +453,7 @@
 }
 
 /* btn-fx wiring: keep the destructive red for the 3D press shadow */
-.filter-clear-all.btn-fx-press { --fx-c2: var(--color-error); }
+.filter-clear-all.btn-press { --fx-accent-deep: var(--color-error); }
 
 .filter-clear-all {
   padding: 0.2rem 0.6rem;

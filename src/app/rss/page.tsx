@@ -59,8 +59,8 @@ function RssAppInner() {
 
   const actions = (
     <>
-      <Link href="/dashboard/schedules" className="button is-light is-small btn-fx-lift"><Clock size={14} /> Edit schedule</Link>
-      <button className="button is-primary is-small btn-fx-fill-up" onClick={callAll} disabled={!!busy}>
+      <Link href="/dashboard/schedules" className="button is-light is-small btn-goo"><Clock size={14} /> Edit schedule</Link>
+      <button className="button is-primary is-small btn-flourish" onClick={callAll} disabled={!!busy}>
         <Send size={14} /> Call all
       </button>
     </>
@@ -120,8 +120,8 @@ function RssAppInner() {
                   <span className="run-detail">{f.name || f.url}</span>
                   <span className="muted">{f.shareToStats ? "stat" : "personal"}{f.active ? "" : " · inactive"}</span>
                   <div className="cell-actions" style={{ marginLeft: "auto" }}>
-                    <button className="button is-light is-small btn-fx-lift" disabled={busy === `test:${f.id}`} onClick={() => run(`test:${f.id}`, () => feedsApi.test(f.id))}><Plug size={13} /> test</button>
-                    <button className="button is-primary is-small btn-fx-fill-up" disabled={busy === `send:${f.id}`} onClick={() => run(`send:${f.id}`, () => feedsApi.send(f.id))}><Send size={13} /> call</button>
+                    <button className="button is-light is-small btn-goo" disabled={busy === `test:${f.id}`} onClick={() => run(`test:${f.id}`, () => feedsApi.test(f.id))}><Plug size={13} /> test</button>
+                    <button className="button is-primary is-small btn-flourish" disabled={busy === `send:${f.id}`} onClick={() => run(`send:${f.id}`, () => feedsApi.send(f.id))}><Send size={13} /> call</button>
                   </div>
                 </div>
                 {logs[`test:${f.id}`] && <LogPanel logs={logs[`test:${f.id}`]} />}

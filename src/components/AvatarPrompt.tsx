@@ -40,7 +40,7 @@ export function AvatarPrompt() {
         </p>
         <AvatarPicker current={null} onPick={pick} busy={busy} />
         <div className="modal-actions">
-          <button type="button" className="btn ghost btn-fx-lift" onClick={() => setOpen(false)}>Skip for now</button>
+          <button type="button" className="btn ghost btn-goo" onClick={() => setOpen(false)}>Skip for now</button>
         </div>
       </div>
     </div>

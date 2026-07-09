@@ -789,7 +789,7 @@ export default function StatsPage() {
         <button
           type="button"
           onClick={() => setScope('public')}
-          className={`button is-small btn-fx-expand ${scope === 'public' ? 'is-primary' : 'is-light'}`}
+          className={`button is-small btn-goo ${scope === 'public' ? 'is-primary' : 'is-light'}`}
           title="All shared feeds"
         >
           <Globe size={14} />
@@ -798,7 +798,7 @@ export default function StatsPage() {
         <button
           type="button"
           onClick={() => setScope('me')}
-          className={`button is-small btn-fx-expand ${scope === 'me' ? 'is-primary' : 'is-light'}`}
+          className={`button is-small btn-goo ${scope === 'me' ? 'is-primary' : 'is-light'}`}
           title="Only feeds you use"
         >
           <Users size={14} />
@@ -808,7 +808,7 @@ export default function StatsPage() {
       <button
         onClick={loadStatistics}
         disabled={loading}
-        className="button is-primary is-small btn-fx-fill-left"
+        className="button is-primary is-small btn-flourish"
       >
         {loading ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}
         <span>Load data</span>
@@ -986,7 +986,7 @@ export default function StatsPage() {
               <div className="panel-header">
                 <Filter size={14} />
                 <span>ACTIVE FILTERS</span>
-                <button onClick={clearAllFilters} className="filter-clear-all btn-fx-press">
+                <button onClick={clearAllFilters} className="filter-clear-all btn-press">
                   CLEAR ALL
                 </button>
               </div>

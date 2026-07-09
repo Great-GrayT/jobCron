@@ -96,7 +96,7 @@ export default function TelegramPage() {
           <label htmlFor="chat">Chat ID <PageGuide label="How to get a chat ID">{ChatIdGuide}</PageGuide></label>
           <input id="chat" value={chatId} onChange={(e) => setChatId(e.target.value)} placeholder="-1001…" />
         </div>
-        <button className="btn btn-fx-fill-up" type="submit" disabled={saving}>
+        <button className={`btn btn-sub ${saving ? "is-loading" : ""}`} type="submit" disabled={saving}>
           {saving ? <Loader2 className="spin" size={16} /> : <Save size={16} />} SAVE
         </button>
       </form>
@@ -121,10 +121,10 @@ export default function TelegramPage() {
                   <td>{c.active ? <span className="ok">yes</span> : "no"}</td>
                   <td>
                     <div className="cell-actions">
-                      <button className="btn ghost sm btn-fx-lift" onClick={() => test(c.id)} disabled={testing === c.id}>
+                      <button className="btn ghost sm btn-goo" onClick={() => test(c.id)} disabled={testing === c.id}>
                         {testing === c.id ? <Loader2 className="spin" size={14} /> : <Plug size={14} />} TEST
                       </button>
-                      <button className="btn danger sm btn-fx-press" onClick={() => remove(c.id)}><Trash2 size={14} /></button>
+                      <button className="btn danger sm btn-press" onClick={() => remove(c.id)}><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>

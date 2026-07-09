@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
             <p className="sub">
               If an account exists for <b>{identifier}</b>, a password-reset link is on its way. The link expires in 1 hour.
             </p>
-            <Link className="btn block btn-fx-shine" href="/login">BACK TO SIGN IN</Link>
+            <Link className="btn block btn-goo" href="/login">BACK TO SIGN IN</Link>
           </>
         ) : (
           <>
@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
                 <label htmlFor="id">Email or username</label>
                 <input id="id" required value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username" />
               </div>
-              <button className="btn block btn-fx-shine" type="submit" disabled={busy}>
+              <button className={`btn block btn-sub ${busy ? "is-loading" : ""}`} type="submit" disabled={busy}>
                 {busy ? <Loader2 className="spin" size={16} /> : <Mail size={16} />}
                 {busy ? "SENDING…" : "SEND RESET LINK"}
               </button>
