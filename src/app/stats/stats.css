@@ -1373,3 +1373,8 @@
 /* Keyword trend badge (icon + label) */
 .trend-cell { text-align: center; }
 .trend-cell svg { display: inline-block; vertical-align: -2px; margin-right: 3px; color: var(--terminal-accent); }
+
+/* Posting Velocity working-days toggle */
+.velocity-workdays { margin-left: auto; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.66rem; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--terminal-text-muted); cursor: pointer; }
+.velocity-workdays input { accent-color: var(--terminal-accent); cursor: pointer; margin: 0; }
+.velocity-workdays:hover { color: var(--terminal-text-secondary); }

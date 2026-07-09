@@ -17,6 +17,7 @@ import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
 import { useTimezone } from "@/context/TimezoneContext";
 import { offsetMinutes } from "@/lib/timezone";
+import { isWorkingDay } from "@/lib/workdays";
 import { PageGuide } from "@/components/PageGuide";
 import { StatsGuide } from "@/components/guides";
 import { SearchFilterPanel } from "@/components/SearchFilterPanel";
@@ -67,6 +68,7 @@ export default function StatsPage() {
   const { user } = useAuth();
   const { format, timezone } = useTimezone();
   const tzOffsetMin = offsetMinutes(timezone);
+  const [workingDaysOnly, setWorkingDaysOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statsData, setStatsData] = useState<StatsData | null>(null);
   // Filtered aggregates that drive every chart (server already applied filters).
@@ -341,6 +343,8 @@ export default function StatsPage() {
     if (!stats) return [];
     return Object.entries(stats.byDate)
       .sort(([a], [b]) => a.localeCompare(b))
+      // "Working days" toggle: drop weekends + US federal holidays (client-side).
+      .filter(([date]) => !workingDaysOnly || isWorkingDay(date))
       .map(([date, count]) => ({
         date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         jobs: count,
@@ -1012,6 +1016,10 @@ export default function StatsPage() {
               <TrendingUp size={14} />
               <span>POSTING VELOCITY</span>
               {selectedDate && <span className="velocity-filtered-badge">(FILTERED: {selectedDate})</span>}
+              <label className="velocity-workdays" title="Show only working days (exclude weekends & US federal holidays)">
+                <input type="checkbox" checked={workingDaysOnly} onChange={(e) => setWorkingDaysOnly(e.target.checked)} />
+                <span>Working days</span>
+              </label>
             </div>
             <div className="chart-container compact">
               <ResponsiveContainer width="100%" height={210}>
