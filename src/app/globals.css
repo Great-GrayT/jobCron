@@ -1038,6 +1038,10 @@ code {
   background: none; border: none; color: var(--color-text-primary); border-radius: 6px; cursor: pointer; font-size: 0.85rem;
 }
 .jfs-options li button:hover { background: var(--terminal-hover); color: var(--terminal-accent); }
+/* "Load more" row — pulls the next 30 dictionary matches */
+.jfs-options .jfs-loadmore { position: sticky; bottom: 0; border-top: 1px solid var(--terminal-border); background: var(--terminal-bg-panel); }
+.jfs-options .jfs-loadmore button { text-align: center; font-weight: 700; font-size: 0.78rem; color: var(--terminal-accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.jfs-options .jfs-loadmore button:hover { background: var(--terminal-accent); color: var(--color-white); }
 
 /* AND/OR segmented toggle between conditions */
 .jfs-connector { display: inline-flex; align-self: flex-start; margin-left: 1.25rem; border-radius: 999px; overflow: hidden; border: 1px solid var(--color-border-light); }

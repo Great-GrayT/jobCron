@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { Loader2, Upload, FileText, X, Sparkles, CheckCircle2, AlertCircle, Lightbulb } from "lucide-react";
@@ -10,8 +10,8 @@ import { featuresMenu } from "@/components/navMenu";
 import { useAuth } from "@/context/AuthContext";
 import { PageGuide } from "@/components/PageGuide";
 import { CvGuide } from "@/components/guides";
-import { fetchOptions, fetchStatistics, type ActiveFilters, type FilterOptions } from "@/lib/api/stats";
-import { dictionaries } from "@/lib/api/me";
+import { fetchStatistics, type ActiveFilters } from "@/lib/api/stats";
+import { DictionaryTypeahead } from "@/components/DictionaryTypeahead";
 import { extractCvText } from "@/lib/cv/extract";
 import { analyzeCv, type CvAnalysis } from "@/lib/cv/analyze";
 import "./cv.css";
@@ -21,6 +21,21 @@ const EMPTY_FILTERS: ActiveFilters = {
   country: [], city: [], software: [], programmingSkill: [], yearsExperience: [],
   academicDegree: [], region: [], roleType: [], roleCategory: [],
 };
+
+// Target-market fields, each searched live from the cron-server dictionaries.
+// `dict` = dictionary field name (server); `key` = ActiveFilters key.
+const CV_DICT_FIELDS: { label: string; dict: string; key: keyof ActiveFilters }[] = [
+  { label: "Industry", dict: "industry", key: "industry" },
+  { label: "Category", dict: "roleCategory", key: "roleCategory" },
+  { label: "Seniority", dict: "seniority", key: "seniority" },
+  { label: "Role type", dict: "roleType", key: "roleType" },
+  { label: "Country", dict: "country", key: "country" },
+  { label: "Region", dict: "region", key: "region" },
+  { label: "Certificate", dict: "certificate", key: "certificate" },
+  { label: "Skill / keyword", dict: "keyword", key: "keyword" },
+  { label: "Software", dict: "software", key: "software" },
+  { label: "Programming", dict: "programming", key: "programmingSkill" },
+];
 
 function CvInner() {
   const { user } = useAuth();
@@ -32,41 +47,16 @@ function CvInner() {
   const [fileError, setFileError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // ---- filters ----
-  // Country stays posting-derived (proper-case). The taxonomy lists come
-  // straight from the cron-server dictionaries so they stay aligned if the
-  // server changes them.
-  const [options, setOptions] = useState<FilterOptions | null>(null);
-  const [dict, setDict] = useState<{ industry: string[]; roleCategory: string[]; seniority: string[] }>({
-    industry: [],
-    roleCategory: [],
-    seniority: [],
-  });
-  const [industry, setIndustry] = useState("");
-  const [roleCategory, setRoleCategory] = useState("");
-  const [seniority, setSeniority] = useState("");
-  const [country, setCountry] = useState("");
+  // ---- filters (target market) ----
+  const [sel, setSel] = useState<Record<string, string>>({});
   const [city, setCity] = useState("");
   const [company, setCompany] = useState("");
-  const [roleType, setRoleType] = useState("");
 
   // ---- analysis ----
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<CvAnalysis | null>(null);
   const [marketTotal, setMarketTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchOptions("public").then(setOptions).catch(() => {});
-    // Target-market taxonomies from the server dictionaries (single source of truth).
-    Promise.all([
-      dictionaries.search("industry", "", 100),
-      dictionaries.search("roleCategory", "", 100),
-      dictionaries.search("seniority", "", 100),
-    ])
-      .then(([industry, roleCategory, seniority]) => setDict({ industry, roleCategory, seniority }))
-      .catch(() => {});
-  }, []);
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
@@ -104,16 +94,13 @@ function CvInner() {
     setAnalyzing(true);
     setError(null);
     try {
-      const filters: ActiveFilters = {
-        ...EMPTY_FILTERS,
-        industry: industry ? [industry] : [],
-        roleCategory: roleCategory ? [roleCategory] : [],
-        seniority: seniority ? [seniority] : [],
-        country: country ? [country] : [],
-        city: city.trim() ? [city.trim()] : [],
-        company: company.trim() ? [company.trim()] : [],
-        roleType: roleType.trim() ? [roleType.trim()] : [],
-      };
+      const filters: ActiveFilters = { ...EMPTY_FILTERS };
+      for (const f of CV_DICT_FIELDS) {
+        const v = (sel[f.key] ?? "").trim();
+        if (v) filters[f.key] = [v];
+      }
+      if (city.trim()) filters.city = [city.trim()];
+      if (company.trim()) filters.company = [company.trim()];
       const stats = await fetchStatistics({ filters, viewMode: "all", scope: "public" });
       setMarketTotal(stats.totalJobs);
       setAnalysis(
@@ -175,38 +162,21 @@ function CvInner() {
         <div className="cv-block">
           <label className="cv-label">2 · Target market</label>
           <div className="cv-filter-grid">
-            <Field label="Industry">
-              <select value={industry} onChange={(e) => setIndustry(e.target.value)}>
-                <option value="">Any</option>
-                {dict.industry.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </Field>
-            <Field label="Category">
-              <select value={roleCategory} onChange={(e) => setRoleCategory(e.target.value)}>
-                <option value="">Any</option>
-                {dict.roleCategory.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </Field>
-            <Field label="Seniority">
-              <select value={seniority} onChange={(e) => setSeniority(e.target.value)}>
-                <option value="">Any</option>
-                {dict.seniority.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </Field>
-            <Field label="Country">
-              <select value={country} onChange={(e) => setCountry(e.target.value)}>
-                <option value="">Any</option>
-                {options?.country.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </Field>
+            {CV_DICT_FIELDS.map((f) => (
+              <Field key={f.key} label={f.label}>
+                <DictionaryTypeahead
+                  field={f.dict}
+                  value={sel[f.key] ?? ""}
+                  onChange={(v) => setSel((s) => ({ ...s, [f.key]: v }))}
+                  placeholder={`search ${f.label.toLowerCase()}…`}
+                />
+              </Field>
+            ))}
             <Field label="City (optional)">
               <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. New York" />
             </Field>
             <Field label="Employer (optional)">
               <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Google" />
-            </Field>
-            <Field label="Role type (optional)">
-              <input value={roleType} onChange={(e) => setRoleType(e.target.value)} placeholder="e.g. Full-time" />
             </Field>
           </div>
         </div>

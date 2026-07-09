@@ -1,11 +1,12 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plus, Trash2, Save, Pencil, Play, Pause, X, AlertTriangle } from "lucide-react";
-import { filters, dictionaries, channels } from "@/lib/api/me";
+import { filters, channels } from "@/lib/api/me";
 import type { Connector, FieldMeta, FilterCondition, FilterSet } from "@/lib/api/types";
 import { PageGuide } from "@/components/PageGuide";
+import { DictionaryTypeahead } from "@/components/DictionaryTypeahead";
 import { JfsGuide } from "@/components/guides";
 
 const OP_LABEL: Record<string, string> = { is: "is", has: "has", contains: "contains", gte: "≥", lte: "≤" };
@@ -22,49 +23,19 @@ function ConnectorToggle({ value, onChange }: { value: Connector; onChange: (v: 
 
 /** Value input: dictionary type-ahead (server-side search), free text, or number. */
 function ValueInput({ field, value, onChange }: { field: FieldMeta; value: string; onChange: (v: string) => void }) {
-  const [q, setQ] = useState(value);
-  const [opts, setOpts] = useState<string[]>([]);
-  const [open, setOpen] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => setQ(value), [value]);
-
   if (field.kind === "number") {
     return <input type="number" className="jfs-val" value={value} onChange={(e) => onChange(e.target.value)} placeholder="number" />;
   }
   if (field.kind === "text") {
     return <input className="jfs-val" value={value} onChange={(e) => onChange(e.target.value)} placeholder="type a value" />;
   }
-
-  const search = (term: string) => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(async () => {
-      const vals = await dictionaries.search(field.field, term).catch(() => []);
-      setOpts(vals);
-      setOpen(true);
-    }, 200);
-  };
-
   return (
-    <div className="jfs-typeahead">
-      <input
-        className="jfs-val"
-        value={q}
-        placeholder={`search ${field.label.toLowerCase()}…`}
-        onFocus={() => { setOpen(true); search(q); }}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-        onChange={(e) => { setQ(e.target.value); onChange(e.target.value); search(e.target.value); }}
-      />
-      {open && opts.length > 0 && (
-        <ul className="jfs-options">
-          {opts.map((o) => (
-            <li key={o}>
-              <button type="button" onMouseDown={() => { onChange(o); setQ(o); setOpen(false); }}>{o}</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <DictionaryTypeahead
+      field={field.field}
+      value={value}
+      onChange={onChange}
+      placeholder={`search ${field.label.toLowerCase()}…`}
+    />
   );
 }
 
