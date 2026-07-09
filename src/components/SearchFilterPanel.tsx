@@ -113,7 +113,15 @@ export function SearchFilterPanel({
   const [isExpanded, setIsExpanded] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<keyof ActiveFilters | null>(null);
   const [dropdownSearches, setDropdownSearches] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Submit-button animation (matches the shared .btn-sub design).
+  const handleSubmit = () => {
+    setSubmitting(true);
+    onSubmit();
+    setTimeout(() => setSubmitting(false), 1600);
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -319,7 +327,7 @@ export function SearchFilterPanel({
           )}
         </div>
 
-        <button type="button" className="filter-submit-btn btn-flourish" onClick={onSubmit} title="Apply filters + search">
+        <button type="button" className={`filter-submit-btn btn-sub ${submitting ? "is-loading" : ""}`} onClick={handleSubmit} title="Apply filters + search">
           <Search size={14} /> SUBMIT
         </button>
 

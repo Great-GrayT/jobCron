@@ -70,6 +70,10 @@ function build(btn: HTMLElement) {
       if (Math.random() < FILL_CHANCE) {
         corner.innerHTML = `<img src="${pickMotif()}" alt="" />`;
         corner.style.display = "";
+        // each flower flourishes at its own randomised speed (stem -> tip)
+        const dur = (0.9 + Math.random() * 1.9).toFixed(2); // 0.9s .. 2.8s
+        const delay = (Math.random() * 0.25).toFixed(2);
+        corner.style.transition = `clip-path ${dur}s cubic-bezier(0.33, 0, 0.2, 1) ${delay}s`;
       } else {
         corner.innerHTML = "";
         corner.style.display = "none";
