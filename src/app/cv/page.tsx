@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { PageGuide } from "@/components/PageGuide";
 import { CvGuide } from "@/components/guides";
 import { fetchOptions, fetchStatistics, type ActiveFilters, type FilterOptions } from "@/lib/api/stats";
+import { dictionaries } from "@/lib/api/me";
 import { extractCvText } from "@/lib/cv/extract";
 import { analyzeCv, type CvAnalysis } from "@/lib/cv/analyze";
 import "./cv.css";
@@ -32,7 +33,15 @@ function CvInner() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ---- filters ----
+  // Country stays posting-derived (proper-case). The taxonomy lists come
+  // straight from the cron-server dictionaries so they stay aligned if the
+  // server changes them.
   const [options, setOptions] = useState<FilterOptions | null>(null);
+  const [dict, setDict] = useState<{ industry: string[]; roleCategory: string[]; seniority: string[] }>({
+    industry: [],
+    roleCategory: [],
+    seniority: [],
+  });
   const [industry, setIndustry] = useState("");
   const [roleCategory, setRoleCategory] = useState("");
   const [seniority, setSeniority] = useState("");
@@ -49,6 +58,14 @@ function CvInner() {
 
   useEffect(() => {
     fetchOptions("public").then(setOptions).catch(() => {});
+    // Target-market taxonomies from the server dictionaries (single source of truth).
+    Promise.all([
+      dictionaries.search("industry", "", 100),
+      dictionaries.search("roleCategory", "", 100),
+      dictionaries.search("seniority", "", 100),
+    ])
+      .then(([industry, roleCategory, seniority]) => setDict({ industry, roleCategory, seniority }))
+      .catch(() => {});
   }, []);
 
   const onFile = async (file: File | undefined) => {
@@ -161,19 +178,19 @@ function CvInner() {
             <Field label="Industry">
               <select value={industry} onChange={(e) => setIndustry(e.target.value)}>
                 <option value="">Any</option>
-                {options?.industry.map((v) => <option key={v} value={v}>{v}</option>)}
+                {dict.industry.map((v) => <option key={v} value={v}>{v}</option>)}
               </select>
             </Field>
             <Field label="Category">
               <select value={roleCategory} onChange={(e) => setRoleCategory(e.target.value)}>
                 <option value="">Any</option>
-                {options?.roleCategory.map((v) => <option key={v} value={v}>{v}</option>)}
+                {dict.roleCategory.map((v) => <option key={v} value={v}>{v}</option>)}
               </select>
             </Field>
             <Field label="Seniority">
               <select value={seniority} onChange={(e) => setSeniority(e.target.value)}>
                 <option value="">Any</option>
-                {options?.seniority.map((v) => <option key={v} value={v}>{v}</option>)}
+                {dict.seniority.map((v) => <option key={v} value={v}>{v}</option>)}
               </select>
             </Field>
             <Field label="Country">
