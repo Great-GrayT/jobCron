@@ -1,3 +1,6 @@
+// One-off generator for public/ornaments/*.svg (Button 3 flourish artwork).
+// potrace is NOT a project dependency — install it ad-hoc to regenerate:
+//   npm i -D potrace && node trace-ornaments.js && npm rm potrace
 const potrace = require('potrace');
 const fs = require('fs');
 const path = require('path');
