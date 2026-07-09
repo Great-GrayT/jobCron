@@ -29,7 +29,7 @@ export function SetPasswordPrompt() {
         </p>
         <PasswordForm onDone={() => setOpen(false)} />
         <div className="modal-actions">
-          <button type="button" className="btn ghost" onClick={() => setOpen(false)}>Later</button>
+          <button type="button" className="btn ghost btn-fx-lift" onClick={() => setOpen(false)}>Later</button>
         </div>
       </div>
     </div>

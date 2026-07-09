@@ -53,7 +53,7 @@ export function PasswordForm({ onDone }: { onDone?: () => void }) {
         <label>Confirm password</label>
         <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" required />
       </div>
-      <button className="btn" type="submit" disabled={busy}>
+      <button className="btn btn-fx-fill-up" type="submit" disabled={busy}>
         {busy ? <Loader2 className="spin" size={16} /> : <KeyRound size={16} />} {hasPw ? "Change password" : "Set password"}
         {ok && <span className="ok"> ✓</span>}
       </button>
