@@ -204,43 +204,30 @@ export default function StatsPage() {
     return () => { cancelled = true; };
   }, [applied, viewMode, selectedDate, scope, reloadKey, jobsPage, jobsPageSize]);
 
-  // Filter management
+  // Filter management.
+  // Everything OUTSIDE the filter box (chart clicks, keyword chips, active-filter
+  // chips) filters instantly | it commits the draft straight to `applied`. Only
+  // the SearchFilterPanel's own options wait for its Submit button (applyFilters).
+  const applyDraft = (next: ActiveFilters) => {
+    setActiveFilters(next);
+    setApplied(a => ({ ...a, filters: next }));
+  };
+
   const toggleFilter = (category: keyof ActiveFilters, value: string) => {
-    setActiveFilters(prev => {
-      const current = prev[category];
-      const updated = current.includes(value)
-        ? current.filter(v => v !== value)
-        : [...current, value];
-      return { ...prev, [category]: updated };
-    });
+    const current = activeFilters[category];
+    const updated = current.includes(value)
+      ? current.filter(v => v !== value)
+      : [...current, value];
+    applyDraft({ ...activeFilters, [category]: updated });
   };
 
   const clearAllFilters = () => {
-    setActiveFilters({
-      industry: [],
-      certificate: [],
-      seniority: [],
-      location: [],
-      company: [],
-      keyword: [],
-      country: [],
-      city: [],
-      software: [],
-      programmingSkill: [],
-      yearsExperience: [],
-      academicDegree: [],
-      region: [],
-      roleType: [],
-      roleCategory: [],
-    });
+    applyDraft({ ...EMPTY_FILTERS });
     setSelectedDate(null);
   };
 
   const removeFilter = (category: keyof ActiveFilters, value: string) => {
-    setActiveFilters(prev => ({
-      ...prev,
-      [category]: prev[category].filter(v => v !== value),
-    }));
+    applyDraft({ ...activeFilters, [category]: activeFilters[category].filter(v => v !== value) });
   };
 
   const hasActiveFilters = Object.values(applied.filters).some(arr => arr.length > 0) || selectedDate !== null || applied.q.length > 0;
