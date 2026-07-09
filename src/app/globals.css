@@ -406,6 +406,8 @@ code {
 .btn-success:hover, .button.is-success:hover { filter: brightness(0.94); }
 
 .btn.danger, .btn-danger, .button.is-danger { background: var(--color-error); color: #fff; }
+/* btn-fx wiring (app-wide): destructive buttons press on a darker-red shadow */
+.btn.danger.btn-fx-press, .btn-danger.btn-fx-press, .button.is-danger.btn-fx-press { --fx-c2: color-mix(in srgb, var(--color-error) 62%, #000); }
 .btn.danger:hover, .btn-danger:hover, .button.is-danger:hover { filter: brightness(0.94); }
 
 /* ghost / light / outlined */
