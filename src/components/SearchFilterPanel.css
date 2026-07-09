@@ -149,6 +149,9 @@
   box-shadow: 0 0 10px var(--color-error-glow);
 }
 
+/* btn-fx wiring: red lift shadow matches the destructive intent */
+.clear-all-btn.btn-fx-lift { --fx-c1: var(--color-error); }
+
 .filter-total-count {
   background: var(--terminal-accent);
   color: var(--terminal-bg);

@@ -452,6 +452,9 @@
   justify-content: space-between;
 }
 
+/* btn-fx wiring: keep the destructive red for the 3D press shadow */
+.filter-clear-all.btn-fx-press { --fx-c2: var(--color-error); }
+
 .filter-clear-all {
   padding: 0.2rem 0.6rem;
   background: color-mix(in srgb, var(--color-error) 15%, transparent);

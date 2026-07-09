@@ -1,0 +1,311 @@
+/* ========================================
+   CURATED BUTTON EFFECTS LIBRARY
+   Opt-in hover/click effects, layered on top of the base
+   .btn / .button styles in globals.css.
+
+   - Every effect is a `.btn-fx-*` class you ADD to a button.
+   - Colors come from CSS vars so each section inherits its own
+     palette automatically. Override per section by setting
+     --fx-c1 / --fx-c2 / --fx-ink on the button (or its wrapper).
+   - Goal: no two neighbouring / same-role buttons share an effect.
+   ======================================== */
+
+:root {
+  --fx-c1: var(--color-blue-primary);   /* main accent */
+  --fx-c2: var(--color-blue-secondary); /* darker/hover accent */
+  --fx-ink: #fff;                        /* text over accent */
+}
+
+/* Shared plumbing for overlay-based effects. Text (non-positioned)
+   paints above a z-index:-1 pseudo thanks to isolation. */
+.btn-fx-fill-up,
+.btn-fx-fill-left,
+.btn-fx-shine,
+.btn-fx-ripple,
+.btn-fx-corner,
+.btn-fx-shimmer,
+.btn-fx-diag {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* 1. FILL UP — accent floods from the bottom */
+.btn-fx-fill-up::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--fx-c2);
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-fx-fill-up:hover::before { transform: translateY(0); }
+.btn-fx-fill-up:hover { color: var(--fx-ink); }
+
+/* 2. FILL LEFT — accent sweeps in from the left */
+.btn-fx-fill-left::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--fx-c2);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+.btn-fx-fill-left:hover::before { transform: translateX(0); }
+.btn-fx-fill-left:hover { color: var(--fx-ink); }
+
+/* 3. SHINE — diagonal light streak crosses once */
+.btn-fx-shine::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.45),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
+}
+.btn-fx-shine:hover::before { left: 140%; }
+
+/* 4. DIAGONAL WIPE — accent enters from top-left corner */
+.btn-fx-diag::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--fx-c2);
+  transform: translate(-100%, -100%);
+  transition: transform 0.32s ease;
+}
+.btn-fx-diag:hover::before { transform: translate(0, 0); }
+.btn-fx-diag:hover { color: var(--fx-ink); }
+
+/* 5. RIPPLE — circle blooms out from the centre */
+.btn-fx-ripple::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--fx-c2);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
+}
+.btn-fx-ripple:hover::before { width: 250%; height: 600%; }
+.btn-fx-ripple:hover { color: var(--fx-ink); }
+
+/* 6. LIFT — floats up with a growing soft shadow */
+.btn-fx-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background var(--transition-fast);
+}
+.btn-fx-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px -6px var(--fx-c1);
+}
+.btn-fx-lift:active { transform: translateY(-1px); }
+
+/* 7. PRESS — chunky 3D key that depresses on click */
+.btn-fx-press {
+  box-shadow: 0 4px 0 0 var(--fx-c2);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.btn-fx-press:hover { box-shadow: 0 5px 0 0 var(--fx-c2); transform: translateY(-1px); }
+.btn-fx-press:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--fx-c2); }
+
+/* 8. BORDER DRAW — outline draws itself around the edge */
+.btn-fx-border-draw {
+  position: relative;
+  background: transparent;
+  color: var(--fx-c1);
+  border-color: var(--color-border-light);
+}
+.btn-fx-border-draw::before,
+.btn-fx-border-draw::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.btn-fx-border-draw::before {
+  border-top: 2px solid var(--fx-c1);
+  border-right: 2px solid var(--fx-c1);
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 0.2s ease 0.2s;
+}
+.btn-fx-border-draw::after {
+  border-bottom: 2px solid var(--fx-c1);
+  border-left: 2px solid var(--fx-c1);
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 0.2s ease 0.2s;
+}
+.btn-fx-border-draw:hover::before { clip-path: inset(0 0 0 0); transition-delay: 0s; }
+.btn-fx-border-draw:hover::after { clip-path: inset(0 0 0 0); transition-delay: 0s; }
+
+/* 9. EXPAND — letters spread and the key swells slightly */
+.btn-fx-expand {
+  transition: letter-spacing 0.25s ease, transform 0.25s ease, background var(--transition-fast);
+}
+.btn-fx-expand:hover { letter-spacing: 2px; transform: scale(1.04); }
+.btn-fx-expand:active { transform: scale(0.97); }
+
+/* 10. GLOW PULSE — accent halo breathes on hover */
+.btn-fx-glow:hover {
+  animation: fxGlowPulse 1.1s ease-in-out infinite;
+}
+@keyframes fxGlowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--color-blue-glow); }
+  50% { box-shadow: 0 0 14px 3px var(--color-blue-glow); }
+}
+
+/* 11. UNDERLINE — animated rule grows under the label
+   (best on ghost / link-style buttons) */
+.btn-fx-underline {
+  position: relative;
+  background: transparent;
+  color: var(--fx-c1);
+}
+.btn-fx-underline::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 6px;
+  height: 2px;
+  background: var(--fx-c1);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+.btn-fx-underline:hover::after { transform: scaleX(1); }
+
+/* 12. ARROW — a chevron slides in as the label shifts left */
+.btn-fx-arrow { transition: padding 0.25s ease, background var(--transition-fast); }
+.btn-fx-arrow::after {
+  content: "\2192"; /* → */
+  width: 0;
+  opacity: 0;
+  margin-left: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.25s ease, transform 0.25s ease, width 0.25s ease, margin-left 0.25s ease;
+  overflow: hidden;
+}
+.btn-fx-arrow:hover::after { width: 1em; opacity: 1; margin-left: 0.35rem; transform: translateX(0); }
+
+/* 13. CORNER BRACKETS — terminal-style [ ] brackets expand to frame */
+.btn-fx-corner::before,
+.btn-fx-corner::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  z-index: 1;
+  opacity: 0;
+  transition: all 0.22s ease;
+}
+.btn-fx-corner::before {
+  top: 5px; left: 5px;
+  border-top: 2px solid var(--fx-c1);
+  border-left: 2px solid var(--fx-c1);
+}
+.btn-fx-corner::after {
+  bottom: 5px; right: 5px;
+  border-bottom: 2px solid var(--fx-c1);
+  border-right: 2px solid var(--fx-c1);
+}
+.btn-fx-corner:hover::before,
+.btn-fx-corner:hover::after { opacity: 1; width: 14px; height: 14px; }
+
+/* 14. SHIMMER — subtle continuous gradient drift (idle attention) */
+.btn-fx-shimmer {
+  background: linear-gradient(100deg, var(--fx-c1) 0%, var(--fx-c2) 45%, var(--fx-c1) 90%);
+  background-size: 220% 100%;
+  transition: background-position 0.4s ease;
+}
+.btn-fx-shimmer:hover { background-position: 100% 0; }
+
+/* 15. BLOB POP — gooey blobs bulge out top & bottom on hover
+   (CSS-only take on the goo example, no SVG/JS needed) */
+.btn-fx-blob {
+  position: relative;
+  z-index: 1;
+}
+.btn-fx-blob::before,
+.btn-fx-blob::after {
+  content: "";
+  position: absolute;
+  width: 45%;
+  height: 90%;
+  z-index: -1;
+  background: var(--fx-c2);
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.btn-fx-blob::before { top: -22%; left: 16%; }
+.btn-fx-blob::after { bottom: -22%; right: 16%; }
+.btn-fx-blob:hover::before,
+.btn-fx-blob:hover::after { transform: scale(1); }
+
+/* 16. SUBMIT — stateful: idle → spinner → check.
+   Toggle classes from React/JS: add `is-loading`, then `is-done`.
+   Works on a button whose label is wrapped in `.btn-fx-submit__label`. */
+.btn-fx-submit {
+  position: relative;
+  transition: width 0.3s ease, border-radius 0.3s ease, background 0.3s ease;
+}
+.btn-fx-submit .btn-fx-submit__label { transition: opacity 0.2s ease; }
+.btn-fx-submit.is-loading,
+.btn-fx-submit.is-done {
+  width: 2.4em;
+  min-width: 2.4em;
+  padding-left: 0;
+  padding-right: 0;
+  border-radius: 50%;
+}
+.btn-fx-submit.is-loading .btn-fx-submit__label,
+.btn-fx-submit.is-done .btn-fx-submit__label { opacity: 0; }
+.btn-fx-submit.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.1em;
+  height: 1.1em;
+  margin: -0.55em 0 0 -0.55em;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: var(--fx-ink);
+  border-radius: 50%;
+  animation: fxSpin 0.7s linear infinite;
+}
+.btn-fx-submit.is-done::after {
+  content: "\2713"; /* ✓ */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--fx-ink);
+  font-size: 1.1em;
+  font-weight: 700;
+}
+@keyframes fxSpin { to { transform: rotate(360deg); } }
+
+/* Respect users who ask for less motion */
+@media (prefers-reduced-motion: reduce) {
+  .btn-fx-glow:hover { animation: none; }
+  .btn-fx-shine::before { transition: none; }
+  [class*="btn-fx-"]::before,
+  [class*="btn-fx-"]::after { transition-duration: 0.01ms; }
+}

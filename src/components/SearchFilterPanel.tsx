@@ -201,7 +201,7 @@ export function SearchFilterPanel({
     return (
       <div key={category.key} className="filter-dropdown-container">
         <button
-          className={`filter-dropdown-trigger ${selectedCount > 0 ? 'active' : ''}`}
+          className={`filter-dropdown-trigger btn-fx-expand ${selectedCount > 0 ? 'active' : ''}`}
           onClick={() => setOpenDropdown(isOpen ? null : category.key)}
         >
           <IconComponent size={14} className="filter-icon" />
@@ -319,13 +319,13 @@ export function SearchFilterPanel({
           )}
         </div>
 
-        <button type="button" className="filter-submit-btn" onClick={onSubmit} title="Apply filters + search">
+        <button type="button" className="filter-submit-btn btn-fx-shine" onClick={onSubmit} title="Apply filters + search">
           <Search size={14} /> SUBMIT
         </button>
 
         <button
           type="button"
-          className={`filter-toggle-btn ${isExpanded ? 'active' : ''}`}
+          className={`filter-toggle-btn btn-fx-corner ${isExpanded ? 'active' : ''}`}
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <Filter size={14} />
@@ -338,7 +338,7 @@ export function SearchFilterPanel({
 
         {activeFilterCount > 0 && (
           <button
-            className="clear-all-btn"
+            className="clear-all-btn btn-fx-lift"
             onClick={clearAllFilters}
           >
             <Trash2 size={14} />

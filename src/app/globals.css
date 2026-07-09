@@ -8,6 +8,8 @@
 
 /* Import component styles */
 @import "../components/SearchFilterPanel.css";
+/* Curated per-button hover/click effects (opt-in .btn-fx-* classes) */
+@import "./button-effects.css";
 
 :root {
   /* ===== Admin One (Bulma) palette | LIGHT is the default look ===== */
