@@ -1,16 +1,12 @@
 /* ========================================
-   BUTTON EFFECTS — the four provided designs, re-implemented for
-   React/Next (no jQuery, no GSAP) and wired to the app theme.
+   BUTTON EFFECTS — faithful ports of the four provided designs.
+   Only the colours are rewired to the app theme; the markup, CSS and
+   timing are kept as in the originals.
 
-   Base button look (turquoise, radius, font) comes from globals.css /
-   dashboard.css. These classes only add the hover / state motion.
-
-   Palette is pulled from theme tokens so light + dark both track:
-     --fx-accent       main accent   (turquoise)
-     --fx-accent-deep  darker accent (hover flood)
+     --fx-accent       turquoise accent   (app --color-blue-primary)
+     --fx-accent-deep  darker accent
      --fx-ink          text over accent
-     --fx-gold         ornament tint (Button 3), from --color-warning
-   Override per button by setting these on the element (e.g. red danger).
+     --fx-gold         Button-3 ornament tint (app --color-warning)
    ======================================== */
 
 :root {
@@ -21,111 +17,168 @@
 }
 
 /* =========================================================
-   1. BUTTON 2  ·  .btn-goo
-   Gooey blobs bulge out top-left + bottom-right on hover, in the
-   button's own accent, then settle. (CSS take on the goo demo —
-   text stays crisp, no SVG filter over the label.)
+   BUTTON 2  ·  .btn-goo   — gooey blobs (CSS + #goo filter)
+   Port of the "gooey-effect" demo: two circles behind the button
+   scale in on hover; the #goo SVG filter (injected once in layout)
+   melts them into the button shape.
    ========================================================= */
 .btn-goo {
   position: relative;
-  isolation: isolate;
-  overflow: visible;
+  filter: url("#goo");
 }
 .btn-goo::before,
 .btn-goo::after {
   content: "";
   position: absolute;
-  width: 62%;
-  height: 118%;
+  width: 4.4em;
+  height: 2.95em;
   z-index: -1;
   background: var(--fx-accent);
   border-radius: 50%;
   transform: scale(0);
-  transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 1s ease;
 }
-.btn-goo::before { top: -30%; left: 12%; }
-.btn-goo::after { bottom: -30%; right: 12%; }
+.btn-goo::before { top: -25%; left: 20%; }
+.btn-goo::after { bottom: -25%; right: 20%; }
 .btn-goo:hover::before,
 .btn-goo:hover::after,
 .btn-goo:focus-visible::before,
-.btn-goo:focus-visible::after { transform: scale(1); }
+.btn-goo:focus-visible::after { transform: none; }
 .btn-goo:active { transform: scale(0.96); }
 
 /* =========================================================
-   2. BUTTON  ·  .btn-goo-b1
-   Bubbles pop OUT from the two corners with a springy bounce and
-   the face floods to the deep accent — the GSAP demo, distilled.
+   BUTTON  ·  .btn-goo-b1  — gooey bubbles popping from the corners
+   Port of the bubble demo (no GSAP): three-stage bubbles emit from
+   top-left + bottom-right; #goo melts them; the face floods to the
+   deep accent.
    ========================================================= */
 .btn-goo-b1 {
   position: relative;
-  isolation: isolate;
-  overflow: visible;
+  filter: url("#goo");
   transition: background var(--transition-fast, 0.15s) ease, color 0.2s ease;
 }
 .btn-goo-b1::before,
 .btn-goo-b1::after {
   content: "";
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 1.6em;
+  height: 1.6em;
   z-index: -1;
   background: var(--fx-accent-deep);
   border-radius: 50%;
+  transform: scale(0.2);
   opacity: 0;
-  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
+  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.7s ease;
 }
-.btn-goo-b1::before { top: -8px; left: -8px; transform: translate(0, 0) scale(0.2); }
-.btn-goo-b1::after { bottom: -8px; right: -8px; transform: translate(0, 0) scale(0.2); }
+.btn-goo-b1::before { top: -0.4em; left: -0.4em; }
+.btn-goo-b1::after { bottom: -0.4em; right: -0.4em; }
 .btn-goo-b1:hover,
 .btn-goo-b1:focus-visible { background: var(--fx-accent-deep); }
 .btn-goo-b1:hover::before,
-.btn-goo-b1:focus-visible::before { opacity: 1; transform: translate(-9px, -9px) scale(1); }
+.btn-goo-b1:focus-visible::before { opacity: 1; transform: translate(-0.5em, -0.5em) scale(1); }
 .btn-goo-b1:hover::after,
-.btn-goo-b1:focus-visible::after { opacity: 1; transform: translate(9px, 9px) scale(1); }
+.btn-goo-b1:focus-visible::after { opacity: 1; transform: translate(0.5em, 0.5em) scale(1); }
 .btn-goo-b1:active { transform: scale(0.95); }
 
 /* =========================================================
-   3. BUTTON 3  ·  .btn-flourish
-   Persian-flourish corner ornaments that bloom outward on hover
-   with staggered timing + sparkles. Ornament markup (.fl-corner /
-   .fl-spark-field) is injected by the FlourishFx enhancer; this is
-   just the styling + reveal animation. Base stays on-theme; the
-   ornaments are tinted with --fx-gold.
+   SUBMIT BUTTON  ·  .btn-sub   — port of the SUBMIT → spinner → check
+   The button itself becomes a rotating ring (like the demo's .onclic)
+   then a filled check (.validate). Driven by the form's real state:
+   add `is-loading` while pending, `is-done` on success.
+   ========================================================= */
+.btn-sub {
+  position: relative;
+  transition: width 0.25s ease, min-width 0.25s ease, border-radius 0.25s ease,
+    padding 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.15s ease;
+}
+/* pending: shrink to a circle, hollow out, spin a ring (demo .onclic) */
+.btn-sub.is-loading,
+.btn-sub.is-done {
+  width: 2.5em !important;
+  min-width: 2.5em !important;
+  height: 2.5em;
+  padding: 0 !important;
+  gap: 0;
+  border-radius: 50% !important;
+  color: transparent !important;
+}
+.btn-sub.is-loading > *,
+.btn-sub.is-done > * { opacity: 0; }
+.btn-sub.is-loading {
+  background: transparent !important;
+  border: 3px solid var(--color-border-light, rgba(0, 0, 0, 0.15)) !important;
+  border-left-color: var(--fx-accent) !important;
+  animation: fxRotating 1s linear infinite;
+}
+/* success: fill + checkmark (demo .validate) */
+.btn-sub.is-done {
+  background: var(--color-success, #48c774) !important;
+  border-color: var(--color-success, #48c774) !important;
+}
+.btn-sub.is-done::after {
+  content: "";
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  width: 0.34em;
+  height: 0.62em;
+  border: solid var(--fx-ink);
+  border-width: 0 0.16em 0.16em 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+@keyframes fxRotating { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* =========================================================
+   BUTTON 3  ·  .btn-flourish  — Persian-flourish corners
+   Port of the demo: four corner ornaments bloom outward via clip-path
+   with staggered timing, plus sparkles. Ornament markup is injected by
+   FlourishFx (SVG in currentColor → themed with --fx-gold). Values
+   mirror the original.
    ========================================================= */
 .btn-flourish {
   position: relative;
   isolation: isolate;
   overflow: visible;
-  transition: box-shadow 0.5s ease, border-color 0.5s ease, background var(--transition-fast, 0.15s) ease;
+  transition: box-shadow 0.6s ease, border-color 0.6s ease;
 }
 .btn-flourish:hover,
 .btn-flourish:focus-visible {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--fx-gold) 55%, transparent),
-    0 0 18px color-mix(in srgb, var(--fx-gold) 30%, transparent);
+    0 0 22px color-mix(in srgb, var(--fx-gold) 28%, transparent);
 }
 
 .btn-flourish .fl-corner {
   position: absolute;
-  width: 46px;
-  height: 64px;
+  width: 50px;
+  height: 76px;
   pointer-events: none;
   z-index: 1;
   color: var(--fx-gold);
   clip-path: circle(0px at 100% 100%);
 }
-.btn-flourish .fl-corner svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--fx-gold) 45%, transparent)); }
-.btn-flourish .fl-corner.tl { left: -22px; top: -34px; transition: clip-path 1.1s cubic-bezier(0.4, 0, 0.2, 1) 0s; }
-.btn-flourish .fl-corner.tr { right: -22px; top: -34px; transform: scaleX(-1); transition: clip-path 1.35s cubic-bezier(0.4, 0, 0.2, 1) 0.12s; }
-.btn-flourish .fl-corner.bl { left: -22px; bottom: -34px; transform: scaleY(-1); transition: clip-path 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.2s; }
-.btn-flourish .fl-corner.br { right: -22px; bottom: -34px; transform: scale(-1, -1); transition: clip-path 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.05s; }
+.btn-flourish .fl-corner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--fx-gold) 45%, transparent));
+  transition: opacity 0.6s ease;
+}
+.btn-flourish .fl-corner.tl { left: -20px; top: -46px; transition: clip-path 1.1s cubic-bezier(0.4, 0, 0.2, 1) 0s; }
+.btn-flourish .fl-corner.tr { right: -20px; top: -46px; transform: scaleX(-1); transition: clip-path 1.35s cubic-bezier(0.4, 0, 0.2, 1) 0.15s; }
+.btn-flourish .fl-corner.bl { left: -20px; bottom: -46px; transform: scaleY(-1); transition: clip-path 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.25s; }
+.btn-flourish .fl-corner.br { right: -20px; bottom: -46px; transform: scale(-1, -1); transition: clip-path 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.05s; }
 .btn-flourish:hover .fl-corner,
-.btn-flourish:focus-visible .fl-corner { clip-path: circle(100px at 100% 100%); }
+.btn-flourish:focus-visible .fl-corner { clip-path: circle(115px at 100% 100%); }
+.btn-flourish:hover .fl-corner img,
+.btn-flourish:focus-visible .fl-corner img { opacity: 1; }
 
-.btn-flourish .fl-spark-field { position: absolute; width: 46px; height: 64px; pointer-events: none; z-index: 2; }
-.btn-flourish .fl-spark-field.tl { left: -22px; top: -34px; --start: 1.0s; }
-.btn-flourish .fl-spark-field.tr { right: -22px; top: -34px; --start: 1.4s; }
-.btn-flourish .fl-spark-field.bl { left: -22px; bottom: -34px; --start: 1.35s; }
-.btn-flourish .fl-spark-field.br { right: -22px; bottom: -34px; --start: 1.45s; }
+.btn-flourish .fl-spark-field { position: absolute; width: 50px; height: 76px; pointer-events: none; z-index: 2; }
+.btn-flourish .fl-spark-field.tl { left: -20px; top: -46px; --start: 1.1s; }
+.btn-flourish .fl-spark-field.tr { right: -20px; top: -46px; --start: 1.5s; }
+.btn-flourish .fl-spark-field.bl { left: -20px; bottom: -46px; --start: 1.45s; }
+.btn-flourish .fl-spark-field.br { right: -20px; bottom: -46px; --start: 1.55s; }
 .btn-flourish .fl-spark {
   position: absolute;
   width: 3px;
@@ -148,57 +201,7 @@
 }
 
 /* =========================================================
-   4. SUBMIT BUTTON  ·  .btn-sub
-   Idle → (is-loading) shrink to a circle + spinner → (is-done)
-   circle + check. Toggle `is-loading` / `is-done` from the form's
-   async state. Same algorithm/feel as the demo, React-driven.
-   ========================================================= */
-.btn-sub {
-  transition: width 0.3s ease, min-width 0.3s ease, border-radius 0.3s ease,
-    padding 0.3s ease, background 0.3s ease, color 0.15s ease;
-}
-.btn-sub.is-loading,
-.btn-sub.is-done {
-  width: 2.6em !important;
-  min-width: 2.6em !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  border-radius: 50% !important;
-  color: transparent !important;
-  gap: 0;
-}
-.btn-sub.is-loading > *,
-.btn-sub.is-done > * { opacity: 0; }
-.btn-sub.is-done { background: var(--color-success, #48c774); }
-.btn-sub.is-loading::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 1.1em;
-  height: 1.1em;
-  margin: -0.55em 0 0 -0.55em;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: var(--fx-ink);
-  border-radius: 50%;
-  animation: fxSpin 0.7s linear infinite;
-}
-.btn-sub.is-done::after {
-  content: "\2713"; /* ✓ */
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: var(--fx-ink);
-  font-size: 1.05em;
-  font-weight: 700;
-}
-@keyframes fxSpin { to { transform: rotate(360deg); } }
-
-/* =========================================================
-   DANGER  ·  .btn-press
-   Simple tactile 3-D key that depresses on click, on a darker-red
-   shadow. Kept plain so destructive actions read clearly.
+   DANGER  ·  .btn-press  — simple tactile 3-D key
    ========================================================= */
 .btn-press {
   box-shadow: 0 4px 0 0 var(--fx-accent-deep);
@@ -207,10 +210,10 @@
 .btn-press:hover { box-shadow: 0 5px 0 0 var(--fx-accent-deep); transform: translateY(-1px); }
 .btn-press:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--fx-accent-deep); }
 
-/* less motion for those who ask */
 @media (prefers-reduced-motion: reduce) {
   .btn-flourish .fl-corner { transition-duration: 0.01ms !important; transition-delay: 0s !important; }
   .btn-flourish .fl-spark { animation: none !important; }
   .btn-goo::before, .btn-goo::after,
   .btn-goo-b1::before, .btn-goo-b1::after { transition-duration: 0.01ms; }
+  .btn-sub.is-loading { animation-duration: 1.6s; }
 }

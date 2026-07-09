@@ -16,15 +16,12 @@ import { useEffect } from "react";
 
 const FILL_CHANCE = 0.3;
 
-// Small, optimised paisley/flower/vine motifs (stroke = currentColor).
-const VINE = `<svg viewBox="0 0 46 64" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M44 62 C34 54 30 44 31 34 C32 24 27 16 16 12"/><path d="M31 34 C24 33 18 36 16 43 C21 44 27 41 31 34Z"/><path d="M16 12 C10 10 6 12 4 18 C10 20 15 18 16 12Z"/><circle cx="19" cy="8" r="4"/><path d="M15 8h8M19 4v8" /><path d="M38 50 C33 49 29 51 28 56"/></svg>`;
-const FLOWER = `<svg viewBox="0 0 46 64" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(23 22)"><circle r="4"/><ellipse cx="0" cy="-11" rx="4" ry="7"/><ellipse cx="0" cy="11" rx="4" ry="7"/><ellipse cx="-11" cy="0" rx="7" ry="4"/><ellipse cx="11" cy="0" rx="7" ry="4"/><ellipse cx="-8" cy="-8" rx="6" ry="3.5" transform="rotate(45)"/><ellipse cx="8" cy="8" rx="6" ry="3.5" transform="rotate(45)"/></g><path d="M23 34 C22 44 26 52 34 58" /><path d="M27 46 C31 45 34 47 35 51" /></svg>`;
-const PAISLEY = `<svg viewBox="0 0 46 64" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 60 C6 50 6 36 16 28 C26 20 34 26 33 36 C32 44 24 46 22 40 C21 36 24 33 28 34"/><path d="M16 28 C20 22 27 20 33 22" stroke-dasharray="0.5 4"/><circle cx="19" cy="52" r="2.5"/><path d="M30 54 C33 52 36 53 37 57"/></svg>`;
-
+// The provided artwork, traced from the PNGs to compact SVG (public/ornaments).
+// Weights mirror the original demo (persian-vine .50 / paisley-color .30 / paisley-line .20).
 const MOTIFS = [
-  { svg: VINE, weight: 0.5 },
-  { svg: FLOWER, weight: 0.3 },
-  { svg: PAISLEY, weight: 0.2 },
+  { src: "/ornaments/persian-vine.svg", weight: 0.5 },
+  { src: "/ornaments/paisley-color.svg", weight: 0.3 },
+  { src: "/ornaments/paisley-line.svg", weight: 0.2 },
 ];
 const CORNERS = ["tl", "tr", "bl", "br"] as const;
 
@@ -41,9 +38,9 @@ function pickMotif(): string {
   let c = 0;
   for (const m of MOTIFS) {
     c += m.weight;
-    if (r < c) return m.svg;
+    if (r < c) return m.src;
   }
-  return MOTIFS[MOTIFS.length - 1].svg;
+  return MOTIFS[MOTIFS.length - 1].src;
 }
 
 function build(btn: HTMLElement) {
@@ -71,7 +68,7 @@ function build(btn: HTMLElement) {
   const roll = () => {
     btn.querySelectorAll<HTMLElement>(".fl-corner").forEach((corner) => {
       if (Math.random() < FILL_CHANCE) {
-        corner.innerHTML = pickMotif();
+        corner.innerHTML = `<img src="${pickMotif()}" alt="" />`;
         corner.style.display = "";
       } else {
         corner.innerHTML = "";
