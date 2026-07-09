@@ -195,7 +195,7 @@ function CvInner() {
         </div>
 
         <div className="cv-actions">
-          <button type="button" className="btn" disabled={!canAnalyze} onClick={analyze}>
+          <button type="button" className="btn btn-fx-fill-up" disabled={!canAnalyze} onClick={analyze}>
             {analyzing ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />} Analyze CV
           </button>
           {error && <span className="cv-inline-err"><AlertCircle size={14} /> {error}</span>}
