@@ -92,11 +92,16 @@ export interface ActiveFilters {
 
 export type Scope = "public" | "me";
 
+export type SearchField =
+  | "title" | "company" | "location" | "country" | "city"
+  | "industry" | "seniority" | "roleType" | "roleCategory";
+
 export interface StatsQuery {
   filters: ActiveFilters;
   viewMode: string; // "all" | "current" | "YYYY-MM"
   selectedDate?: string | null; // YYYY-MM-DD
   q?: string;
+  qField?: SearchField;
   scope?: Scope;
 }
 
@@ -147,7 +152,10 @@ export function serializeFilters(q: StatsQuery): QueryRecord {
     out.expMax = Number(exp);
   }
 
-  if (q.q) out.q = q.q;
+  if (q.q) {
+    out.q = q.q;
+    out.qField = q.qField ?? "title"; // default: search job title only
+  }
   return out;
 }
 

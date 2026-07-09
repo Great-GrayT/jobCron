@@ -30,6 +30,7 @@ import {
   type MonthlyStatistics,
   type JobStatistic,
   type ActiveFilters,
+  type SearchField,
 } from "@/lib/api/stats";
 import "./stats.css";
 
@@ -83,7 +84,12 @@ export default function StatsPage() {
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({ ...EMPTY_FILTERS });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [textSearch, setTextSearch] = useState<string>('');
-  const [debouncedTextSearch, setDebouncedTextSearch] = useState<string>('');
+  const [qField, setQField] = useState<SearchField>('title');
+  // Filters + search only take effect on Submit — the panel edits these drafts,
+  // `applied` is the snapshot that actually drives the queries.
+  const [applied, setApplied] = useState<{ filters: ActiveFilters; q: string; qField: SearchField }>(
+    { filters: EMPTY_FILTERS, q: '', qField: 'title' },
+  );
   const [reloadKey, setReloadKey] = useState(0);
   const [hoveredJob, setHoveredJob] = useState<JobStatistic | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
@@ -111,13 +117,10 @@ export default function StatsPage() {
   // Manual refresh (LOAD DATA button) | bumps the key both data effects watch.
   const loadStatistics = () => setReloadKey(k => k + 1);
 
-  // Debounce text search to avoid refetching on every keystroke
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedTextSearch(textSearch);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [textSearch]);
+  // Commit the current draft filters + search — this is what "Submit" does.
+  const applyFilters = () => {
+    setApplied({ filters: activeFilters, q: textSearch.trim(), qField });
+  };
 
   // Sync loading bar widths imperatively (avoids inline-style linter warnings)
   useEffect(() => {
@@ -161,9 +164,9 @@ export default function StatsPage() {
     if (initial) { setLoading(true); setLoadingStep('LOADING MARKET STATISTICS...'); setLoadingProgress(40); }
     else { setStatsUpdating(true); }
     setError(null);
-    const q = { filters: activeFilters, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope };
-    const hasFacets = Object.values(activeFilters).some(a => a.length > 0);
-    const baseQ = { filters: EMPTY_FILTERS, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope };
+    const q = { filters: applied.filters, viewMode, selectedDate, q: applied.q || undefined, qField: applied.qField, scope };
+    const hasFacets = Object.values(applied.filters).some(a => a.length > 0);
+    const baseQ = { filters: EMPTY_FILTERS, viewMode, selectedDate, q: applied.q || undefined, qField: applied.qField, scope };
     Promise.all([fetchStatistics(q), hasFacets ? fetchStatistics(baseQ) : Promise.resolve(null)])
       .then(([stats, base]) => {
         if (cancelled) return;
@@ -175,21 +178,20 @@ export default function StatsPage() {
       .finally(() => { if (!cancelled) { setLoading(false); setStatsUpdating(false); } });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilters, viewMode, selectedDate, debouncedTextSearch, scope, reloadKey]);
+  }, [applied, viewMode, selectedDate, scope, reloadKey]);
 
-  // Any change to the filter context resets the jobs table to page 1 (a no-op
-  // when already on page 1, so it doesn't cause an extra fetch).
+  // Applying filters / changing view resets the jobs table to page 1.
   useEffect(() => {
     setJobsPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilters, viewMode, selectedDate, debouncedTextSearch, scope]);
+  }, [applied, viewMode, selectedDate, scope]);
 
   // Paginated jobs for the table | server-side page/pageSize, descriptions
   // omitted (fetched on demand when a row is hovered).
   useEffect(() => {
     let cancelled = false;
     setJobsLoading(true);
-    const q = { filters: activeFilters, viewMode, selectedDate, q: debouncedTextSearch || undefined, scope };
+    const q = { filters: applied.filters, viewMode, selectedDate, q: applied.q || undefined, qField: applied.qField, scope };
     fetchJobs(q, { page: jobsPage, pageSize: jobsPageSize, withDescription: false })
       .then(res => {
         if (cancelled) return;
@@ -200,7 +202,7 @@ export default function StatsPage() {
       .catch(err => { if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load jobs'); })
       .finally(() => { if (!cancelled) setJobsLoading(false); });
     return () => { cancelled = true; };
-  }, [activeFilters, viewMode, selectedDate, debouncedTextSearch, scope, reloadKey, jobsPage, jobsPageSize]);
+  }, [applied, viewMode, selectedDate, scope, reloadKey, jobsPage, jobsPageSize]);
 
   // Filter management
   const toggleFilter = (category: keyof ActiveFilters, value: string) => {
@@ -241,7 +243,7 @@ export default function StatsPage() {
     }));
   };
 
-  const hasActiveFilters = Object.values(activeFilters).some(arr => arr.length > 0) || selectedDate !== null || debouncedTextSearch.length > 0;
+  const hasActiveFilters = Object.values(applied.filters).some(arr => arr.length > 0) || selectedDate !== null || applied.q.length > 0;
 
   // Normalize city names
   const normalizeCity = (cityName: string | null): string | null => {
@@ -896,6 +898,9 @@ export default function StatsPage() {
           availableOptions={availableFilterOptions}
           textSearch={textSearch}
           setTextSearch={setTextSearch}
+          qField={qField}
+          setQField={setQField}
+          onSubmit={applyFilters}
           selectedDate={selectedDate}
           loadingDescriptions={loadingDescriptionsDate !== null}
         />

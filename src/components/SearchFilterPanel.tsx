@@ -53,12 +53,31 @@ interface FilterCategory {
   icon: React.ElementType;
 }
 
+type SearchField =
+  | "title" | "company" | "location" | "country" | "city"
+  | "industry" | "seniority" | "roleType" | "roleCategory";
+
+const SEARCH_FIELDS: { value: SearchField; label: string }[] = [
+  { value: "title", label: "Job Title" },
+  { value: "company", label: "Company" },
+  { value: "location", label: "Location" },
+  { value: "country", label: "Country" },
+  { value: "city", label: "City" },
+  { value: "industry", label: "Industry" },
+  { value: "seniority", label: "Seniority" },
+  { value: "roleType", label: "Role Type" },
+  { value: "roleCategory", label: "Category" },
+];
+
 interface SearchFilterPanelProps {
   activeFilters: ActiveFilters;
   setActiveFilters: (filters: ActiveFilters) => void;
   availableOptions: Record<keyof ActiveFilters, FilterOption[]>;
   textSearch: string;
   setTextSearch: (search: string) => void;
+  qField: SearchField;
+  setQField: (f: SearchField) => void;
+  onSubmit: () => void;
   selectedDate?: string | null;
   loadingDescriptions?: boolean;
 }
@@ -87,8 +106,9 @@ export function SearchFilterPanel({
   availableOptions,
   textSearch,
   setTextSearch,
-  selectedDate,
-  loadingDescriptions,
+  qField,
+  setQField,
+  onSubmit,
 }: SearchFilterPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<keyof ActiveFilters | null>(null);
@@ -270,12 +290,21 @@ export function SearchFilterPanel({
       {/* Main Search Bar and Toggle */}
       <div className="search-filter-header">
         <div className="search-input-container">
+          <select
+            className="search-field-select"
+            aria-label="Search in field"
+            value={qField}
+            onChange={(e) => setQField(e.target.value as SearchField)}
+          >
+            {SEARCH_FIELDS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+          </select>
           <Search size={16} />
           <input
             type="text"
-            placeholder="Search jobs, companies, titles..."
+            placeholder={`Search ${SEARCH_FIELDS.find((f) => f.value === qField)?.label ?? 'title'}… (use OR / AND)`}
             value={textSearch}
             onChange={(e) => setTextSearch(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') onSubmit(); }}
             className="search-input"
           />
           {textSearch && (
@@ -290,17 +319,12 @@ export function SearchFilterPanel({
           )}
         </div>
 
-        {textSearch && (
-          <div className="search-description-hint">
-            {!selectedDate
-              ? 'Select a date on the velocity chart to also search descriptions'
-              : loadingDescriptions
-              ? '⟳ Loading descriptions…'
-              : 'Searching metadata + descriptions'}
-          </div>
-        )}
+        <button type="button" className="filter-submit-btn" onClick={onSubmit} title="Apply filters + search">
+          <Search size={14} /> SUBMIT
+        </button>
 
         <button
+          type="button"
           className={`filter-toggle-btn ${isExpanded ? 'active' : ''}`}
           onClick={() => setIsExpanded(!isExpanded)}
         >
