@@ -162,7 +162,7 @@ export default function JfsPage() {
       <section className="panel">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <h2>{draft.id ? "EDIT FILTER SET" : "NEW FILTER SET"}</h2>
-          <button type="button" className="btn ghost sm" onClick={() => setDraft(null)}><X size={14} /> Cancel</button>
+          <button type="button" className="btn ghost sm btn-fx-lift" onClick={() => setDraft(null)}><X size={14} /> Cancel</button>
         </div>
         <p className="hint">
           A job is sent to your <b>Filtered</b> Telegram channel if it matches this set. Conditions are
@@ -190,7 +190,7 @@ export default function JfsPage() {
                     </select>
                   )}
                   <ValueInput field={meta} value={c.value} onChange={(v) => patchCond(i, { value: v })} />
-                  <button type="button" className="btn danger sm" onClick={() => removeCond(i)} aria-label="remove condition" disabled={draft.conditions.length === 1}>
+                  <button type="button" className="btn danger sm btn-fx-press" onClick={() => removeCond(i)} aria-label="remove condition" disabled={draft.conditions.length === 1}>
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -200,14 +200,14 @@ export default function JfsPage() {
               </Fragment>
             );
           })}
-          <button type="button" className="btn ghost sm" onClick={addCond}><Plus size={14} /> add condition</button>
+          <button type="button" className="btn ghost sm btn-fx-lift" onClick={addCond}><Plus size={14} /> add condition</button>
         </div>
 
         <div className="row" style={{ marginTop: "1rem" }}>
           <label className="switch">
             <input type="checkbox" checked={draft.enabled} onChange={(e) => setDraft({ ...draft, enabled: e.target.checked })} /> Enabled
           </label>
-          <button type="button" className="btn" onClick={save} disabled={!valid || saving}>
+          <button type="button" className="btn btn-fx-fill-up" onClick={save} disabled={!valid || saving}>
             {saving ? <Loader2 className="spin" size={16} /> : <Save size={16} />} SAVE
           </button>
         </div>
@@ -220,7 +220,7 @@ export default function JfsPage() {
     <section className="panel">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2>JOB FILTERING SYSTEM <PageGuide>{JfsGuide}</PageGuide></h2>
-        <button type="button" className="btn" onClick={newSet}><Plus size={16} /> New filter set</button>
+        <button type="button" className="btn btn-fx-fill-up" onClick={newSet}><Plus size={16} /> New filter set</button>
       </div>
       <p className="hint">
         Build one or more filter sets. A job matching <b>any</b> enabled set is posted to your <b>Filtered</b> Telegram channel.
@@ -254,11 +254,11 @@ export default function JfsPage() {
                 ))}
               </div>
               <div className="cell-actions cell-actions-end">
-                <button type="button" className="btn ghost sm" disabled={busy === fs.id} onClick={() => togglePause(fs)}>
+                <button type="button" className="btn ghost sm btn-fx-lift" disabled={busy === fs.id} onClick={() => togglePause(fs)}>
                   {fs.enabled ? <><Pause size={13} /> pause</> : <><Play size={13} /> resume</>}
                 </button>
-                <button type="button" className="btn sm" onClick={() => editSet(fs)}><Pencil size={13} /> edit</button>
-                <button type="button" className="btn danger sm" disabled={busy === fs.id} onClick={() => remove(fs)}><Trash2 size={13} /></button>
+                <button type="button" className="btn sm btn-fx-shine" onClick={() => editSet(fs)}><Pencil size={13} /> edit</button>
+                <button type="button" className="btn danger sm btn-fx-press" disabled={busy === fs.id} onClick={() => remove(fs)}><Trash2 size={13} /></button>
               </div>
             </div>
           ))}
